@@ -3,7 +3,7 @@ import {View, Text, StyleSheet} from 'react-native';
 
 const Support = () => (
   <View style={styles.container}>
-    <Text style={styles.text}>Home Screen</Text>
+    <Text style={styles.text}>Currently Not Available</Text>
   </View>
 );
 

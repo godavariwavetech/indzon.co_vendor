@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -7,45 +7,46 @@ import {
   FlatList,
   Modal,
   TextInput,
-} from "react-native";
-import Icon from "react-native-vector-icons/Ionicons";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+} from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { colors } from '../config/theme';
 
 const transactions = [
   {
-    id: "1",
+    id: '1',
     amount: -2200,
-    description: "Need to be approved by Quickee",
-    status: "Pending",
-    date: "11,Mar 2025",
+    description: 'Need to be approved by Quickee',
+    status: 'Pending',
+    date: '11,Mar 2025',
   },
   {
-    id: "2",
+    id: '2',
     amount: -3400,
-    description: "Amount Transferred successfully",
-    status: "Transferred",
-    date: "09,Mar 2025",
+    description: 'Amount Transferred successfully',
+    status: 'Transferred',
+    date: '09,Mar 2025',
   },
   {
-    id: "3",
+    id: '3',
     amount: 110,
-    description: "Order ID : #100021",
+    description: 'Order ID : #100021',
     status: null,
-    date: "08,Mar 2025",
+    date: '08,Mar 2025',
   },
   {
-    id: "4",
+    id: '4',
     amount: -4000,
-    description: "Amount Transferred successfully",
-    status: "Transferred",
-    date: "06,Mar 2025",
+    description: 'Amount Transferred successfully',
+    status: 'Transferred',
+    date: '06,Mar 2025',
   },
   {
-    id: "5",
+    id: '5',
     amount: -240,
-    description: "Rejected by Quickee",
-    status: "Rejected",
-    date: "05,Mar 2025",
+    description: 'Rejected by Quickee',
+    status: 'Rejected',
+    date: '05,Mar 2025',
   },
 ];
 
@@ -67,20 +68,19 @@ export default function EarningsScreen() {
 
   // 🔹 Date Picker states
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
-  const [selecting, setSelecting] = useState("start");
+  const [selecting, setSelecting] = useState('start');
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
 
-  // helpers
-  const showDatePicker = (type) => {
+  const showDatePicker = type => {
     setSelecting(type);
     setDatePickerVisible(true);
   };
 
   const hideDatePicker = () => setDatePickerVisible(false);
 
-  const handleConfirm = (date) => {
-    if (selecting === "start") {
+  const handleConfirm = date => {
+    if (selecting === 'start') {
       setStartDate(date);
     } else {
       setEndDate(date);
@@ -88,26 +88,27 @@ export default function EarningsScreen() {
     hideDatePicker();
   };
 
-  const formatDate = (date) => {
-    if (!date) return "--";
+  const formatDate = date => {
+    if (!date) return '--';
     const d = new Date(date);
-    return `${d.getDate().toString().padStart(2, "0")}-${(d.getMonth() + 1)
+    return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth() + 1)
       .toString()
-      .padStart(2, "0")}-${d.getFullYear()}`;
+      .padStart(2, '0')}-${d.getFullYear()}`;
   };
 
-  const renderTransaction = ({ item }) => {
-    const amountColor = item.amount >= 0 ? "#0AA007" : "#FF5758";
+  const renderTransaction = ({item}) => {
+    const amountColor =
+      item.amount >= 0 ? colors.earningsAmountPositive : colors.earningsAmountNegative;
     const statusColors = {
-      Pending: "#FFB123",
-      Transferred: "#1A43BF",
-      Rejected: "#FF5758",
+      Pending: colors.earningsPending,
+      Transferred: colors.earningsTransferred,
+      Rejected: colors.earningsRejected,
     };
 
     return (
       <View style={styles.transactionCard}>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.amount, { color: amountColor }]}>
+        <View style={{flex: 1}}>
+          <Text style={[styles.amount, {color: amountColor}]}>
             {item.amount >= 0
               ? `+ ₹${item.amount.toFixed(2)}`
               : `-₹${Math.abs(item.amount).toFixed(2)}`}
@@ -115,14 +116,13 @@ export default function EarningsScreen() {
           <Text style={styles.description}>{item.description}</Text>
         </View>
 
-        <View style={{ alignItems: "flex-end" }}>
+        <View style={{alignItems: 'flex-end'}}>
           {item.status && (
             <View
               style={[
                 styles.statusBadge,
-                { backgroundColor: statusColors[item.status] },
-              ]}
-            >
+                {backgroundColor: statusColors[item.status]},
+              ]}>
               <Text style={styles.statusText}>{item.status}</Text>
             </View>
           )}
@@ -153,9 +153,8 @@ export default function EarningsScreen() {
           onPress={() => {
             setShowWithdraw(true);
             setShowSuccess(false);
-          }}
-        >
-          <Icon name="cash-outline" size={20} color="#000" />
+          }}>
+          <Icon name="cash-outline" size={20} color={colors.textDark} />
           <Text style={styles.withdrawText}>Withdraw</Text>
         </TouchableOpacity>
       </View>
@@ -167,22 +166,20 @@ export default function EarningsScreen() {
         {/* Start Date */}
         <TouchableOpacity
           style={styles.datePicker}
-          onPress={() => showDatePicker("start")}
-        >
-          <Icon name="calendar-outline" size={16} color="#000" />
+          onPress={() => showDatePicker('start')}>
+          <Icon name="calendar-outline" size={16} color={colors.textDark} />
           <Text style={styles.dateText}>
-            {startDate ? formatDate(startDate) : "Start Date"}
+            {startDate ? formatDate(startDate) : 'Start Date'}
           </Text>
         </TouchableOpacity>
 
         {/* End Date */}
         <TouchableOpacity
           style={styles.datePicker}
-          onPress={() => showDatePicker("end")}
-        >
-          <Icon name="calendar-outline" size={16} color="#000" />
+          onPress={() => showDatePicker('end')}>
+          <Icon name="calendar-outline" size={16} color={colors.textDark} />
           <Text style={styles.dateText}>
-            {endDate ? formatDate(endDate) : "End Date"}
+            {endDate ? formatDate(endDate) : 'End Date'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -191,9 +188,9 @@ export default function EarningsScreen() {
       {/* Transaction List */}
       <FlatList
         data={transactions}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         renderItem={renderTransaction}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{paddingBottom: 20}}
       />
 
       {/* Withdraw Modal */}
@@ -201,57 +198,49 @@ export default function EarningsScreen() {
         visible={showWithdraw}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowWithdraw(false)}
-      >
+        onRequestClose={() => setShowWithdraw(false)}>
         <View style={styles.modalOverlay}>
           {showSuccess ? (
             // ✅ Success Card
             <View style={styles.successCard}>
-              {/* Close Button */}
               <TouchableOpacity
                 style={styles.cancelButton}
-                onPress={() => setShowWithdraw(false)}
-              >
-                <Icon name="close" size={22} color="#000" />
+                onPress={() => setShowWithdraw(false)}>
+                <Icon name="close" size={22} color={colors.textDark} />
               </TouchableOpacity>
 
               <View style={styles.successCircle}>
-                <Icon name="checkmark" size={40} color="#fff" />
+                <Icon name="checkmark" size={40} color={colors.textWhite} />
               </View>
 
               <Text style={styles.successText}>
                 “Your applied for Withdraw Request“
               </Text>
 
-              {/* Divider */}
               <View style={styles.successDivider} />
 
-              {/* Bottom Thanks */}
               <TouchableOpacity
-              style={styles.thanksWrapper}
+                style={styles.thanksWrapper}
                 onPress={() => {
                   setShowWithdraw(false);
                   setShowSuccess(false);
-                }}
-              >
+                }}>
                 <Text style={styles.successThanks}>Yahooo! Thanks</Text>
               </TouchableOpacity>
             </View>
           ) : (
             // ✅ Withdraw Form
             <View style={styles.withdrawCard}>
-              {/* Cancel Button */}
               <TouchableOpacity
                 style={styles.cancelButton}
-                onPress={() => setShowWithdraw(false)}
-              >
-                <Icon name="close" size={22} color="#000" />
+                onPress={() => setShowWithdraw(false)}>
+                <Icon name="close" size={22} color={colors.textDark} />
               </TouchableOpacity>
 
               <Text style={styles.cardTitle}>Withdraw</Text>
 
               <View style={styles.bankIconWrapper}>
-                <Icon name="cash-outline" size={40} color="#1A43BF" />
+                <Icon name="cash-outline" size={40} color={colors.primary} />
               </View>
 
               <Text style={styles.inputLabel}>Enter Amount</Text>
@@ -263,8 +252,7 @@ export default function EarningsScreen() {
 
               <TouchableOpacity
                 style={styles.cardButton}
-                onPress={() => setShowSuccess(true)}
-              >
+                onPress={() => setShowSuccess(true)}>
                 <Text style={styles.cardButtonText}>Withdraw</Text>
               </TouchableOpacity>
             </View>
@@ -272,7 +260,6 @@ export default function EarningsScreen() {
         </View>
       </Modal>
 
-      {/* Date Picker Modal */}
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
         mode="date"
@@ -284,46 +271,46 @@ export default function EarningsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: {flex: 1, backgroundColor: colors.background},
 
   header: {
-    backgroundColor: "#000",
+    backgroundColor: colors.earningsHeaderBg,
     padding: 20,
-    alignItems: "center",
+    alignItems: 'center',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
     paddingTop: 50,
   },
-  headerTitle: { color: "#fff", fontSize: 22, fontWeight: "500" },
+  headerTitle: {color: colors.textWhite, fontSize: 22, fontWeight: '500'},
   note: {
-    color: "#fff",
+    color: colors.textWhite,
     fontSize: 12,
-    textAlign: "center",
+    textAlign: 'center',
     marginTop: 10,
     paddingHorizontal: 10,
   },
   amountBig: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
+    fontWeight: 'bold',
+    color: colors.textWhite,
   },
   withdrawBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FBBF24",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.earningsWithdrawBtnBg,
     paddingHorizontal: 100,
     paddingVertical: 10,
     borderRadius: 8,
     marginTop: 15,
   },
   withdrawText: {
-    fontWeight: "600",
+    fontWeight: '600',
     fontSize: 16,
     marginLeft: 8,
   },
 
   cancelButton: {
-    position: "absolute",
+    position: 'absolute',
     top: 10,
     right: 10,
     padding: 5,
@@ -331,152 +318,148 @@ const styles = StyleSheet.create({
   },
 
   dateRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     paddingHorizontal: 15,
     paddingVertical: 10,
-    alignItems: "center",
+    alignItems: 'center',
   },
-  transactionHistoryText: { fontSize: 14, fontWeight: "500" },
+  transactionHistoryText: {fontSize: 14, fontWeight: '500'},
   datePicker: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: colors.border,
     paddingHorizontal: 10,
     paddingVertical: 10,
     borderRadius: 8,
   },
-  dateText: { fontSize: 12, marginLeft: 5 },
+  dateText: {fontSize: 12, marginLeft: 5},
 
   transactionCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: "#fff",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: colors.cardBackground,
     padding: 15,
     marginHorizontal: 10,
     marginTop: 10,
     borderRadius: 10,
     borderWidth: 0.5,
-    borderColor: "#ddd",
-    shadowColor: "#000",
+    borderColor: colors.earningsCardBorder,
+    shadowColor: colors.earningsShadow,
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 1,
   },
-  amount: { fontSize: 15, fontWeight: "500" },
-  description: { fontSize: 12, color: "#00000099", marginTop: 3 },
+  amount: {fontSize: 15, fontWeight: '500'},
+  description: {fontSize: 12, color: colors.earningsTextMuted, marginTop: 3},
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
     marginBottom: 5,
   },
-  statusText: { fontSize: 12, color: "#fff", fontWeight: "bold" },
-  date: { fontSize: 11, color: "#00000099" },
+  statusText: {fontSize: 12, color: colors.textWhite, fontWeight: 'bold'},
+  date: {fontSize: 11, color: colors.earningsTextMuted},
 
   divider: {
     marginVertical: 18,
     borderWidth: 0.75,
-    borderColor: "#FFFFFF",
+    borderColor: colors.earningsDividerWhite,
     width: 325,
-    borderStyle: "dashed",
+    borderStyle: 'dashed',
   },
   divider2: {
     height: 1,
-    backgroundColor: "#000",
+    backgroundColor: colors.earningsDividerBlack,
     marginVertical: 12,
     marginHorizontal: 20,
   },
 
-  // Withdraw Card Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: colors.earningsModalOverlay,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   withdrawCard: {
     width: 375,
     height: 311,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.background,
     borderRadius: 10,
     padding: 20,
-    alignItems: "center",
+    alignItems: 'center',
   },
-  cardTitle: { fontSize: 18, fontWeight: "600", marginBottom: 15 },
+  cardTitle: {fontSize: 18, fontWeight: '600', marginBottom: 15},
   bankIconWrapper: {
     borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "#1A43BF",
+    borderStyle: 'dashed',
+    borderColor: colors.primary,
     borderRadius: 50,
     padding: 15,
     marginBottom: 20,
   },
-  inputLabel: { alignSelf: "flex-start", marginBottom: 5, fontSize: 14 },
+  inputLabel: {alignSelf: 'flex-start', marginBottom: 5, fontSize: 14},
   inputBox: {
-    width: "100%",
+    width: '100%',
     height: 45,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 10,
     marginBottom: 20,
   },
   cardButton: {
-    width: "100%",
+    width: '100%',
     height: 45,
     borderRadius: 8,
-    backgroundColor: "#1A43BF",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  cardButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  cardButtonText: {color: colors.textWhite, fontSize: 16, fontWeight: '600'},
 
-  // ✅ Success Card Styles
   successCard: {
     width: 300,
     height: 266,
-    backgroundColor: "#fff",
+    backgroundColor: colors.earningsSuccessBg,
     borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: 20,
-    position: "relative",
+    position: 'relative',
   },
   successCircle: {
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: "#0AA007",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: colors.success,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
   },
   successText: {
     fontSize: 18,
-    fontWeight: "500",
-    color: "#000000B2",
-    textAlign: "center",
+    fontWeight: '500',
+    color: colors.textMedium,
+    textAlign: 'center',
     marginBottom: 20,
   },
   successDivider: {
     height: 1,
-    backgroundColor: "#ddd",
-    width: "100%",
+    backgroundColor: colors.earningsSuccessDivider,
+    width: '100%',
     marginVertical: 10,
   },
-successThanks: {
-  fontSize: 14,
-  color: "#1A43BF",
-  fontWeight: "500",
-  textAlign: "center",
-},
-thanksWrapper: {
-  width: "100%",
-  alignItems: "center",   // centers horizontally inside card
-  marginTop: 5,
-},
-
-
+  successThanks: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  thanksWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 5,
+  },
 });

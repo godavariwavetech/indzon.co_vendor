@@ -11,10 +11,13 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import {colors} from '../../config/theme';
+import {appLogo} from '../../assets';
 
-import AppNavigation from '../../navigation/AppNavigation';
 export default function SignInScreen() {
-  const [phoneNumber, setPhoneNumber] = useState('9988776655');
+  const navigation = useNavigation();
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
 
   const validatePhoneNumber = number => {
@@ -22,7 +25,7 @@ export default function SignInScreen() {
     return phoneRegex.test(number);
   };
 
-  const handleSignIn = ({navigation}) => {
+  const handleSignIn = () => {
     if (!validatePhoneNumber(phoneNumber)) {
       Alert.alert(
         'Invalid Phone Number',
@@ -40,11 +43,7 @@ export default function SignInScreen() {
       {/* Logo */}
       <View style={styles.logoContainer}>
         <View style={styles.logoCircle}>
-          <Image
-            source={require('../../assets/AppLogo.png')} // Replace with your logo
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <Image source={appLogo} style={styles.logo} resizeMode="contain" />
         </View>
       </View>
 
@@ -62,7 +61,6 @@ export default function SignInScreen() {
           maxLength={10}
           value={phoneNumber}
           onChangeText={text => {
-            // Allow only digits
             const filtered = text.replace(/[^0-9]/g, '');
             setPhoneNumber(filtered);
           }}
@@ -74,8 +72,8 @@ export default function SignInScreen() {
         <Switch
           value={rememberMe}
           onValueChange={setRememberMe}
-          trackColor={{false: '#ccc', true: '#ccc'}}
-          thumbColor={rememberMe ? '#1849C6' : '#f4f3f4'}
+          trackColor={{false: colors.toggleOff, true: colors.toggleOff}}
+          thumbColor={rememberMe ? colors.morePrimary : '#f4f3f4'}
         />
         <Text style={styles.rememberText}>Remember me</Text>
       </View>
@@ -91,7 +89,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     paddingHorizontal: 20,
     alignItems: 'center',
   },
@@ -103,7 +101,7 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     borderRadius: 90,
-    backgroundColor: '#DCE4FA',
+    backgroundColor: colors.signInLogoCircle, // ✅ new global color
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -114,13 +112,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000000',
+    color: colors.textDark,
     marginTop: 10,
     marginBottom: 9,
   },
   subtitle: {
     fontSize: 12,
-    color: '#1A43BF',
+    color: colors.primary,
     marginBottom: 40,
     fontWeight: '600',
   },
@@ -130,17 +128,17 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 15,
-    color: '#5B616E',
+    color: colors.textLight,
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#0000001A',
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   rememberContainer: {
     flexDirection: 'row',
@@ -151,10 +149,10 @@ const styles = StyleSheet.create({
   rememberText: {
     marginLeft: 8,
     fontSize: 13,
-    color: '#1A1A1A99',
+    color: colors.signInRememberText, // ✅ new global color
   },
   signInButton: {
-    backgroundColor: '#1A43BF',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingVertical: 14,
     paddingHorizontal: 30,
@@ -162,7 +160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   signInText: {
-    color: '#FFFFFF',
+    color: colors.textWhite,
     fontSize: 16,
     fontWeight: '600',
   },

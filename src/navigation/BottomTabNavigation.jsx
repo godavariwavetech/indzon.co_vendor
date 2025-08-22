@@ -10,9 +10,7 @@ import MenuScreen from '../screens/MenuScreen';
 import ReportsScreen from '../screens/ReportsScreen';
 import EarningsScreen from '../screens/EarningsScreen';
 
-
 const Tab = createBottomTabNavigator();
-
 
 const BottomTabNavigation = () => {
   //const [modalVisible, setModalVisible] = useState(false);
@@ -22,6 +20,7 @@ const BottomTabNavigation = () => {
       <Tab.Navigator
         screenOptions={({route}) => ({
           headerShown: false,
+          tabBarHideOnKeyboard: true,
           tabBarButton: props => (
             <Pressable
               {...props}
@@ -35,44 +34,19 @@ const BottomTabNavigation = () => {
           tabBarIcon: ({focused, color, size}) => {
             switch (route.name) {
               case 'Orders':
-                return (
-                  <Ionicons
-                    name={ 'reader' }
-                    size={21}
-                    color={color}
-                  />
-                );
+                return <Ionicons name={'reader'} size={21} color={color} />;
               case 'Menu':
-                return (
-                  <Ionicons
-                    name={'grid'}
-                    size={21}
-                    color={color}
-                  />
-                );
+                return <Ionicons name={'grid'} size={21} color={color} />;
               case 'Reports':
                 return (
-                  <Ionicons
-                    name={ 'document-text'}
-                    size={21}
-                    color={color}
-                  />
+                  <Ionicons name={'document-text'} size={21} color={color} />
                 );
               case 'Earnings':
-                return (
-                  <Ionicons
-                    name={'wallet'}
-                    size={21}
-                    color={color}
-                  />
-                );
+                return <Ionicons name={'wallet'} size={21} color={color} />;
               case 'More':
                 return (
                   <Ionicons
-                    name={
-                      'ellipsis-horizontal-circle-sharp'
-                        
-                    }
+                    name={'ellipsis-horizontal-circle-sharp'}
                     size={21}
                     color={color}
                   />
@@ -87,7 +61,7 @@ const BottomTabNavigation = () => {
               style={{
                 color: color,
                 fontSize: 11,
-                fontWeight: "700",
+                fontWeight: '700',
               }}>
               {route.name}
             </Text>
@@ -99,7 +73,6 @@ const BottomTabNavigation = () => {
             paddingTop: 7,
             paddingLeft: 8,
             paddingRight: 8,
-           
           },
         })}>
         <Tab.Screen name="Orders" component={OrdersScreen} />

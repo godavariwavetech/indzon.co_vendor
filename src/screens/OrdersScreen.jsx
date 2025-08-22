@@ -13,11 +13,12 @@ import {
 import AdvertisementsCarousel from '../components/AdvertisementsCarousel';
 
 import Icon from 'react-native-vector-icons/Ionicons'; // ✅ Needed for VegNonVegIcon
+import {colors} from '../config/theme';
 
 // Mock Data for orders
 const allOrders = [
   {
-    id: 'ID-34323',
+    id: '34323',
     status: 'Pending',
     time: '8:00 PM',
     items: [
@@ -30,7 +31,7 @@ const allOrders = [
     customerName: 'Kali krishna',
   },
   {
-    id: 'ID-34324',
+    id: '34324',
     status: 'Preparing',
     time: '8:05 PM',
     items: [
@@ -43,10 +44,10 @@ const allOrders = [
     customerName: 'John Doe',
   },
   {
-    id: 'ID-34325',
+    id: '34325',
     status: 'Ready',
     time: '8:10 PM',
-   items: [
+    items: [
       {name: 'Chicken Dum Biryani', quantity: 1, price: 350, isVeg: false},
       {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
     ],
@@ -65,7 +66,7 @@ const allOrders = [
     total: 800,
   },
   {
-    id: 'ID-34323-2',
+    id: '34323',
     status: 'Picked up',
     time: '8:00 PM',
     items: [
@@ -84,12 +85,12 @@ const VegNonVegIcon = ({isVeg, useIonicons = true}) => {
         <Icon
           name="square-outline"
           size={16}
-          color={isVeg ? '#00C48C' : '#FF4D4D'}
+          color={isVeg ? colors.veg : colors.nonVeg}
         />
         <Icon
           name="ellipse"
           size={8}
-          color={isVeg ? '#00C48C' : '#FF4D4D'}
+          color={isVeg ? colors.veg : colors.nonVeg}
           style={{position: 'absolute', top: 4, left: 4}}
         />
       </View>
@@ -101,10 +102,13 @@ const VegNonVegIcon = ({isVeg, useIonicons = true}) => {
     <View
       style={[
         styles.vegNonVegContainer,
-        {borderColor: isVeg ? '#00C48C' : '#FF4D4D'},
+        {borderColor: isVeg ? colors.veg : colors.nonVeg},
       ]}>
       <View
-        style={[styles.dot, {backgroundColor: isVeg ? '#00C48C' : '#FF4D4D'}]}
+        style={[
+          styles.dot,
+          {backgroundColor: isVeg ? colors.veg : colors.nonVeg},
+        ]}
       />
     </View>
   );
@@ -113,6 +117,7 @@ const VegNonVegIcon = ({isVeg, useIonicons = true}) => {
 export default function OrdersScreen() {
   const [isOn, setIsOn] = useState(true);
   const [selectedTab, setSelectedTab] = useState('Pending');
+
   const translateX = new Animated.Value(isOn ? 32 : 0);
 
   const toggleSwitch = () => {
@@ -143,10 +148,9 @@ export default function OrdersScreen() {
           <View key={order.id} style={styles.orderCard}>
             <View style={styles.cardHeader}>
               <View style={styles.orderIdContainer}>
-                <Text style={styles.orderId}>ID-{order.id.split('-')[1]}</Text>
+                <Text style={styles.orderId}>ID-{order.id}</Text>
                 <TouchableOpacity>
-                <Icon name="copy-outline" size={16} color="#000" />
-
+                  <Icon name="copy-outline" size={16} color="#000" />
                 </TouchableOpacity>
               </View>
               <Text style={styles.orderTime}>{order.time}</Text>
@@ -177,7 +181,7 @@ export default function OrdersScreen() {
               <View style={styles.row}>
                 {/* Profile Image */}
                 <Image
-                  source={require('../assets/RestaurantLogo.png')} // replace with actual image
+                  source={require('../assets/RestaurantLogo.png')}
                   style={styles.avatar2}
                 />
                 <Text style={styles.title}>
@@ -204,7 +208,7 @@ export default function OrdersScreen() {
         return (
           <View key={order.id} style={styles.orderCard}>
             <View style={styles.cardHeader}>
-              <Text style={styles.orderId}>ID-{order.id.split('-')[1]}</Text>
+              <Text style={styles.orderId}>ID-{order.id}</Text>
               <Text style={styles.orderTime}>{order.time}</Text>
             </View>
             <View style={styles.statusBadgePreparing}>
@@ -222,7 +226,7 @@ export default function OrdersScreen() {
             ))}
             <View style={styles.divider} />
 
-             <View style={styles.totalContainer}>
+            <View style={styles.totalContainer}>
               <View style={styles.Totalbillcontainer}>
                 <Text style={styles.totalBill}>Total Bill</Text>
                 <View style={styles.paymentMethod}>
@@ -258,14 +262,14 @@ export default function OrdersScreen() {
         return (
           <View key={order.id} style={styles.orderCard}>
             <View style={styles.cardHeader}>
-              <Text style={styles.orderId}>ID-{order.id.split('-')[1]}</Text>
+              <Text style={styles.orderId}>ID-{order.id}</Text>
               <Text style={styles.orderTime}>{order.time}</Text>
             </View>
             <View style={styles.statusBadgeReady}>
               <Text style={styles.statusBadgeText}>Ready</Text>
             </View>
 
-                        <View style={styles.divider} />
+            <View style={styles.divider} />
 
             {order.items.map((item, index) => (
               <View key={index} style={styles.itemContainer}>
@@ -276,7 +280,7 @@ export default function OrdersScreen() {
               </View>
             ))}
 
-                        <View style={styles.divider} />
+            <View style={styles.divider} />
 
             <View style={styles.totalContainer}>
               <View style={styles.Totalbillcontainer}>
@@ -288,34 +292,27 @@ export default function OrdersScreen() {
               <Text style={styles.totalPrice}>₹{order.total}</Text>
             </View>
 
+            <View style={styles.card3}>
+              {/* Left: Avatar */}
+              <Image
+                source={require('../assets/RestaurantLogo.png')} // replace with actual profile image
+                style={styles.avatar3}
+              />
 
+              {/* Middle: Text Content */}
+              <View style={styles.textContainer}>
+                <Text style={styles.subtitle3}>Manoj is on the way</Text>
+                <Text style={styles.orderId3}>
+                  ORDER ID : <Text style={styles.bold}>425424814</Text>
+                </Text>
+              </View>
 
-
-           <View style={styles.card3}>
-      {/* Left: Avatar */}
-      <Image
-        source={require('../assets/RestaurantLogo.png')} // replace with actual profile image
-        style={styles.avatar3}
-      />
-
-      {/* Middle: Text Content */}
-      <View style={styles.textContainer}>
-        <Text style={styles.subtitle3}>Manoj is on the way</Text>
-        <Text style={styles.orderId3}>
-          ORDER ID : <Text style={styles.bold}>425424814</Text>
-        </Text>
-      </View>
-
-      {/* Right: Call Icon */}
-      <TouchableOpacity>
-        <Icon name="call-outline" size={20} color="#1A43BF" />
-      </TouchableOpacity>
-    </View>
+              {/* Right: Call Icon */}
+              <TouchableOpacity>
+                <Icon name="call" size={20} color="#1A43BF" />
+              </TouchableOpacity>
+            </View>
           </View>
-
-
-
-
         );
       case 'Picked up':
         return (
@@ -334,7 +331,7 @@ export default function OrdersScreen() {
                 <Text style={styles.itemPrice}>₹{item.price}</Text>
               </View>
             ))}
-                <View style={styles.divider} />
+            <View style={styles.divider} />
 
             <View style={styles.totalContainerSimple}>
               <Text style={styles.totalBill}>Total bill : </Text>
@@ -354,7 +351,7 @@ export default function OrdersScreen() {
           <AdvertisementsCarousel />
           <View style={styles.onlineSection}>
             <Image
-              source={{uri: 'https://i.imgur.com/BZNqlbI.png'}}
+              source={require('../assets/Ordersscreenimage.png')}
               style={{width: 300, height: 200, resizeMode: 'contain'}}
             />
             <Text style={styles.onlineText}>You are online.</Text>
@@ -368,7 +365,7 @@ export default function OrdersScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar translucent backgroundColor={'transparent'} />
+      <StatusBar translucent backgroundColor={'transparent'}  barStyle={'dark-content'}/>
 
       {/* Header */}
       <View style={styles.header}>
@@ -410,7 +407,6 @@ export default function OrdersScreen() {
           </TouchableOpacity>
         ))}
       </View>
-
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
         {renderContent()}
       </ScrollView>
@@ -421,7 +417,7 @@ export default function OrdersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     paddingTop: 40,
   },
 
@@ -430,7 +426,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 15,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     marginBottom: 5,
   },
   avatar: {
@@ -443,7 +439,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.textDark,
   },
   toggleContainer: {
     width: 64,
@@ -456,14 +452,14 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
 
   // ✅ Tabs
   tabContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     elevation: 2,
     paddingVertical: 8,
     marginVertical: 7,
@@ -474,36 +470,35 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginVertical: 3,
     borderWidth: 1,
-    borderColor: '#0000001A',
+    borderColor: colors.border,
   },
   tabButtonActive: {
-    backgroundColor: '#1A43BF33',
+    backgroundColor: colors.primaryLight,
     borderWidth: 1,
-    borderColor: '#1A43BF33',
+    borderColor: colors.primaryLight,
   },
   tabText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#6E6E6E',
+    color: colors.textLight,
   },
   tabTextActive: {
     fontSize: 12,
-    color: '#000000BF',
+    color: colors.textMuted,
     fontWeight: 'bold',
   },
 
   // ✅ ScrollView
-  scrollViewContent: {
-    padding: 12,
-  },
+  scrollViewContent: {},
 
   // ✅ Orders
   orderCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.cardBackground,
     padding: 12,
     borderRadius: 5,
     marginVertical: 12,
     elevation: 2,
+    marginHorizontal: 15,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -517,11 +512,11 @@ const styles = StyleSheet.create({
   orderId: {
     fontWeight: '500',
     fontSize: 14,
-    color: '#1A43BF',
+    color: colors.primary,
   },
   orderTime: {
     fontSize: 14,
-    color: '#000000B2',
+    color: colors.textMedium,
     fontWeight: '500',
   },
 
@@ -534,23 +529,23 @@ const styles = StyleSheet.create({
   itemQuantity: {
     fontWeight: '500',
     marginRight: 8,
-    color: '#333',
+    color: colors.totalPrice,
     borderWidth: 0.5,
     borderRadius: 5,
     paddingHorizontal: 7,
     paddingVertical: 4,
-    borderColor: '#00000080',
+    borderColor: colors.borderMedium,
   },
   itemName: {
     flex: 1,
     fontSize: 14,
-    fontWeight: 400,
-    color: '#000000',
+    fontWeight: '400',
+    color: colors.textDark,
   },
   itemPrice: {
     fontWeight: 'bold',
     fontSize: 14,
-    color: '#000000A6',
+    color: colors.textMuted,
   },
 
   // ✅ Veg/Non-Veg
@@ -583,18 +578,18 @@ const styles = StyleSheet.create({
   },
   totalBill: {
     fontSize: 14,
-    color: '#000000',
+    color: colors.textDark,
     fontWeight: '500',
   },
   totalPrice: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#333',
+    color: colors.totalPrice,
   },
   totalPriceBold: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#222',
+    color: colors.textDark,
   },
   Totalbillcontainer: {
     gap: 20,
@@ -602,21 +597,21 @@ const styles = StyleSheet.create({
   },
   paymentMethod: {
     borderRadius: 5,
-    backgroundColor: '#1A43BF33',
+    backgroundColor: colors.primaryLight,
     paddingHorizontal: 6,
     padding: 2,
   },
   codText: {
     fontSize: 11,
-    color: '#1A43BF',
+    color: colors.primary,
   },
 
   // ✅ Cooking Request
   card: {
     borderRadius: 5,
     borderWidth: 0.5,
-    borderColor: '#1A43BF',
-    backgroundColor: '#1A43BF33',
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
     opacity: 1,
     padding: 8,
     justifyContent: 'center',
@@ -636,14 +631,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#000',
+    color: colors.textDark,
   },
   subtitle: {
     fontSize: 13,
-    color: '#444',
+    color: colors.textLight,
     marginTop: 15,
-    marginLeft: 25, // little left padding so bullet aligns nicely
+    marginLeft: 25,
   },
+
   // ✅ Buttons
   buttonContainer: {
     flexDirection: 'row',
@@ -655,51 +651,50 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#FF4D4D',
+    borderColor: colors.danger,
     borderRadius: 6,
     paddingVertical: 8,
     alignItems: 'center',
   },
   rejectButtonText: {
-    color: '#FF4D4D',
+    color: colors.danger,
     fontWeight: 'bold',
   },
   confirmButton: {
     flex: 1,
     marginLeft: 8,
-    backgroundColor: '#0AA007',
+    backgroundColor: colors.success,
     borderRadius: 6,
     paddingVertical: 8,
     alignItems: 'center',
   },
   confirmButtonText: {
-    color: '#fff',
+    color: colors.textWhite,
     fontWeight: 'bold',
   },
   orderReadyButton: {
-    backgroundColor: '#1A43BF',
+    backgroundColor: colors.primary,
     borderRadius: 6,
     paddingVertical: 10,
     alignItems: 'center',
     marginVertical: 12,
   },
   orderReadyButtonText: {
-    color: '#fff',
+    color: colors.textWhite,
     fontWeight: 'bold',
   },
 
   // ✅ Status Badges
   statusBadgePreparing: {
-    backgroundColor: '#1A43BFB2',
+    backgroundColor: colors.primarySemi,
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 5,
     alignSelf: 'flex-start',
     marginBottom: 6,
-    
   },
   statusBadgeReady: {
-    backgroundColor: '#1A43BFB2',
+    backgroundColor: colors.primarySemi,
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 5,
@@ -709,45 +704,44 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#FFFFFF',
+    color: colors.textWhite,
   },
 
   // ✅ Driver Info
- card3: {
-  
+  card3: {
     borderRadius: 5,
     borderWidth: 0.65,
-    borderColor: "#00000040",
+    borderColor: colors.borderLight,
     opacity: 1,
-    backgroundColor: "#fff",
-    flexDirection: "row",
-    alignItems: "center",
+    backgroundColor: colors.background,
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical:15,
-    marginVertical:10
+    paddingVertical: 15,
+    marginVertical: 10,
   },
   avatar3: {
     width: 36,
     height: 36,
     borderRadius: 18,
     marginRight: 12,
-    backgroundColor: "#1A43BF", // fallback background color
+    backgroundColor: colors.primary,
   },
   textContainer: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   subtitle3: {
     fontSize: 13,
-    color: "#000000B2",
+    color: colors.textMedium,
     marginBottom: 2,
   },
   orderId3: {
     fontSize: 13,
-    color: "#000000",
+    color: colors.textDark,
   },
   bold: {
-    fontWeight: "600",
+    fontWeight: '600',
   },
 
   // ✅ Online Section
@@ -757,16 +751,18 @@ const styles = StyleSheet.create({
   },
   onlineText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 10,
+    fontWeight: '500',
+    marginTop: 12,
+    color: colors.onlineGreen,
   },
   waitingText: {
-    fontSize: 13,
-    color: '#666',
+    fontSize: 16,
+    color: colors.textMuted,
+    marginTop: 4,
   },
   divider: {
     height: 1,
-    backgroundColor: '#E0E0E0', // light gray
+    backgroundColor: colors.divider,
     marginVertical: 12,
   },
 });
