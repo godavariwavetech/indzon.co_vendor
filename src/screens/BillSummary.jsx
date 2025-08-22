@@ -7,6 +7,8 @@ import {
   ScrollView,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import  {colors}  from '../config/theme'; 
+
 
 export default function BillSummary({ navigation }) {
   return (
@@ -14,7 +16,7 @@ export default function BillSummary({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={22} color="#000" />
+          <Icon name="arrow-back" size={22} color={colors.textDark} />
         </TouchableOpacity>
         <View style={styles.headerTextContainer}>
           <Text style={styles.orderId}>ORDER #100021</Text>
@@ -33,12 +35,12 @@ export default function BillSummary({ navigation }) {
 
           {/* Items */}
           <View style={styles.itemRow}>
-            <Icon name="remove-circle" size={18} color="red" />
+            <Icon name="caret-up-circle-outline" size={18} color={colors.danger} />
             <Text style={styles.itemText}>1 x Chicken Dum Biryani</Text>
             <Text style={styles.itemPrice}>₹400</Text>
           </View>
           <View style={styles.itemRow}>
-            <Icon name="remove-circle" size={18} color="red" />
+            <Icon name="caret-up-circle-outline" size={18} color={colors.danger} />
             <Text style={styles.itemText}>1 x Chicken Fry Biryani</Text>
             <Text style={styles.itemPrice}>₹400</Text>
           </View>
@@ -79,14 +81,16 @@ export default function BillSummary({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
+    paddingTop: 40,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E6E8F6",
-    padding: 12,
+    backgroundColor: colors.billHeaderBg,
+    padding: 18,
     justifyContent: "space-between",
+    marginBottom: 12,
   },
   headerTextContainer: {
     flex: 1,
@@ -94,25 +98,26 @@ const styles = StyleSheet.create({
   },
   orderId: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "500",
+    color: colors.textDark,
   },
   subText: {
     fontSize: 13,
-    color: "#666",
+    color: colors.billSubText,
   },
   helpText: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#000",
+    color: colors.textDark,
   },
   scrollContainer: {
     padding: 16,
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderRadius: 10,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: colors.textDark,
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 3,
@@ -120,12 +125,14 @@ const styles = StyleSheet.create({
   billSummary: {
     fontSize: 16,
     fontWeight: "bold",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   divider: {
-    height: 1,
-    backgroundColor: "#ddd",
+    backgroundColor: colors.divider,
     marginBottom: 10,
+    borderStyle: "dashed",
+    borderWidth: 0.75,
+    borderColor: colors.borderLight,
   },
   itemRow: {
     flexDirection: "row",
@@ -134,45 +141,47 @@ const styles = StyleSheet.create({
   },
   itemText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     marginLeft: 6,
+    color: colors.textMedium,
   },
   itemPrice: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "500",
+    color: colors.textMedium,
   },
   taxText: {
     flex: 1,
-    fontSize: 14,
-    color: "#444",
+    fontSize: 13,
+    color: colors.textMedium,
   },
   couponText: {
     flex: 1,
     fontSize: 14,
-    color: "blue",
+    color: colors.billCoupon,
   },
   couponAmount: {
     fontSize: 14,
     fontWeight: "500",
-    color: "blue",
+    color: colors.billCoupon,
   },
   commissionText: {
     flex: 1,
     fontSize: 14,
-    color: "green",
+    color: colors.billCommission,
   },
   commissionAmount: {
     fontSize: 14,
     fontWeight: "500",
-    color: "green",
+    color: colors.billCommission,
   },
   totalBox: {
-    backgroundColor: "#F7CF69",
+    backgroundColor: colors.billTotalBg,
     borderRadius: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 12,
+    padding: 15,
     marginTop: 14,
   },
   totalText: {
