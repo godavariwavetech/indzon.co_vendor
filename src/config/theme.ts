@@ -32,6 +32,7 @@ export const colors = {
   // ------- SignInScreen specific -------
   signInLogoCircle: "#DCE4FA", // ✅ new
   signInRememberText: "#1A1A1A99", // ✅ new
+  rememberMeToggle:"#f4f3f4",
 
   // ------- OrdersScreen specific -------
   ordersCardBg: "#FFFFFF",
@@ -54,7 +55,7 @@ export const colors = {
   searchOutline: "#A0A0A0",
   closeButton: "#333",
   white: "#FFFFFF",
-  lightBlue: "1A43BF24",
+  lightBlue: "#1A43BF24",
   black: "#00000014",
   black2: "#0000001A",
   black3: "#000000A6",
@@ -118,6 +119,32 @@ export const colors = {
   billCoupon: "#0000FF", // blue
   billCommission: "#008000", // green
   billTotalBg: "#EFB319B2",
+
+
+   
+  primaryBlue: '#1A43BF',
+  textSecondary: '#00000099',
+  borderGray: 'lightgray',
+  errorRed: '#FF4D4F',
+
+
+
+  brandPrimary: "#1A43BF",     // Main brand / accent color (buttons, icons, highlights)
+  backgroundLight: "#F9F9F9",  // Screen background
+  cardBackground2: "#FFFFFF",   // Card / surface background
+  textPrimary: "#333333",      // Main heading text
+  textSecondary2: "#555555",    // Supporting / body text
+  shadowColor: "#000000",      // For shadow effects
+  buttonTextLight: "#FFFFFF",  // Text color for buttons
+
+
+black7:"#00000024",
+  bgColor: '#FFFFFF',
+  mainColor:'#1A43BF',
+
+
+
+
 };
 
 

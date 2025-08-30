@@ -11,44 +11,80 @@ import {
   SafeAreaView,
 } from 'react-native';
 import AdvertisementsCarousel from '../components/AdvertisementsCarousel';
-
-import Icon from 'react-native-vector-icons/Ionicons'; // ✅ Needed for VegNonVegIcon
+import Icon from 'react-native-vector-icons/Ionicons';
 import {colors} from '../config/theme';
+import {emoji} from '../assets/index';
+import {Ordersscreenimage} from '../assets/index';
+import {RestaurantLogo} from '../assets/index';
+import OrderCard from '../components/OrderCard';
 
-// Mock Data for orders
 const allOrders = [
   {
-    id: '34323',
+    id: '230820257934322',
     status: 'Pending',
+    date: '23/08/2025',
     time: '8:00 PM',
+    address:
+      '14-105/1, Vl puram, Rehamanth nagar colony, rajamahendravaram,andhrapradesh,533102, india',
+
     items: [
-      {name: 'Chicken Dum Biryani', quantity: 1, price: 350, isVeg: false},
+      {name: 'Paneer Butter Masala', quantity: 1, price: 350, isVeg: true},
+      {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
+      {name: 'Paneer Butter Masala', quantity: 1, price: 350, isVeg: true},
+      {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
+      {name: 'Paneer Butter Masala', quantity: 1, price: 350, isVeg: true},
       {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
     ],
     total: 900,
     paymentMethod: 'COD',
     cookingRequest: 'Please send extra tissues and spoons.',
-    customerName: 'Kali krishna',
   },
   {
-    id: '34324',
+    id: '230820257934323',
+    status: 'Pending',
+    date: '23/08/2025',
+    time: '9:00 PM',
+    address:
+      '14-105/1, Vl puram, Rehamanth nagar colony, rajamahendravaram,andhrapradesh,533102, india',
+
+    items: [
+      {name: 'Paneer Butter Masala', quantity: 1, price: 350, isVeg: true},
+      {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
+      {name: 'Paneer Butter Masala', quantity: 1, price: 350, isVeg: true},
+      {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
+      {name: 'Paneer Butter Masala', quantity: 1, price: 350, isVeg: true},
+      {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
+    ],
+    total: 1900,
+    paymentMethod: 'cash',
+  },
+  {
+    id: '230820257934324',
     status: 'Preparing',
     time: '8:05 PM',
+    date: '23/08/2025',
+    address:
+      '14-105/1, Vl puram, Rehamanth nagar colony, rajamahendravaram,andhrapradesh,533102, india ',
     items: [
       {name: 'Paneer Butter Masala', quantity: 2, price: 250, isVeg: true},
       {name: 'Naan', quantity: 4, price: 50, isVeg: true},
+      {name: 'Paneer Butter Masala', quantity: 1, price: 350, isVeg: true},
+      {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
     ],
     total: 700,
     paymentMethod: 'Online',
-    cookingRequest: 'Make it less spicy.',
-    customerName: 'John Doe',
   },
   {
-    id: '34325',
+    id: '230820257934325',
     status: 'Ready',
     time: '8:10 PM',
+    date: '23/08/2025',
+    address:
+      '14-105/1, Vl puram, Rehamanth nagar colony, rajamahendravaram,andhrapradesh,533102, india',
     items: [
       {name: 'Chicken Dum Biryani', quantity: 1, price: 350, isVeg: false},
+      {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
+      {name: 'Paneer Butter Masala', quantity: 1, price: 350, isVeg: true},
       {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
     ],
     total: 800,
@@ -56,65 +92,43 @@ const allOrders = [
     driverInfo: {name: 'Manoj', orderId: '425424814'},
   },
   {
-    id: 'ORD10001',
+    id: '230820257934326',
     status: 'Picked up',
+    paymentMethod: 'COD',
+
     time: '8:00 PM',
+    date: '23/08/2025',
+
+    address:
+      '14-105/1, Vl puram, Rehamanth nagar colony, rajamahendravaram,andhrapradesh,533102, india',
     items: [
       {name: 'Chicken Dum Biryani', quantity: 1, price: 350, isVeg: false},
+      {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
+      {name: 'Paneer Butter Masala', quantity: 1, price: 350, isVeg: true},
       {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
     ],
-    total: 800,
+    total: 900,
   },
   {
-    id: '34323',
+    id: '230820257934327',
     status: 'Picked up',
-    time: '8:00 PM',
+    paymentMethod: 'cash',
+
+    time: '8:10 PM',
+    date: '23/08/2025',
+    address:
+      '14-105/1, Vl puram, Rehamanth nagar colony, rajamahendravaram,andhrapradesh,533102, india',
     items: [
       {name: 'Chicken Dum Biryani', quantity: 1, price: 350, isVeg: false},
       {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
+      {name: 'Paneer Butter Masala', quantity: 1, price: 350, isVeg: true},
+      {name: 'Mutton Dum Biryani', quantity: 1, price: 550, isVeg: false},
     ],
     total: 800,
   },
 ];
 
-// ✅ Veg / Non-Veg Icon Component
-const VegNonVegIcon = ({isVeg, useIonicons = true}) => {
-  if (useIonicons) {
-    return (
-      <View style={{marginRight: 6}}>
-        <Icon
-          name="square-outline"
-          size={16}
-          color={isVeg ? colors.veg : colors.nonVeg}
-        />
-        <Icon
-          name="ellipse"
-          size={8}
-          color={isVeg ? colors.veg : colors.nonVeg}
-          style={{position: 'absolute', top: 4, left: 4}}
-        />
-      </View>
-    );
-  }
-
-  // ✅ Default fallback (custom square + dot like Swiggy/Zomato)
-  return (
-    <View
-      style={[
-        styles.vegNonVegContainer,
-        {borderColor: isVeg ? colors.veg : colors.nonVeg},
-      ]}>
-      <View
-        style={[
-          styles.dot,
-          {backgroundColor: isVeg ? colors.veg : colors.nonVeg},
-        ]}
-      />
-    </View>
-  );
-};
-
-export default function OrdersScreen() {
+export default function OrdersScreen({navigation}) {
   const [isOn, setIsOn] = useState(true);
   const [selectedTab, setSelectedTab] = useState('Pending');
 
@@ -142,58 +156,19 @@ export default function OrdersScreen() {
   ];
 
   const renderOrderCard = order => {
+    const commonProps = {
+      order,
+      onPressAddress: () => navigation.navigate('OrderDetailsScreen', {order}),
+    };
+
     switch (order.status) {
       case 'Pending':
         return (
-          <View key={order.id} style={styles.orderCard}>
-            <View style={styles.cardHeader}>
-              <View style={styles.orderIdContainer}>
-                <Text style={styles.orderId}>ID-{order.id}</Text>
-                <TouchableOpacity>
-                  <Icon name="copy-outline" size={16} color="#000" />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.orderTime}>{order.time}</Text>
-            </View>
-            <View style={styles.divider} />
-
-            {order.items.map((item, index) => (
-              <View key={index} style={styles.itemContainer}>
-                <Text style={styles.itemQuantity}>x{item.quantity}</Text>
-                <VegNonVegIcon isVeg={item.isVeg} />
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemPrice}>₹{item.price}</Text>
-              </View>
-            ))}
-            <View style={styles.divider} />
-
-            <View style={styles.totalContainer}>
-              <View style={styles.Totalbillcontainer}>
-                <Text style={styles.totalBill}>Total Bill</Text>
-                <View style={styles.paymentMethod}>
-                  <Text style={styles.codText}>● COD</Text>
-                </View>
-              </View>
-              <Text style={styles.totalPrice}>₹{order.total}</Text>
-            </View>
-
-            <View style={styles.card}>
-              <View style={styles.row}>
-                {/* Profile Image */}
-                <Image
-                  source={require('../assets/RestaurantLogo.png')}
-                  style={styles.avatar2}
-                />
-                <Text style={styles.title}>
-                  Cooking Request from Kali krishna
-                </Text>
-              </View>
-
-              <Text style={styles.subtitle}>
-                • Please send extra tissues and spoons.
-              </Text>
-            </View>
-
+          <OrderCard
+            key={order.id}
+            {...commonProps}
+            statusColor={colors.primarySemi}
+            statusLabel="Pending">
             <View style={styles.buttonContainer}>
               <TouchableOpacity style={styles.rejectButton}>
                 <Text style={styles.rejectButtonText}>Reject</Text>
@@ -202,143 +177,55 @@ export default function OrdersScreen() {
                 <Text style={styles.confirmButtonText}>Confirm Now</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </OrderCard>
         );
+
       case 'Preparing':
         return (
-          <View key={order.id} style={styles.orderCard}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.orderId}>ID-{order.id}</Text>
-              <Text style={styles.orderTime}>{order.time}</Text>
-            </View>
-            <View style={styles.statusBadgePreparing}>
-              <Text style={styles.statusBadgeText}>Preparing</Text>
-            </View>
-            <View style={styles.divider} />
-
-            {order.items.map((item, index) => (
-              <View key={index} style={styles.itemContainer}>
-                <Text style={styles.itemQuantity}>x{item.quantity}</Text>
-                <VegNonVegIcon isVeg={item.isVeg} />
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemPrice}>₹{item.price}</Text>
-              </View>
-            ))}
-            <View style={styles.divider} />
-
-            <View style={styles.totalContainer}>
-              <View style={styles.Totalbillcontainer}>
-                <Text style={styles.totalBill}>Total Bill</Text>
-                <View style={styles.paymentMethod}>
-                  <Text style={styles.codText}>● COD</Text>
-                </View>
-              </View>
-              <Text style={styles.totalPrice}>₹{order.total}</Text>
-            </View>
-
-            <View style={styles.card}>
-              <View style={styles.row}>
-                {/* Profile Image */}
-                <Image
-                  source={require('../assets/RestaurantLogo.png')} // replace with actual image
-                  style={styles.avatar2}
-                />
-                <Text style={styles.title}>
-                  Cooking Request from Kali krishna
-                </Text>
-              </View>
-
-              <Text style={styles.subtitle}>
-                • Please send extra tissues and spoons.
-              </Text>
-            </View>
-
+          <OrderCard
+            key={order.id}
+            {...commonProps}
+            statusColor={colors.primarySemi}
+            statusLabel="Preparing">
             <TouchableOpacity style={styles.orderReadyButton}>
-              <Text style={styles.orderReadyButtonText}>Order ready</Text>
+              <Text style={styles.orderReadyButtonText}>Order Ready</Text>
             </TouchableOpacity>
-          </View>
+          </OrderCard>
         );
+
       case 'Ready':
         return (
-          <View key={order.id} style={styles.orderCard}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.orderId}>ID-{order.id}</Text>
-              <Text style={styles.orderTime}>{order.time}</Text>
-            </View>
-            <View style={styles.statusBadgeReady}>
-              <Text style={styles.statusBadgeText}>Ready</Text>
-            </View>
-
-            <View style={styles.divider} />
-
-            {order.items.map((item, index) => (
-              <View key={index} style={styles.itemContainer}>
-                <Text style={styles.itemQuantity}>x{item.quantity}</Text>
-                <VegNonVegIcon isVeg={item.isVeg} />
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemPrice}>₹{item.price}</Text>
-              </View>
-            ))}
-
-            <View style={styles.divider} />
-
-            <View style={styles.totalContainer}>
-              <View style={styles.Totalbillcontainer}>
-                <Text style={styles.totalBill}>Total Bill</Text>
-                <View style={styles.paymentMethod}>
-                  <Text style={styles.codText}>● COD</Text>
-                </View>
-              </View>
-              <Text style={styles.totalPrice}>₹{order.total}</Text>
-            </View>
-
+          <OrderCard
+            key={order.id}
+            {...commonProps}
+            statusColor={colors.primarySemi}
+            statusLabel="Ready">
+            {/* Driver info */}
             <View style={styles.card3}>
-              {/* Left: Avatar */}
-              <Image
-                source={require('../assets/RestaurantLogo.png')} // replace with actual profile image
-                style={styles.avatar3}
-              />
-
-              {/* Middle: Text Content */}
+              <Image source={emoji} style={styles.avatar3} />
               <View style={styles.textContainer}>
                 <Text style={styles.subtitle3}>Manoj is on the way</Text>
                 <Text style={styles.orderId3}>
-                  ORDER ID : <Text style={styles.bold}>425424814</Text>
+                  ORDER ID : <Text style={styles.bold}>4254248142121</Text>
                 </Text>
               </View>
-
-              {/* Right: Call Icon */}
               <TouchableOpacity>
                 <Icon name="call" size={20} color="#1A43BF" />
               </TouchableOpacity>
             </View>
-          </View>
+          </OrderCard>
         );
+
       case 'Picked up':
         return (
-          <View key={order.id} style={styles.orderCard}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.orderId}>{order.id}</Text>
-              <Text style={styles.orderTime}>{order.time}</Text>
-            </View>
-            <View style={styles.divider} />
-
-            {order.items.map((item, index) => (
-              <View key={index} style={styles.itemContainer}>
-                <Text style={styles.itemQuantity}>x{item.quantity}</Text>
-                <VegNonVegIcon isVeg={item.isVeg} />
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemPrice}>₹{item.price}</Text>
-              </View>
-            ))}
-            <View style={styles.divider} />
-
-            <View style={styles.totalContainerSimple}>
-              <Text style={styles.totalBill}>Total bill : </Text>
-              <Text style={styles.totalPriceBold}>₹{order.total}</Text>
-            </View>
-          </View>
+          <OrderCard
+            key={order.id}
+            {...commonProps}
+            statusColor={colors.primarySemi}
+            statusLabel="Picked up"
+          />
         );
+
       default:
         return null;
     }
@@ -350,12 +237,20 @@ export default function OrdersScreen() {
         <View>
           <AdvertisementsCarousel />
           <View style={styles.onlineSection}>
-            <Image
-              source={require('../assets/Ordersscreenimage.png')}
-              style={{width: 300, height: 200, resizeMode: 'contain'}}
-            />
-            <Text style={styles.onlineText}>You are online.</Text>
-            <Text style={styles.waitingText}>waiting for new orders</Text>
+            <Image source={Ordersscreenimage} style={styles.emptyOrdersImage} />
+            {/* ✅ Online / Offline toggle text */}
+            <Text
+              style={[
+                styles.onlineText,
+                {color: isOn ? colors.onlineGreen : colors.danger},
+              ]}>
+              You are {isOn ? 'online' : 'offline'}.
+            </Text>
+            <Text style={styles.waitingText}>
+              {isOn
+                ? 'waiting for new orders'
+                : 'switch on to start receiving orders'}
+            </Text>
           </View>
         </View>
       );
@@ -365,21 +260,21 @@ export default function OrdersScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar translucent backgroundColor={'transparent'}  barStyle={'dark-content'}/>
+      <StatusBar
+        translucent
+        backgroundColor={'transparent'}
+        barStyle={'dark-content'}
+      />
 
-      {/* Header */}
       <View style={styles.header}>
-        <Image
-          source={require('../assets/RestaurantLogo.png')}
-          style={styles.avatar}
-        />
+        <Image source={RestaurantLogo} style={styles.avatar} />
         <Text style={styles.restaurantName}>
           Bismillah Family Indian Restaurant
         </Text>
         <TouchableOpacity
           style={[
             styles.toggleContainer,
-            {backgroundColor: isOn ? '#00CE9C' : '#ccc'},
+            isOn ? styles.toggleOn : styles.toggleOff, // 👈 use stylesheet
           ]}
           activeOpacity={0.8}
           onPress={toggleSwitch}>
@@ -387,7 +282,6 @@ export default function OrdersScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Tabs */}
       <View style={styles.tabContainer}>
         {tabs.map(tab => (
           <TouchableOpacity
@@ -407,6 +301,7 @@ export default function OrdersScreen() {
           </TouchableOpacity>
         ))}
       </View>
+
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
         {renderContent()}
       </ScrollView>
@@ -421,7 +316,6 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
 
-  // ✅ Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -448,6 +342,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 4,
   },
+  toggleOn: {
+    backgroundColor: '#00CE9C',
+  },
+  toggleOff: {
+    backgroundColor: '#ccc',
+  },
   circle: {
     width: 24,
     height: 24,
@@ -455,7 +355,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
 
-  // ✅ Tabs
   tabContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -488,159 +387,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  // ✅ ScrollView
-  scrollViewContent: {},
-
-  // ✅ Orders
-  orderCard: {
-    backgroundColor: colors.cardBackground,
-    padding: 12,
-    borderRadius: 5,
-    marginVertical: 12,
-    elevation: 2,
-    marginHorizontal: 15,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  orderIdContainer: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  orderId: {
-    fontWeight: '500',
-    fontSize: 14,
-    color: colors.primary,
-  },
-  orderTime: {
-    fontSize: 14,
-    color: colors.textMedium,
-    fontWeight: '500',
+  scrollViewContent: {
+    paddingBottom: 10,
   },
 
-  // ✅ Items
-  itemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  itemQuantity: {
-    fontWeight: '500',
-    marginRight: 8,
-    color: colors.totalPrice,
-    borderWidth: 0.5,
-    borderRadius: 5,
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderColor: colors.borderMedium,
-  },
-  itemName: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '400',
-    color: colors.textDark,
-  },
-  itemPrice: {
-    fontWeight: 'bold',
-    fontSize: 14,
-    color: colors.textMuted,
-  },
-
-  // ✅ Veg/Non-Veg
-  vegNonVegContainer: {
-    width: 16,
-    height: 16,
-    borderWidth: 1.5,
-    borderRadius: 3,
-    marginRight: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-
-  // ✅ Total Bill
-  totalContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  totalContainerSimple: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginVertical: 8,
-  },
-  totalBill: {
-    fontSize: 14,
-    color: colors.textDark,
-    fontWeight: '500',
-  },
-  totalPrice: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: colors.totalPrice,
-  },
-  totalPriceBold: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: colors.textDark,
-  },
-  Totalbillcontainer: {
-    gap: 20,
-    flexDirection: 'row',
-  },
-  paymentMethod: {
-    borderRadius: 5,
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: 6,
-    padding: 2,
-  },
-  codText: {
-    fontSize: 11,
-    color: colors.primary,
-  },
-
-  // ✅ Cooking Request
-  card: {
-    borderRadius: 5,
-    borderWidth: 0.5,
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
-    opacity: 1,
-    padding: 8,
-    justifyContent: 'center',
-    marginVertical: 12,
-    paddingVertical: 10,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatar2: {
-    width: 21,
-    height: 21,
-    borderRadius: 16,
-    marginRight: 8,
-  },
-  title: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.textDark,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: colors.textLight,
-    marginTop: 15,
-    marginLeft: 25,
-  },
-
-  // ✅ Buttons
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -648,26 +398,26 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   rejectButton: {
-    flex: 1,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: colors.danger,
-    borderRadius: 6,
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
+  flex: 0.7, 
+  marginRight: 8,
+  borderWidth: 1,
+  borderColor: colors.danger,
+  borderRadius: 6,
+  paddingVertical: 8,
+  alignItems: 'center',
+},
   rejectButtonText: {
     color: colors.danger,
     fontWeight: 'bold',
   },
-  confirmButton: {
-    flex: 1,
-    marginLeft: 8,
-    backgroundColor: colors.success,
-    borderRadius: 6,
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
+confirmButton: {
+  flex: 1.3,  
+  marginLeft: 8,
+  backgroundColor: colors.success,
+  borderRadius: 6,
+  paddingVertical: 8,
+  alignItems: 'center',
+},
   confirmButtonText: {
     color: colors.textWhite,
     fontWeight: 'bold',
@@ -684,30 +434,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 
-  // ✅ Status Badges
-  statusBadgePreparing: {
-    backgroundColor: colors.primarySemi,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 5,
-    alignSelf: 'flex-start',
-    marginBottom: 6,
-  },
-  statusBadgeReady: {
-    backgroundColor: colors.primarySemi,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    alignSelf: 'flex-start',
-    marginBottom: 6,
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.textWhite,
-  },
-
-  // ✅ Driver Info
   card3: {
     borderRadius: 5,
     borderWidth: 0.65,
@@ -744,7 +470,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // ✅ Online Section
   onlineSection: {
     alignItems: 'center',
     marginTop: 30,
@@ -760,9 +485,10 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 4,
   },
-  divider: {
-    height: 1,
-    backgroundColor: colors.divider,
-    marginVertical: 12,
+
+  emptyOrdersImage: {
+    width: 300,
+    height: 200,
+    resizeMode: 'contain',
   },
 });

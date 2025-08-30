@@ -16,38 +16,39 @@ export default function MoreScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Advertisement Card */}
       <AdvertisementsCarousel navigation={navigation} />
 
-      {/* My Account Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>My Account</Text>
-
+<MenuItem
+          icon="account"
+          title="Profile"
+          onPress={() => navigation.navigate('Profile')}
+        />
         <MenuItem
           icon="silverware-fork-knife"
           title="Add Food"
-          onPress={() => navigation.navigate('CustomerSupportScreen')}
+          onPress={() => navigation.navigate('AddFoodScreen')}
         />
         <MenuItem
           icon="message-text-outline"
           title="Customer care support"
-          onPress={() => navigation.navigate('BillSummary')}
+          onPress={() => navigation.navigate('CustomerSupportScreen')}
         />
         <MenuItem
           icon="file-lock-outline"
           title="Privacy Policy"
-          onPress={() => navigation.navigate('CustomerSupportScreen')}
+          onPress={() => navigation.navigate('PrivacyPolicyScreen')}
         />
         <MenuItem
           icon="file-lock-outline"
           title="Terms & Conditions"
-          onPress={() => navigation.navigate('CustomerSupportScreen')}
+          onPress={() => navigation.navigate('TermsScreen')}
         />
         <MenuItem 
           icon="logout"
           title="Logout"
           onPress={() => {
-            // Add logout logic
             navigation.navigate('CustomerSupportScreen');
           }}
         />

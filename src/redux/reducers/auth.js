@@ -7,17 +7,68 @@ const initialState = {
   loading: false,
   token: null,
   userRole: 1,
-  userId:null,
+  userId: null,
 };
+
+export const vendorLogin = createAsyncThunk(
+  'vendorLogin',
+  async ({phoneNumber, password}, {rejectWithValue, fulfillWithValue}) => {
+    const data = {
+      number: phoneNumber,
+      password: password,
+    };
+    const response = await api.post(endpoints.LOGIN, data);
+    if (response) {
+      if (response.data) {
+        return fulfillWithValue(response.data);
+      } else {
+        return rejectWithValue('Something went wrong!');
+      }
+    }
+  },
+);
+
+export const verifyNumber = createAsyncThunk(
+  'verifyNumber',
+  async ({phoneNumber}, {rejectWithValue, fulfillWithValue}) => {
+    const data = {
+      number: phoneNumber
+    };
+    const response = await api.post(endpoints.CHECKTHEMOBILENUMBER, data);
+    if (response) {
+      if (response.data) {
+        return fulfillWithValue(response.data);
+      } else {
+        return rejectWithValue('Something went wrong!');
+      }
+    }
+  },
+);
+
+
+export const changePassword = createAsyncThunk(
+  'changePassword',
+  async ({phoneNumber,newPassword}, {rejectWithValue, fulfillWithValue}) => {
+    const data = {
+      number: phoneNumber,
+      password:newPassword,
+    };
+    const response = await api.post(endpoints.UPDATENEWPASSWORD, data);
+    if (response) {
+      if (response.data) {
+        return fulfillWithValue(response.data);
+      } else {
+        return rejectWithValue('Something went wrong!');
+      }
+    }
+  },
+);
 
 
 
 export const requestLoginOtp = createAsyncThunk(
   'requestLoginOtp',
-  async (
-    mobileNumber,
-    { rejectWithValue, fulfillWithValue},
-  ) => {
+  async (mobileNumber, {rejectWithValue, fulfillWithValue}) => {
     const data = {
       number: mobileNumber,
     };
@@ -44,21 +95,29 @@ export const AuthSlice = createSlice({
     },
   },
   extraReducers: builder => {
-    builder.addCase(requestLoginOtp.pending, (state) => {
+    builder.addCase(requestLoginOtp.pending, state => {
       state.message = null;
     });
     builder.addCase(requestLoginOtp.fulfilled, (state, action) => {
       state.message = null;
     });
-    builder.addCase(requestLoginOtp.rejected, (state) => {
+    builder.addCase(requestLoginOtp.rejected, state => {
+      state.message = 'Please try again!';
+    });
+
+    builder.addCase(vendorLogin.pending, state => {
+      state.message = null;
+    });
+    builder.addCase(vendorLogin.fulfilled, (state, action) => {
+      state.message = null;
+      console.log(action.payload, '>>>>>>>>>>>>>>>>>>>>responseses');
+    });
+    builder.addCase(vendorLogin.rejected, state => {
       state.message = 'Please try again!';
     });
   },
 });
 
-export const {
-  actionLogout,
-  actionLogin
-} = AuthSlice.actions;
+export const {actionLogout, actionLogin} = AuthSlice.actions;
 
 export default AuthSlice.reducer;

@@ -13,7 +13,6 @@ import  {colors}  from '../config/theme';
 export default function BillSummary({ navigation }) {
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={22} color={colors.textDark} />
@@ -27,13 +26,11 @@ export default function BillSummary({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Bill Summary */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.card}>
           <Text style={styles.billSummary}>Bill Summary</Text>
           <View style={styles.divider} />
 
-          {/* Items */}
           <View style={styles.itemRow}>
             <Icon name="caret-up-circle-outline" size={18} color={colors.danger} />
             <Text style={styles.itemText}>1 x Chicken Dum Biryani</Text>
@@ -45,7 +42,6 @@ export default function BillSummary({ navigation }) {
             <Text style={styles.itemPrice}>₹400</Text>
           </View>
 
-          {/* Taxes */}
           <View style={styles.itemRow}>
             <Text style={styles.taxText}>CSGT ( 2.5% )</Text>
             <Text style={styles.itemPrice}>₹20</Text>
@@ -55,19 +51,16 @@ export default function BillSummary({ navigation }) {
             <Text style={styles.itemPrice}>₹20</Text>
           </View>
 
-          {/* Coupon */}
           <View style={styles.itemRow}>
             <Text style={styles.couponText}>Coupon applied - Bismil50</Text>
             <Text style={styles.couponAmount}>-₹100</Text>
           </View>
 
-          {/* Commission */}
           <View style={styles.itemRow}>
             <Text style={styles.commissionText}>Quickiee commission ( 35% )</Text>
             <Text style={styles.commissionAmount}>-₹128</Text>
           </View>
 
-          {/* Grand Total */}
           <View style={styles.totalBox}>
             <Text style={styles.totalText}>Grand Total</Text>
             <Text style={styles.totalPrice}>₹612</Text>

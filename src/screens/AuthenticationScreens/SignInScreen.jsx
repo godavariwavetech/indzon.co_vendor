@@ -6,26 +6,31 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Switch,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import {colors} from '../../config/theme';
-import {appLogo} from '../../assets';
+import {appLogo} from '../../assets/index';
+import {useDispatch} from 'react-redux';
+import {vendorLogin} from '../../redux/reducers/auth';
 
-export default function SignInScreen() {
+export default function LoginScreen() {
   const navigation = useNavigation();
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
+  const dispatch = useDispatch();
+  const [phoneNumber, setPhoneNumber] = useState('9010933109');
+  const [password, setPassword] = useState('123456');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const validatePhoneNumber = number => {
-    const phoneRegex = /^[0-9]{10}$/;
-    return phoneRegex.test(number);
-  };
+  const validatePhoneNumber = number => /^[0-9]{10}$/.test(number);
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     if (!validatePhoneNumber(phoneNumber)) {
       Alert.alert(
         'Invalid Phone Number',
@@ -33,81 +38,166 @@ export default function SignInScreen() {
       );
       return;
     }
-    navigation.navigate('VerificationScreen');
+    if (!password.trim()) {
+      Alert.alert('Invalid Password', 'Please enter your password');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await dispatch(vendorLogin({phoneNumber, password}));
+      console.log('Login API response:', response);
+
+      if (response?.payload?.status === 200) {
+        const successMessage = response?.payload?.msg || 'Login Successful';
+        Alert.alert('Success', successMessage);
+        navigation.navigate('BottomTabNavigation');
+      } else {
+        const errorMessage =
+          response?.payload?.msg ||
+          response?.error?.message ||
+          'Login failed. Please try again.';
+        Alert.alert('Login Failed', errorMessage);
+      }
+    } catch (error) {
+      console.error('Login API Error:', error);
+      if (error.response) {
+        const status = error.response.status;
+        if (status === 401) {
+          Alert.alert(
+            'Unauthorized',
+            error.response.data?.msg || 'Invalid credentials.',
+          );
+        } else if (status >= 500) {
+          Alert.alert('Server Error', 'Please try again later.');
+        } else {
+          Alert.alert(
+            'Error',
+            error.response.data?.msg || 'Something went wrong.',
+          );
+        }
+      } else if (error.request) {
+        Alert.alert(
+          'Network Error',
+          'Unable to reach server. Please check your internet.',
+        );
+      } else {
+        Alert.alert('Error', error.message || 'Unexpected error occurred.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {/* Logo */}
-      <View style={styles.logoContainer}>
-        <View style={styles.logoCircle}>
-          <Image source={appLogo} style={styles.logo} resizeMode="contain" />
-        </View>
-      </View>
+    <View style={styles.container}>
+      <StatusBar
+        translucent
+        backgroundColor={'transparent'}
+        barStyle={'dark-content'}
+      />
+      <KeyboardAvoidingView
+        style={{flex: 1}}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          contentContainerStyle={{flexGrow: 1}}
+          keyboardShouldPersistTaps="handled">
+          <View>
+            <View style={styles.logoContainer}>
+              <Image
+                source={appLogo}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </View>
 
-      {/* Title */}
-      <Text style={styles.title}>SIGN IN</Text>
-      <Text style={styles.subtitle}>Only for Restaurant owner</Text>
+            <Text style={styles.title}>SIGN IN</Text>
+            <Text style={styles.subtitle}>Only for Restaurant owner</Text>
 
-      {/* Phone Input */}
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Phone Number</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your Phone Number"
-          keyboardType="number-pad"
-          maxLength={10}
-          value={phoneNumber}
-          onChangeText={text => {
-            const filtered = text.replace(/[^0-9]/g, '');
-            setPhoneNumber(filtered);
-          }}
-        />
-      </View>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Enter Your Phone Number</Text>
+              <TextInput
+                style={[styles.input, {color: colors.textDark}]}
+                placeholder="Enter your Phone Number"
+                placeholderTextColor={colors.textLight}
+                keyboardType="number-pad"
+                maxLength={10}
+                value={phoneNumber}
+                onChangeText={text =>
+                  setPhoneNumber(text.replace(/[^0-9]/g, ''))
+                }
+              />
+            </View>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Enter Your Password</Text>
+              <View style={styles.passwordWrapper}>
+                <TextInput
+                  style={[styles.passwordInput, {color: colors.textDark}]}
+                  placeholder="Enter your Password"
+                  placeholderTextColor={colors.textLight}
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setShowPassword(!showPassword)}>
+                  <Icon
+                    name={showPassword ? 'eye-off' : 'eye'}
+                    size={22}
+                    color={colors.textLight}
+                  />
+                </TouchableOpacity>
+              </View>
 
-      {/* Remember Me */}
-      <View style={styles.rememberContainer}>
-        <Switch
-          value={rememberMe}
-          onValueChange={setRememberMe}
-          trackColor={{false: colors.toggleOff, true: colors.toggleOff}}
-          thumbColor={rememberMe ? colors.morePrimary : '#f4f3f4'}
-        />
-        <Text style={styles.rememberText}>Remember me</Text>
-      </View>
+              {/* Forgot Password link */}
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ChangeForgotPassword')}
+                style={styles.forgotPasswordContainer}>
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            </View>
 
-      {/* Sign In Button */}
-      <TouchableOpacity style={styles.signInButton} onPress={handleSignIn}>
-        <Text style={styles.signInText}>Sign in</Text>
-      </TouchableOpacity>
-    </KeyboardAvoidingView>
+            {/* Sign In Button */}
+            <TouchableOpacity
+              style={styles.signInButton}
+              onPress={handleSignIn}
+              disabled={loading}>
+              {loading ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.signInText}>Sign In</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Register SignUp */}
+            <View style={styles.Register}>
+              <Text style={styles.signText}>Don't have an account? </Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('RegisterScreen')}>
+                <Text style={styles.sigupText}>SignUp</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    paddingHorizontal: 15,
+    backgroundColor: '#fff',
     flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: 20,
-    alignItems: 'center',
   },
   logoContainer: {
     marginTop: 60,
-    marginBottom: 20,
-  },
-  logoCircle: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: colors.signInLogoCircle, // ✅ new global color
-    justifyContent: 'center',
     alignItems: 'center',
   },
   logo: {
-    width: 300,
-    height: 300,
+    width: 150,
+    height: 150,
   },
   title: {
     fontSize: 24,
@@ -115,12 +205,14 @@ const styles = StyleSheet.create({
     color: colors.textDark,
     marginTop: 10,
     marginBottom: 9,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 12,
     color: colors.primary,
     marginBottom: 40,
     fontWeight: '600',
+    textAlign: 'center',
   },
   inputContainer: {
     width: '100%',
@@ -133,35 +225,61 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.textLight,
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
     fontSize: 16,
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
   },
-  rememberContainer: {
+  passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 40,
-    width: '100%',
+    borderWidth: 1,
+    borderColor: colors.textLight,
+    borderRadius: 8,
+    backgroundColor: colors.white,
+    paddingHorizontal: 12,
   },
-  rememberText: {
-    marginLeft: 8,
-    fontSize: 13,
-    color: colors.signInRememberText, // ✅ new global color
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 10,
+  },
+  eyeIcon: {
+    paddingHorizontal: 8,
+  },
+  forgotPasswordContainer: {
+    marginTop: 8,
+    alignItems: 'flex-end',
+  },
+  forgotPasswordText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
   },
   signInButton: {
     backgroundColor: colors.primary,
     borderRadius: 8,
     paddingVertical: 14,
-    paddingHorizontal: 30,
-    width: '100%',
     alignItems: 'center',
   },
   signInText: {
-    color: colors.textWhite,
+    color: colors.white,
     fontSize: 16,
     fontWeight: '600',
+  },
+  Register: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 15,
+  },
+  signText: {
+    fontSize: 16,
+    fontWeight: '400',
+  },
+  sigupText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.primary,
   },
 });

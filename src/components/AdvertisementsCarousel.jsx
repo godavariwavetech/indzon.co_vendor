@@ -1,13 +1,15 @@
 import React, {useState} from 'react';
 import Carousel from 'react-native-reanimated-carousel';
 import {View, Image, Dimensions, StyleSheet} from 'react-native';
+import {bannerimage1} from '../assets/index';
+
 
 const {width} = Dimensions.get('window');
 
 const banners = [
-  {id: 1, image: require('../assets/bannerimage1.png')},
-  {id: 2, image: require('../assets/bannerimage1.png')},
-  {id: 3, image:require('../assets/bannerimage1.png')},
+  {id: 1, image: bannerimage1},
+  {id: 2, image: bannerimage1},
+  {id: 3, image:bannerimage1},
 ];
 
 export default function CarouselComponent({navigation}) {

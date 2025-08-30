@@ -6,16 +6,20 @@ import AddFoodScreen from '../screens/MyAccountScreens/AddFoodScreen';
 import CustomerSupportScreen from '../screens/MyAccountScreens/CustomerSupportScreen';
 import PrivacyPolicyScreen from '../screens/MyAccountScreens/PrivacyPolicyScreen';
 import TermsScreen from '../screens/MyAccountScreens/TermsScreen';
+import Profile from '../screens/MyAccountScreens/Profile';
+import EditProfile from '../screens/MyAccountScreens/EditProfile';
 
-//* authenticationScrrens*//
 import SplashScreen from '../screens/AuthenticationScreens/SplashScreen';
 import SignInScreen from '../screens/AuthenticationScreens/SignInScreen';
-import VerificationScreen from '../screens/AuthenticationScreens/VerificationScreen';
-//* authenticationScrrens*//
+import ChangeForgotPassword from '../screens/AuthenticationScreens/ChangeForgotPassword';
+import RegisterScreen from '../screens/AuthenticationScreens/RegisterScreen';
+
 
 import BottomTabNavigation from './BottomTabNavigation';
 import AdvertisementsCarousel from '../components/AdvertisementsCarousel';
 import OrdersScreen from '../screens/OrdersScreen';
+import OrderDetailsScreen from '../screens/OrderDetailsScreen';
+
 import MenuScreen from '../screens/MenuScreen';
 import ReportsScreen from '../screens/ReportsScreen';
 import EarningsScreen from '../screens/EarningsScreen';
@@ -30,16 +34,25 @@ const AppNavigation = () => {
         <Stack.Screen name="SplashScreen" component={SplashScreen} />
         <Stack.Screen name="SignInScreen" component={SignInScreen} />
         <Stack.Screen
-          name="VerificationScreen"
-          component={VerificationScreen}
+          name="ChangeForgotPassword"
+          component={ChangeForgotPassword}
+        />
+
+        <Stack.Screen
+          name="RegisterScreen"
+          component={RegisterScreen}
         />
         <Stack.Screen
           name="BottomTabNavigation"
           component={BottomTabNavigation}
         />
 
-
         <Stack.Screen name="OrdersScreen" component={OrdersScreen} />
+
+        <Stack.Screen
+          name="OrderDetailsScreen"
+          component={OrderDetailsScreen}
+        />
         <Stack.Screen name="MenuScreen" component={MenuScreen} />
         <Stack.Screen name="ReportsScreen" component={ReportsScreen} />
         <Stack.Screen name="EarningsScreen" component={EarningsScreen} />
@@ -57,6 +70,8 @@ const AppNavigation = () => {
           component={PrivacyPolicyScreen}
         />
         <Stack.Screen name="TermsScreen" component={TermsScreen} />
+        <Stack.Screen name="Profile" component={Profile} />
+        <Stack.Screen name="EditProfile" component={EditProfile} />
 
         <Stack.Screen
           name="AdvertisementsCarousel"
