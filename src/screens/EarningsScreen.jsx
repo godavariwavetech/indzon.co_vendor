@@ -5,12 +5,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  Modal,
-  TextInput,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { colors } from '../config/theme';
+import {colors} from '../config/theme';
+import WithdrawModal from '../components/WithdrawModal';
+
 
 const transactions = [
   {
@@ -54,7 +54,6 @@ export default function EarningsScreen() {
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // 🔹 Auto close after 3 seconds when success is shown
   useEffect(() => {
     let timer;
     if (showSuccess) {
@@ -66,7 +65,6 @@ export default function EarningsScreen() {
     return () => clearTimeout(timer);
   }, [showSuccess]);
 
-  // 🔹 Date Picker states
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [selecting, setSelecting] = useState('start');
   const [startDate, setStartDate] = useState(null);
@@ -98,7 +96,9 @@ export default function EarningsScreen() {
 
   const renderTransaction = ({item}) => {
     const amountColor =
-      item.amount >= 0 ? colors.earningsAmountPositive : colors.earningsAmountNegative;
+      item.amount >= 0
+        ? colors.earningsAmountPositive
+        : colors.earningsAmountNegative;
     const statusColors = {
       Pending: colors.earningsPending,
       Transferred: colors.earningsTransferred,
@@ -107,7 +107,7 @@ export default function EarningsScreen() {
 
     return (
       <View style={styles.transactionCard}>
-        <View style={{flex: 1}}>
+        <View style={styles.transactionLeft}>
           <Text style={[styles.amount, {color: amountColor}]}>
             {item.amount >= 0
               ? `+ ₹${item.amount.toFixed(2)}`
@@ -116,7 +116,7 @@ export default function EarningsScreen() {
           <Text style={styles.description}>{item.description}</Text>
         </View>
 
-        <View style={{alignItems: 'flex-end'}}>
+        <View style={styles.transactionRight}>
           {item.status && (
             <View
               style={[
@@ -134,7 +134,6 @@ export default function EarningsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header Section */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Withdrawable amount</Text>
         <Text style={styles.note}>
@@ -159,11 +158,9 @@ export default function EarningsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Date Range Picker */}
       <View style={styles.dateRow}>
         <Text style={styles.transactionHistoryText}>Transaction History:</Text>
 
-        {/* Start Date */}
         <TouchableOpacity
           style={styles.datePicker}
           onPress={() => showDatePicker('start')}>
@@ -173,7 +170,6 @@ export default function EarningsScreen() {
           </Text>
         </TouchableOpacity>
 
-        {/* End Date */}
         <TouchableOpacity
           style={styles.datePicker}
           onPress={() => showDatePicker('end')}>
@@ -185,80 +181,25 @@ export default function EarningsScreen() {
       </View>
       <View style={styles.divider2} />
 
-      {/* Transaction List */}
       <FlatList
         data={transactions}
         keyExtractor={item => item.id}
         renderItem={renderTransaction}
-        contentContainerStyle={{paddingBottom: 20}}
+        contentContainerStyle={styles.listContent}
       />
 
-      {/* Withdraw Modal */}
-      <Modal
-        visible={showWithdraw}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowWithdraw(false)}>
-        <View style={styles.modalOverlay}>
-          {showSuccess ? (
-            // ✅ Success Card
-            <View style={styles.successCard}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowWithdraw(false)}>
-                <Icon name="close" size={22} color={colors.textDark} />
-              </TouchableOpacity>
+<WithdrawModal
+  visible={showWithdraw}
+  onClose={() => {
+    setShowWithdraw(false);
+    setShowSuccess(false);
+  }}
+  showSuccess={showSuccess}
+  setShowSuccess={setShowSuccess}
+/>
 
-              <View style={styles.successCircle}>
-                <Icon name="checkmark" size={40} color={colors.textWhite} />
-              </View>
 
-              <Text style={styles.successText}>
-                “Your applied for Withdraw Request“
-              </Text>
 
-              <View style={styles.successDivider} />
-
-              <TouchableOpacity
-                style={styles.thanksWrapper}
-                onPress={() => {
-                  setShowWithdraw(false);
-                  setShowSuccess(false);
-                }}>
-                <Text style={styles.successThanks}>Yahooo! Thanks</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            // ✅ Withdraw Form
-            <View style={styles.withdrawCard}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowWithdraw(false)}>
-                <Icon name="close" size={22} color={colors.textDark} />
-              </TouchableOpacity>
-
-              <Text style={styles.cardTitle}>Withdraw</Text>
-
-              <View style={styles.bankIconWrapper}>
-                <Icon name="cash-outline" size={40} color={colors.primary} />
-              </View>
-
-              <Text style={styles.inputLabel}>Enter Amount</Text>
-              <TextInput
-                placeholder="₹0.00"
-                keyboardType="numeric"
-                style={styles.inputBox}
-              />
-
-              <TouchableOpacity
-                style={styles.cardButton}
-                onPress={() => setShowSuccess(true)}>
-                <Text style={styles.cardButtonText}>Withdraw</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </Modal>
 
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
@@ -279,7 +220,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    paddingTop: 50,
+    paddingTop: 40,
   },
   headerTitle: {color: colors.textWhite, fontSize: 22, fontWeight: '500'},
   note: {
@@ -351,6 +292,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 1,
   },
+  transactionLeft: {flex: 1},
+  transactionRight: {alignItems: 'flex-end'},
   amount: {fontSize: 15, fontWeight: '500'},
   description: {fontSize: 12, color: colors.earningsTextMuted, marginTop: 3},
   statusBadge: {
@@ -376,90 +319,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
 
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: colors.earningsModalOverlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  withdrawCard: {
-    width: 375,
-    height: 311,
-    backgroundColor: colors.background,
-    borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-  },
-  cardTitle: {fontSize: 18, fontWeight: '600', marginBottom: 15},
-  bankIconWrapper: {
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.primary,
-    borderRadius: 50,
-    padding: 15,
-    marginBottom: 20,
-  },
-  inputLabel: {alignSelf: 'flex-start', marginBottom: 5, fontSize: 14},
-  inputBox: {
-    width: '100%',
-    height: 45,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    marginBottom: 20,
-  },
-  cardButton: {
-    width: '100%',
-    height: 45,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardButtonText: {color: colors.textWhite, fontSize: 16, fontWeight: '600'},
+  listContent: {paddingBottom: 20},
 
-  successCard: {
-    width: 300,
-    height: 266,
-    backgroundColor: colors.earningsSuccessBg,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    position: 'relative',
-  },
-  successCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: colors.success,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  successText: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: colors.textMedium,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  successDivider: {
-    height: 1,
-    backgroundColor: colors.earningsSuccessDivider,
-    width: '100%',
-    marginVertical: 10,
-  },
-  successThanks: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  thanksWrapper: {
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 5,
-  },
+  
 });

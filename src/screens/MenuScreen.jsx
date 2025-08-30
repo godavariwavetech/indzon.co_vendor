@@ -9,30 +9,16 @@ import {
   TextInput,
   ScrollView,
   Animated,
-  Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import  {colors}  from '../config/theme'; 
+import {colors} from '../config/theme';
+import {ItemLogo, RestaurantLogo} from '../assets/index';
+import UpdateModal from '../components/UpdateModal';
+import ConfirmationModal from '../components/ConfirmationModal';
+ import VegNonVegIcon from '../components/VegNonVegIcon';
 
 
-// ✅ Veg/NonVeg Icon Component
-const VegNonVegIcon = ({isVeg}) => (
-  <View style={{marginRight: 6}}>
-    <Icon
-      name="square-outline"
-      size={16}
-      color={isVeg ? colors.menuVeg : colors.menuNonVeg}
-    />
-    <Icon
-      name="ellipse"
-      size={8}
-      color={isVeg ? colors.menuVeg : colors.menuNonVeg}
-      style={{position: 'absolute', top: 4, left: 4}}
-    />
-  </View>
-);
 
-// ✅ Custom Toggle
 const CustomToggle = ({value, onChange}) => {
   const translateX = new Animated.Value(value ? 19 : 0);
 
@@ -49,7 +35,7 @@ const CustomToggle = ({value, onChange}) => {
     <TouchableOpacity
       style={[
         styles.toggleContainer,
-        {backgroundColor: value ? colors.accent : colors.toggleOff},
+        value ? styles.toggleOn : styles.toggleOff,
       ]}
       activeOpacity={0.8}
       onPress={toggleSwitch}>
@@ -62,50 +48,15 @@ const CustomToggle = ({value, onChange}) => {
 
 export default function MenuScreen() {
   const [menuData, setMenuData] = useState([
-    {
-      id: '1',
-      name: 'Masala Vada',
-      price: 50,
-      image: require('../assets/RestaurantLogo.png'),
-      isVeg: true,
-    },
-    {
-      id: '2',
-      name: 'Plain Dosa',
-      price: 150,
-      image: require('../assets/RestaurantLogo.png'),
-      isVeg: true,
-    },
-    {
-      id: '3',
-      name: 'Upma',
-      price: 250,
-      image: require('../assets/RestaurantLogo.png'),
-      isVeg: true,
-    },
+    {id: '1', name: 'Masala Vada', price: 50, image: ItemLogo, isVeg: true},
+    {id: '2', name: 'Plain Dosa', price: 150, image: ItemLogo, isVeg: true},
+    {id: '3', name: 'Upma', price: 250, image: ItemLogo, isVeg: true},
   ]);
+
   const [menuData2, setMenuData2] = useState([
-    {
-      id: '1',
-      name: 'Chicken Biryani',
-      price: 250,
-      image: require('../assets/RestaurantLogo.png'),
-      isVeg: false,
-    },
-    {
-      id: '2',
-      name: 'Mutton Biryani',
-      price: 350,
-      image: require('../assets/RestaurantLogo.png'),
-      isVeg: false,
-    },
-    {
-      id: '3',
-      name: 'Veg Biryani',
-      price: 200,
-      image: require('../assets/RestaurantLogo.png'),
-      isVeg: true,
-    },
+    {id: '1', name: 'Chicken Biryani', price: 250, image: ItemLogo, isVeg: false},
+    {id: '2', name: 'Mutton Biryani', price: 350, image: ItemLogo, isVeg: false},
+    {id: '3', name: 'Veg Biryani', price: 200, image: ItemLogo, isVeg: true},
   ]);
 
   const [breakfastToggles, setBreakfastToggles] = useState({});
@@ -114,11 +65,8 @@ export default function MenuScreen() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [menuPrice, setMenuPrice] = useState('');
   const [discountPrice, setDiscountPrice] = useState('');
-
-  // ✅ Confirmation Card State
   const [confirmationVisible, setConfirmationVisible] = useState(false);
 
-  // ✅ Toggle Handlers
   const handleBreakfastToggle = (id, newValue) => {
     setBreakfastToggles(prev => ({...prev, [id]: newValue}));
   };
@@ -126,7 +74,6 @@ export default function MenuScreen() {
     setBiryaniToggles(prev => ({...prev, [id]: newValue}));
   };
 
-  // ✅ Open modal
   const openEditCard = item => {
     setSelectedItem(item);
     setMenuPrice(item.price.toString());
@@ -134,7 +81,6 @@ export default function MenuScreen() {
     setModalVisible(true);
   };
 
-  // ✅ Save updated price and show confirmation
   const handleUpdate = () => {
     if (!selectedItem) return;
 
@@ -158,10 +104,9 @@ export default function MenuScreen() {
     }
 
     setModalVisible(false);
-    setConfirmationVisible(true); // ✅ Show confirmation card
+    setConfirmationVisible(true);
   };
 
-  // ✅ Auto-close confirmation after 3 seconds
   useEffect(() => {
     if (confirmationVisible) {
       const timer = setTimeout(() => {
@@ -171,7 +116,6 @@ export default function MenuScreen() {
     }
   }, [confirmationVisible]);
 
-  // ✅ Card
   const renderCard = ({item, toggles, onToggleChange}) => (
     <View style={styles.card}>
       <Image source={item.image} style={styles.foodImage} resizeMode="cover" />
@@ -202,10 +146,7 @@ export default function MenuScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.headerCard}>
-        <Image
-          source={require('../assets/RestaurantLogo.png')}
-          style={styles.headerImage}
-        />
+        <Image source={RestaurantLogo} style={styles.headerImage} />
         <View style={styles.headerTextContainer}>
           <Text style={styles.headerTitle}>
             Bismillah Family Indian Restaurant
@@ -230,8 +171,9 @@ export default function MenuScreen() {
           placeholderTextColor={colors.searchOutline}
         />
       </View>
+
+      {/* Menu Lists */}
       <ScrollView>
-        {/* Breakfast Section */}
         <Text style={styles.sectionTitle}>Break Fast Recipes</Text>
         <FlatList
           data={menuData}
@@ -246,7 +188,6 @@ export default function MenuScreen() {
           scrollEnabled={false}
         />
 
-        {/* Biryani Section */}
         <Text style={styles.sectionTitle}>Biryani's</Text>
         <FlatList
           data={menuData2}
@@ -260,93 +201,24 @@ export default function MenuScreen() {
           keyExtractor={item => item.id}
           scrollEnabled={false}
         />
-
-        {/* ✅ Modal for Update */}
-        <Modal visible={modalVisible} transparent animationType="fade">
-          <View style={styles.overlay}>
-            <View style={styles.updateCard}>
-              <TouchableOpacity
-                style={styles.closeBtn}
-                onPress={() => setModalVisible(false)}>
-                <Icon name="close" size={22} color="#333" />
-              </TouchableOpacity>
-              <View style={styles.row}>
-                <VegNonVegIcon isVeg={selectedItem?.isVeg} />
-                <Text style={styles.modalTitle}>{selectedItem?.name}</Text>
-              </View>
-              <View style={styles.divider} />
-
-              <Text style={styles.label}>Menu Price</Text>
-              <TextInput
-                style={styles.inputBox}
-                value={menuPrice}
-                keyboardType="numeric"
-                onChangeText={setMenuPrice}
-              />
-
-              <Text style={styles.label}>
-                Discount Price{' '}
-                <Text style={colors.searchOutline}>(Optional)</Text>
-              </Text>
-              <TextInput
-                style={styles.inputBox}
-                value={discountPrice}
-                keyboardType="numeric"
-                onChangeText={setDiscountPrice}
-              />
-
-              <View style={styles.bottomRow}>
-                <Text style={styles.totalText}>
-                  Total Amount : ₹
-                  {menuPrice && discountPrice
-                    ? menuPrice - discountPrice
-                    : menuPrice}
-                </Text>
-                <TouchableOpacity
-                  style={styles.updateBtn}
-                  onPress={handleUpdate}>
-                  <Text style={styles.updateBtnText}>Update</Text>
-                  <Icon
-                    name="play"
-                    size={14}
-                    color={colors.menuCardBg}
-                    style={{marginLeft: 5}}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-
-        {/* ✅ Confirmation Card Modal */}
-        <Modal visible={confirmationVisible} transparent animationType="fade">
-          <View style={styles.overlay}>
-            <View style={styles.confirmCard}>
-              {/* Close Button */}
-              <TouchableOpacity
-                style={styles.closeBtn}
-                onPress={() => setConfirmationVisible(false)}>
-                <Icon name="close" size={22} color={colors.closeButton} />
-              </TouchableOpacity>
-
-              {/* Checkmark */}
-              <View style={{alignItems: 'center', marginBottom: 15}}>
-                <Icon name="checkmark-circle" size={64} color="green" />
-              </View>
-
-              {/* Message */}
-              <Text style={styles.confirmText}>
-                “Your applied for Withdraw Request“
-              </Text>
-
-              {/* Yahoo Thanks */}
-              <TouchableOpacity onPress={() => setConfirmationVisible(false)}>
-                <Text style={styles.thanksText}>Yahooo! Thanks</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
       </ScrollView>
+
+      {/* Extracted Modals */}
+      <UpdateModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        item={selectedItem}
+        menuPrice={menuPrice}
+        discountPrice={discountPrice}
+        setMenuPrice={setMenuPrice}
+        setDiscountPrice={setDiscountPrice}
+        onUpdate={handleUpdate}
+      />
+
+      <ConfirmationModal
+        visible={confirmationVisible}
+        onClose={() => setConfirmationVisible(false)}
+      />
     </View>
   );
 }
@@ -397,13 +269,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   icon: {marginRight: 5},
-  input: {flex: 1, fontSize: 16, color:colors.grey},
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 8,
-    marginTop: 10,
-  },
+  input: {flex: 1, fontSize: 16, color: colors.grey},
+  sectionTitle: {fontSize: 16, fontWeight: '500', marginBottom: 8, marginTop: 10},
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -440,85 +307,9 @@ const styles = StyleSheet.create({
     padding: 2,
     justifyContent: 'center',
   },
-  toggleCircle: {
-    width: 15,
-    height: 15,
-    borderRadius: 7.5,
-    backgroundColor: colors.white,
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: colors.black5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  updateCard: {
-    width: 340,
-    borderRadius: 10,
-    backgroundColor: colors.white,
-    padding: 20,
-    elevation: 4,
-  },
-  closeBtn: {position: 'absolute', top: 10, right: 10, padding: 6, zIndex: 1},
-  modalTitle: {fontSize: 15, fontWeight: '500', color: '#1A43BF'},
-  divider: {
-    borderBottomWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.black4,
-    marginVertical: 15,
-  },
-  label: {fontSize: 14, fontWeight: '500', marginBottom: 8},
-  inputBox: {
-    height: 45,
-    borderWidth: 0.5,
-    borderColor: colors.black6,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    marginBottom: 12,
-    fontSize: 14,
-  },
-  bottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.black4,
-    borderRadius: 19,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginTop: 8,
-  },
-  totalText: {color: '#fff', fontSize: 14, fontWeight: '500'},
-  updateBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.success,
-    paddingHorizontal: 15,
-    paddingVertical: 6,
-    borderRadius: 19,
-  },
-  updateBtnText: {color: colors.white, fontWeight: '500', fontSize: 13},
-
-  // ✅ Confirmation Card Styles
-  confirmCard: {
-    width: 300,
-    height: 266,
-    borderRadius: 10,
-    backgroundColor: colors.white,
-    padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6,
-  },
-  confirmText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: colors.closeButton,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  thanksText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.editBtn,
-  },
+  toggleOn: {backgroundColor: colors.accent},
+  toggleOff: {backgroundColor: colors.toggleOff},
+  toggleCircle: {width: 15, height: 15, borderRadius: 7.5, backgroundColor: colors.white},
+  vegIconContainer: {marginRight: 6},
+  vegIconInner: {position: 'absolute', top: 4, left: 4},
 });

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, Image, Animated } from "react-native";
-//import { colors } from "../config/theme";
+import {colors} from '../../config/theme';
+import {QUICKIEE} from '../../assets/index';
 
 const SplashScreen = ({ navigation }) => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -23,7 +24,7 @@ const SplashScreen = ({ navigation }) => {
     return (
         <View style={styles.Container}>
             <Animated.View style={{ opacity: fadeAnim }}>
-                <Image source={require('../../assets/QUICKIEE.png')} />
+                <Image source={QUICKIEE} />
             </Animated.View>
         </View>
     );
@@ -32,7 +33,7 @@ const SplashScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     Container: {
         flex: 1,
-        backgroundColor: "black",
+        backgroundColor: colors.textDark,
         justifyContent: 'center',
         alignItems: 'center'
     }
