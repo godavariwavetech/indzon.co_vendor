@@ -89,6 +89,9 @@ export default function LoginScreen() {
     }
   };
 
+
+  
+
   return (
     <View style={styles.container}>
       <StatusBar
@@ -187,7 +190,7 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 18,
     backgroundColor: '#fff',
     flex: 1,
   },

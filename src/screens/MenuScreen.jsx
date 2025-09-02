@@ -10,13 +10,13 @@ import {
   ScrollView,
   Animated,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {colors} from '../config/theme';
 import {ItemLogo, RestaurantLogo} from '../assets/index';
 import UpdateModal from '../components/UpdateModal';
 import ConfirmationModal from '../components/ConfirmationModal';
- import VegNonVegIcon from '../components/VegNonVegIcon';
 
+    <MaterialCommunityIcons name="chevron-right" size={16} />
 
 
 const CustomToggle = ({value, onChange}) => {
@@ -116,31 +116,41 @@ export default function MenuScreen() {
     }
   }, [confirmationVisible]);
 
-  const renderCard = ({item, toggles, onToggleChange}) => (
-    <View style={styles.card}>
-      <Image source={item.image} style={styles.foodImage} resizeMode="cover" />
-      <View style={styles.cardContent}>
-        <View style={styles.row}>
-          <VegNonVegIcon isVeg={item.isVeg} />
-          <Text style={styles.foodName}>{item.name}</Text>
-        </View>
-        <Text style={styles.price}>₹{item.price}</Text>
-      </View>
-
-      <View style={styles.rightSection}>
-        <CustomToggle
-          value={toggles[item.id] || false}
-          onChange={value => onToggleChange(item.id, value)}
+  const renderCard = ({ item, toggles, onToggleChange }) => (
+  <View style={styles.card}>
+    <Image source={item.image} style={styles.foodImage} resizeMode="cover" />
+    <View style={styles.cardContent}>
+      <View style={styles.row}>
+        <MaterialCommunityIcons
+          name="square-circle"
+          size={16}
+          color={item.isVeg ? colors.veg : colors.nonVeg}
+          style={{ marginRight: 6 }}
         />
-        <TouchableOpacity
-          style={styles.editBtn}
-          onPress={() => openEditCard(item)}>
-          <Text style={styles.editText}>Edit</Text>
-          <Icon name="chevron-forward" size={16} color={colors.editBtn} />
-        </TouchableOpacity>
+        <Text style={styles.foodName}>{item.name}</Text>
       </View>
+      <Text style={styles.price}>₹{item.price}</Text>
     </View>
-  );
+
+    <View style={styles.rightSection}>
+      <CustomToggle
+        value={toggles[item.id] || false}
+        onChange={(value) => onToggleChange(item.id, value)}
+      />
+      <TouchableOpacity
+        style={styles.editBtn}
+        onPress={() => openEditCard(item)}>
+        <Text style={styles.editText}>Edit</Text>
+        <MaterialCommunityIcons
+          name="chevron-right"
+          size={16}
+          color={colors.editBtn}
+        />
+      </TouchableOpacity>
+    </View>
+  </View>
+);
+
 
   return (
     <View style={styles.container}>
@@ -159,8 +169,8 @@ export default function MenuScreen() {
 
       {/* Search */}
       <View style={styles.searchcontainer1}>
-        <Icon
-          name="search-outline"
+        <MaterialCommunityIcons
+          name="magnify"
           size={20}
           color={colors.searchOutline}
           style={styles.icon}

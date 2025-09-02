@@ -9,8 +9,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; // ✅ Added
 import {colors} from '../config/theme';
-import VegNonVegIcon from './VegNonVegIcon';
 
 const UpdateModal = ({
   visible,
@@ -31,7 +31,12 @@ const UpdateModal = ({
           </TouchableOpacity>
 
           <View style={styles.row}>
-            <VegNonVegIcon isVeg={item?.isVeg} />
+            <MaterialCommunityIcons
+              name="square-circle"
+              size={18}
+              color={item?.isVeg ? colors.veg : colors.nonVeg}
+              style={{marginRight: 6}}
+            />
             <Text style={styles.modalTitle}>{item?.name}</Text>
           </View>
 

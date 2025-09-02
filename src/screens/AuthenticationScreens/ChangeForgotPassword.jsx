@@ -118,9 +118,9 @@ export default function ChangeForgotPassword() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={{}}>
           <MaterialIcons
             style={styles.Arrow}
-            name="keyboard-arrow-left"
-            size={35}
-            color="#ffffffff"
+            name="arrow-back"
+            size={25}
+            color="#000"
           />
         </TouchableOpacity>
         <Text style={styles.header}>Change Password</Text>
@@ -241,23 +241,22 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flexDirection: 'row',
-    paddingTop: 40,
-    backgroundColor: colors.primary,
+    paddingTop: 45,
+    //backgroundColor: colors.primary,
     alignItems: 'center',
     paddingBottom: 18,
-    marginBottom:10,
-    paddingLeft:10
+    marginBottom: 10,
+    paddingLeft: 10,
   },
   header: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: colors.white,
+    color: colors.textDark,
     marginLeft: 20,
   },
   content: {
     flex: 1,
-    padding: 15,
-    
+    padding: 18,
   },
   subtitle: {
     fontSize: 15,

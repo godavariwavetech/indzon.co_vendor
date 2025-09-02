@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity,Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; // ✅ import added
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../config/theme';
-import VegNonVegIcon from '../components/VegNonVegIcon';
 import { ItemLogo } from '../assets/index';
 
 export default function OrderDetailsScreen({ route }) {
@@ -19,7 +19,7 @@ export default function OrderDetailsScreen({ route }) {
         <Text style={styles.headerTitle}>Order Details</Text>
       </View>
 
-      <ScrollView Style={styles.contentContainerStyle}>
+      <ScrollView style={styles.contentContainerStyle}>
         <View style={styles.orderCard}>
           <Text style={styles.orderId}>Order ID - {order.id}</Text>
           <Text style={styles.orderTime}>
@@ -29,11 +29,17 @@ export default function OrderDetailsScreen({ route }) {
 
           {order.items.map((item, index) => (
             <View key={index} style={styles.itemContainer}>
-                
               <Text style={styles.itemQuantity}>x{item.quantity}</Text>
-         <Image source={ItemLogo} style={styles.logo} />
+              <Image source={ItemLogo} style={styles.logo} />
 
-              <VegNonVegIcon isVeg={item.isVeg} />
+              {/* ✅ Replaced VegNonVegIcon with MaterialCommunityIcons */}
+              <MaterialCommunityIcons
+                name="square-circle"
+                size={16}
+                color={item.isVeg ? 'green' : 'red'} // ✅ color based on veg/non-veg
+                style={{ marginRight: 6 }}
+              />
+
               <Text style={styles.itemName}>{item.name}</Text>
               <Text style={styles.itemPrice}>₹{item.price}</Text>
             </View>
@@ -62,7 +68,7 @@ export default function OrderDetailsScreen({ route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background , Top:50},
+  container: { flex: 1, backgroundColor: colors.background, top: 50 },
 
   header: {
     flexDirection: 'row',
@@ -70,14 +76,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 22,
     backgroundColor: colors.textWhite,
-    elevation: 5, // Android shadow
-    shadowColor: '#000', // iOS shadow
+    elevation: 5,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    paddingTop:50,
-    borderBottomWidth:1,
-    borderColor:"lightgrey"
+    paddingTop: 50,
+    borderBottomWidth: 1,
+    borderColor: 'lightgrey',
   },
   backButton: {
     marginRight: 10,
@@ -87,7 +93,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
   },
-contentContainerStyle:{paddingBottom:20},
+  contentContainerStyle: { paddingBottom: 20 },
   orderCard: {
     backgroundColor: '#fff',
     margin: 16,
@@ -98,10 +104,10 @@ contentContainerStyle:{paddingBottom:20},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    marginTop:30
+    marginTop: 30,
   },
   orderId: { fontSize: 16, fontWeight: 'bold', color: colors.primary },
-  orderTime: { fontSize: 14,fontWeight: 'bold', color: colors.textMedium, marginTop: 4 },
+  orderTime: { fontSize: 14, fontWeight: 'bold', color: colors.textMedium, marginTop: 4 },
   divider: { height: 1, backgroundColor: colors.divider, marginVertical: 10 },
 
   itemContainer: {
@@ -109,7 +115,15 @@ contentContainerStyle:{paddingBottom:20},
     alignItems: 'center',
     marginVertical: 8,
   },
-  itemQuantity: { marginRight: 6, fontWeight: '500', borderWidth:0.5, paddingHorizontal:7,padding:4, borderRadius:5, backgroundColor:"#1A43BF1F" },
+  itemQuantity: {
+    marginRight: 6,
+    fontWeight: '500',
+    borderWidth: 0.5,
+    paddingHorizontal: 7,
+    padding: 4,
+    borderRadius: 5,
+    backgroundColor: '#1A43BF1F',
+  },
   itemName: { flex: 1, fontSize: 14 },
   itemPrice: { fontWeight: 'bold' },
 
@@ -154,10 +168,10 @@ contentContainerStyle:{paddingBottom:20},
     fontWeight: 'bold',
     color: '#000',
   },
-    logo: {
+  logo: {
     width: 33,
     height: 33,
     borderRadius: 50,
-    marginRight:5
+    marginRight: 5,
   },
 });

@@ -1,26 +1,37 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, FlatList } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 const CategoryModal = ({ visible, categories, selectedCategory, onSelect, onClose }) => {
+  const renderItem = ({ item }) => (
+    <TouchableOpacity
+      key={item.id}
+      style={styles.optionRow}
+      onPress={() => onSelect(item)} // pass full object {id, name}
+    >
+      <Icon
+        name={selectedCategory?.id === item.id ? 'radio-button-on' : 'radio-button-off'}
+        size={22}
+        color="#007AFF"
+      />
+      <Text style={styles.optionText}>{item.name}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
         <View style={styles.modalCard}>
           <Text style={styles.modalTitle}>Select Category</Text>
-          {categories.map(item => (
-            <TouchableOpacity
-              key={item}
-              style={styles.optionRow}
-              onPress={() => onSelect(item)}>
-              <Icon
-                name={selectedCategory === item ? 'radio-button-on' : 'radio-button-off'}
-                size={22}
-                color="#007AFF"
-              />
-              <Text style={styles.optionText}>{item}</Text>
-            </TouchableOpacity>
-          ))}
+
+          {/* ✅ Use FlatList for better performance with dynamic data */}
+          <FlatList
+            data={categories}
+            keyExtractor={item => String(item.id)}
+            renderItem={renderItem}
+            showsVerticalScrollIndicator={false}
+          />
+
           <TouchableOpacity style={styles.modalButton} onPress={onClose}>
             <Text style={styles.modalButtonText}>Done</Text>
           </TouchableOpacity>

@@ -1,26 +1,57 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Modal,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-const LocationModal = ({ visible, locations, selectedLocation, onSelect, onClose }) => {
+const LocationModal = ({
+  visible,
+  locations,
+  selectedLocation,
+  onSelect,
+  onClose,
+}) => {
+  const hasLocations = locations && locations.length > 0;
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
         <View style={styles.modalCard}>
           <Text style={styles.modalTitle}>Select Location</Text>
-          {locations.map(item => (
-            <TouchableOpacity
-              key={item}
-              style={styles.optionRow}
-              onPress={() => onSelect(item)}>
-              <Icon
-                name={selectedLocation === item ? 'radio-button-on' : 'radio-button-off'}
-                size={22}
-                color="#007AFF"
-              />
-              <Text style={styles.optionText}>{item}</Text>
-            </TouchableOpacity>
-          ))}
+
+          {hasLocations ? (
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {locations.map(item => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.optionRow}
+                  onPress={() => onSelect(item)} // ✅ pass whole object
+                >
+                  <Icon
+                    name={
+                      selectedLocation?.id === item.id
+                        ? 'radio-button-on'
+                        : 'radio-button-off'
+                    }
+                    size={22}
+                    color="#007AFF"
+                  />
+                  <Text style={styles.optionText}>{item.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.noLocationContainer}>
+              <Icon name="alert-circle-outline" size={40} color="#FF3B30" />
+              <Text style={styles.noLocationText}>No locations found</Text>
+            </View>
+          )}
+
           <TouchableOpacity style={styles.modalButton} onPress={onClose}>
             <Text style={styles.modalButtonText}>Done</Text>
           </TouchableOpacity>
@@ -46,12 +77,13 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
   },
   modalTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 16,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
     color: '#333',
     textAlign: 'center',
   },
+
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -61,6 +93,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 10,
     color: '#333',
+  },
+  noLocationContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 30,
+  },
+  noLocationText: {
+    fontSize: 16,
+    color: '#FF3B30',
+    fontWeight: '600',
+    marginTop: 8,
   },
   modalButton: {
     marginTop: 20,

@@ -32,7 +32,7 @@ export const verifyNumber = createAsyncThunk(
   'verifyNumber',
   async ({phoneNumber}, {rejectWithValue, fulfillWithValue}) => {
     const data = {
-      number: phoneNumber
+      number: phoneNumber,
     };
     const response = await api.post(endpoints.CHECKTHEMOBILENUMBER, data);
     if (response) {
@@ -45,13 +45,12 @@ export const verifyNumber = createAsyncThunk(
   },
 );
 
-
 export const changePassword = createAsyncThunk(
   'changePassword',
-  async ({phoneNumber,newPassword}, {rejectWithValue, fulfillWithValue}) => {
+  async ({phoneNumber, newPassword}, {rejectWithValue, fulfillWithValue}) => {
     const data = {
       number: phoneNumber,
-      password:newPassword,
+      password: newPassword,
     };
     const response = await api.post(endpoints.UPDATENEWPASSWORD, data);
     if (response) {
@@ -63,6 +62,81 @@ export const changePassword = createAsyncThunk(
     }
   },
 );
+
+
+export const fetchLocations = createAsyncThunk(
+  'fetchLocations',
+  async (_, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      // ✅ Use your API + endpoint constant
+      const response = await api.get(endpoints.GETLOCATION);
+      const data = response.data; // axios automatically parses JSON
+      console.log('Fetched locations from API:', data);
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        return fulfillWithValue(
+          data.data.map(loc => ({
+            id: loc.id,
+            name: loc.location_name,
+          })),
+        );
+      } else {
+        return rejectWithValue('No locations found or invalid response');
+      }
+    } catch (error) {
+      console.error('Fetch locations error:', error);
+      return rejectWithValue(error.response?.data?.msg || 'Failed to fetch locations');
+    }
+  },
+);
+
+
+export const fetchCategories = createAsyncThunk(
+  'fetchCategories',
+  async (_, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.get(endpoints.GETCATEGORIES);
+      const data = response.data;
+      console.log('Fetched categories from API:', data);
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        return fulfillWithValue(
+          data.data.map(cat => ({
+            id: cat.id,
+            name: cat.category_name, // ✅ we only need these two
+          })),
+        );
+      } else {
+        return rejectWithValue('No categories found or invalid response');
+      }
+    } catch (error) {
+      console.error('Fetch categories error:', error);
+      return rejectWithValue(error.response?.data?.msg || 'Failed to fetch categories');
+    }
+  },
+);
+
+   
+export const vendorRegistration = createAsyncThunk(
+  'vendorRegistration',
+  async (payload, { rejectWithValue, fulfillWithValue }) => {
+    try {
+      const response = await api.post(endpoints.VENDOR_REGISTRATION, payload);
+
+      if (response?.data) {
+        return fulfillWithValue(response.data);
+      } else {
+        return rejectWithValue('Something went wrong!');
+      }
+    } catch (error) {
+      console.error('Vendor Registration Error:', error);
+      return rejectWithValue(
+        error.response?.data?.message || error.message || 'Something went wrong!'
+      );
+    }
+  }
+);
+
 
 
 
@@ -82,6 +156,9 @@ export const requestLoginOtp = createAsyncThunk(
     }
   },
 );
+
+
+
 
 export const AuthSlice = createSlice({
   name: 'authlice',

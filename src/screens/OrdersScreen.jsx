@@ -9,6 +9,7 @@ import {
   Animated,
   StatusBar,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import AdvertisementsCarousel from '../components/AdvertisementsCarousel';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -398,26 +399,26 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   rejectButton: {
-  flex: 0.7, 
-  marginRight: 8,
-  borderWidth: 1,
-  borderColor: colors.danger,
-  borderRadius: 6,
-  paddingVertical: 8,
-  alignItems: 'center',
-},
+    flex: 0.7,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    borderRadius: 6,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
   rejectButtonText: {
     color: colors.danger,
     fontWeight: 'bold',
   },
-confirmButton: {
-  flex: 1.3,  
-  marginLeft: 8,
-  backgroundColor: colors.success,
-  borderRadius: 6,
-  paddingVertical: 8,
-  alignItems: 'center',
-},
+  confirmButton: {
+    flex: 1.3,
+    marginLeft: 8,
+    backgroundColor: colors.success,
+    borderRadius: 6,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
   confirmButtonText: {
     color: colors.textWhite,
     fontWeight: 'bold',
