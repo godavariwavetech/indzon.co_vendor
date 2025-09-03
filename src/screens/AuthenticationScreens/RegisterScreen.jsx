@@ -1,4 +1,5 @@
 import React, {useState, useEffect} from 'react';
+import RNFS from 'react-native-fs'; 
 import {
   View,
   Text,
@@ -17,8 +18,10 @@ import {useNavigation} from '@react-navigation/native';
 import {useDispatch} from 'react-redux';
 import {fetchLocations} from '../../redux/reducers/auth';
 import {fetchCategories} from '../../redux/reducers/auth';
+import {fetchSubCategories} from '../../redux/reducers/auth';
+import {fetchFilters} from '../../redux/reducers/auth';
 
-import {vendorRegistration} from '../../redux/reducers/auth';
+import {registerVendor} from '../../redux/reducers/auth';
 
 import LocationModal from '../../components/RegisterScreenLocationModal';
 import CategoryModal from '../../components/RegisterScreenCategoryModal';
@@ -58,6 +61,11 @@ export default function RegisterScreen() {
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [categoryLoading, setCategoryLoading] = useState(false);
 
+  const [subCategoryOptions, setSubCategoryOptions] = useState([]);
+  const [filterOptions, setFilterOptions] = useState([]);
+  const [subCategoryLoading, setSubCategoryLoading] = useState(false);
+  const [filterLoading, setFilterLoading] = useState(false);
+
   // modal states
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [isOpenTime, setIsOpenTime] = useState(true);
@@ -68,28 +76,6 @@ export default function RegisterScreen() {
 
   // errors
   const [errors, setErrors] = useState({});
-
-  const categoryData = {
-    Food: {
-      subCategories: [
-        'Biryani',
-        'Curries',
-        'Desserts',
-        'Fried Rice',
-        'Noodles',
-        'Soup',
-      ],
-      filters: ['Veg', 'Non Veg'],
-    },
-    Grocery: {
-      subCategories: ['Dairy & Eggs', 'Oils', 'Rice & Grains', 'Snacks'],
-      filters: ['Organic', 'Non-Organic'],
-    },
-    Meat: {
-      subCategories: ['Chicken', 'Mutton', 'Fish'],
-      filters: ['Fresh', 'Frozen'],
-    },
-  };
 
   useEffect(() => {
     const handleFetchLocations = async () => {
@@ -134,14 +120,33 @@ export default function RegisterScreen() {
     setTimePickerVisible(false);
   };
 
-  const pickImage = async setter => {
-    const result = await launchImageLibrary({mediaType: 'photo'});
-    if (result.assets?.length > 0) setter(result.assets[0].uri);
-  };
+
+
+const pickImage = async (setter) => {
+  try {
+    const result = await launchImageLibrary({ mediaType: 'photo' });
+
+    if (result.assets?.length > 0) {
+      const selectedImage = result.assets[0];
+if (selectedImage.fileSize > 2 * 1024 * 1024) {
+  Alert.alert('File too large', 'Please select an image under 2MB.');
+  return;
+}
+
+      // Convert to base64
+      const base64Data = await RNFS.readFile(selectedImage.uri, 'base64');
+      const base64Image = `data:${selectedImage.type};base64,${base64Data}`;
+
+      setter(base64Image); // ✅ store as Base64 directly
+    }
+  } catch (error) {
+    console.error('Error picking image:', error);
+  }
+};
 
   const validateAll = () => {
     const newErrors = {
-      location: !location ? 'Location is required' : '',
+       location: !location ? 'Location is required' : '',
       category: !category ? 'Category is required' : '',
       subCategory: !subCategory.length ? 'Select at least one subcategory' : '',
       filter: !filter.length ? 'Select at least one filter' : '',
@@ -183,14 +188,15 @@ export default function RegisterScreen() {
     }
 
     const payload = {
-      location_id: selectedLocation.id, // ✅ correct location id
-      location_name: selectedLocation.name, // optional for debugging
-      category,
-      sub_category: subCategory.join(','),
-      filter: filter.join(','),
+      location: selectedLocation.id,
+      category_id: categoryOptions.find(c => c.name === category)?.id, // send ID instead of name
+      subcategory_id: subCategory.map(sc => sc.id).join(','), // send IDs
+      name: subCategory.map(sc => sc.name).join(','), // ✅ subcategory names
+      filter: filter.map(f => f.id).join(','), // send IDs
+      filter_name: filter.map(f => f.name).join(','), // ✅ filter names
       shop_name: shopName,
       phone_number: phone,
-      password,
+      password: password,
       email_id: email,
       shop_address: address,
       open_time: openTime,
@@ -202,48 +208,59 @@ export default function RegisterScreen() {
       shop_gst_number: gst,
       shop_img: shopImage,
       passbook: passbookImage,
+      table_name: "a",
+      sub_category_image:shopImage,
+      shopinnerone:"",
+      shopinnertwo:"",
+      shopinnerthree:"",
+      latitude: null,
+      longitude: null
+
+
+
     };
 
     console.log('Submitting payload:', payload);
 
-    try {
-      setLoading(true);
+   try {
+  setLoading(true);
+  const result = await dispatch(registerVendor(payload)).unwrap();
 
-      const response = await fetch(
-        'https://melocalapp.com:2630/delivery_boy/register',
-        {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(payload),
-        },
-      );
+  Alert.alert('Success', 'Vendor registered successfully!');
+  navigation.goBack();
+} catch (err) {
+  Alert.alert('Failed', err || 'Registration failed. Try again.');
+} finally {
+  setLoading(false);
+}
 
-      const result = await response.json();
-      console.log('Register response:', result);
-
-      if (result?.status === 200) {
-        Alert.alert('Success', 'Vendor registered successfully!');
-        navigation.goBack();
-      } else {
-        Alert.alert('Failed', result?.msg || 'Registration failed. Try again.');
-      }
-    } catch (error) {
-      console.error('Error during registration:', error);
-      Alert.alert('Error', 'Something went wrong. Try again.');
-    } finally {
-      setLoading(false);
-    }
   };
 
-  const toggleSubCategory = item =>
-    setSubCategory(prev =>
-      prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item],
-    );
+  // For Subcategories
+  const toggleSubCategory = item => {
+    setSubCategory(prevSelected => {
+      const exists = prevSelected.some(sc => sc.id === item.id);
+      if (exists) {
+        // remove if already selected
+        return prevSelected.filter(sc => sc.id !== item.id);
+      } else {
+        // add if not selected
+        return [...prevSelected, item];
+      }
+    });
+  };
 
-  const toggleFilter = item =>
-    setFilter(prev =>
-      prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item],
-    );
+  // For Filters
+  const toggleFilter = item => {
+    setFilter(prevSelected => {
+      const exists = prevSelected.some(f => f.id === item.id);
+      if (exists) {
+        return prevSelected.filter(f => f.id !== item.id);
+      } else {
+        return [...prevSelected, item];
+      }
+    });
+  };
 
   return (
     <ScrollView
@@ -296,9 +313,8 @@ export default function RegisterScreen() {
               style={
                 subCategory.length ? styles.timeText : styles.placeholderText
               }>
-              {subCategory.length
-                ? subCategory.join(', ')
-                : 'Select SubCategories'}
+              {subCategory.map(sc => sc.name).join(', ') ||
+                'Select Subcategories'}
             </Text>
           </TouchableOpacity>
           {errors.subCategory && (
@@ -315,7 +331,7 @@ export default function RegisterScreen() {
             onPress={() => setFilterModalVisible(true)}>
             <Text
               style={filter.length ? styles.timeText : styles.placeholderText}>
-              {filter.length ? filter.join(', ') : 'Select Filters'}
+              {filter.map(f => f.name).join(', ') || 'Select Filters'}
             </Text>
           </TouchableOpacity>
           {errors.filter && (
@@ -524,27 +540,44 @@ export default function RegisterScreen() {
 
       <CategoryModal
         visible={categoryModalVisible}
-        categories={categoryOptions} // ✅ now dynamic from API
+        categories={categoryOptions}
         selectedCategory={category}
-        onSelect={item => {
-          setCategory(item); // ✅ use name from API
-          setSubCategory([]);
+        onSelect={async item => {
+          setCategory(item.name); // selected category name
+          setSubCategory([]); // reset previously selected subcategories
           setFilter([]);
+          setCategoryModalVisible(false);
+
+          try {
+            setSubCategoryLoading(true);
+            const subCatResponse = await dispatch(fetchSubCategories(item.id));
+            setSubCategoryOptions(subCatResponse?.payload || []);
+
+            setFilterLoading(true);
+            const filterResponse = await dispatch(fetchFilters(item.id));
+            setFilterOptions(filterResponse?.payload || []);
+          } finally {
+            setSubCategoryLoading(false);
+            setFilterLoading(false);
+          }
         }}
         onClose={() => setCategoryModalVisible(false)}
       />
 
       <SubCategoryModal
         visible={subCategoryModalVisible}
-        subCategories={categoryData[category]?.subCategories || []}
+        subCategories={subCategoryOptions}
         selected={subCategory}
         onToggle={toggleSubCategory}
+        loading={subCategoryLoading}
         onClose={() => setSubCategoryModalVisible(false)}
       />
+
       <FilterModal
         visible={filterModalVisible}
-        filters={categoryData[category]?.filters || []}
+        filters={filterOptions}
         selected={filter}
+        loading={filterLoading}
         onToggle={toggleFilter}
         onClose={() => setFilterModalVisible(false)}
       />

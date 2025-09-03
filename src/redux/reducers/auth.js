@@ -63,7 +63,6 @@ export const changePassword = createAsyncThunk(
   },
 );
 
-
 export const fetchLocations = createAsyncThunk(
   'fetchLocations',
   async (_, {rejectWithValue, fulfillWithValue}) => {
@@ -78,6 +77,7 @@ export const fetchLocations = createAsyncThunk(
           data.data.map(loc => ({
             id: loc.id,
             name: loc.location_name,
+            location_latitude: loc.location_latitude,
           })),
         );
       } else {
@@ -85,11 +85,12 @@ export const fetchLocations = createAsyncThunk(
       }
     } catch (error) {
       console.error('Fetch locations error:', error);
-      return rejectWithValue(error.response?.data?.msg || 'Failed to fetch locations');
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch locations',
+      );
     }
   },
 );
-
 
 export const fetchCategories = createAsyncThunk(
   'fetchCategories',
@@ -111,34 +112,91 @@ export const fetchCategories = createAsyncThunk(
       }
     } catch (error) {
       console.error('Fetch categories error:', error);
-      return rejectWithValue(error.response?.data?.msg || 'Failed to fetch categories');
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch categories',
+      );
     }
   },
 );
 
-   
-export const vendorRegistration = createAsyncThunk(
-  'vendorRegistration',
-  async (payload, { rejectWithValue, fulfillWithValue }) => {
+export const fetchSubCategories = createAsyncThunk(
+  'fetchSubCategories',
+  async (categoryId, {rejectWithValue, fulfillWithValue}) => {
     try {
-      const response = await api.post(endpoints.VENDOR_REGISTRATION, payload);
+      const response = await api.get(
+        `${endpoints.GETSUBCATEGORIES}/${categoryId}`,
+      );
+      const data = response.data;
+      console.log('Fetched subcategories from API:', data);
 
-      if (response?.data) {
-        return fulfillWithValue(response.data);
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        return fulfillWithValue(
+          data.data.map(sub => ({
+            id: sub.id,
+            name: sub.sub_category_name, // adjust based on your API response
+          })),
+        );
       } else {
-        return rejectWithValue('Something went wrong!');
+        return rejectWithValue('No subcategories found or invalid response');
       }
     } catch (error) {
-      console.error('Vendor Registration Error:', error);
+      console.error('Fetch subcategories error:', error);
       return rejectWithValue(
-        error.response?.data?.message || error.message || 'Something went wrong!'
+        error.response?.data?.msg || 'Failed to fetch subcategories',
       );
     }
-  }
+  },
 );
 
+export const fetchFilters = createAsyncThunk(
+  'fetchFilters',
+  async (categoryId, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.get(`${endpoints.GETFILTERS}/${categoryId}`);
+      const data = response.data;
+      console.log('Fetched filters from API:', data);
 
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        return fulfillWithValue(
+          data.data.map(f => ({
+            id: f.id,
+            name: f.main_filter_name, // adjust based on your API response
+          })),
+        );
+      } else {
+        return rejectWithValue('No filters found or invalid response');
+      }
+    } catch (error) {
+      console.error('Fetch filters error:', error);
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch filters',
+      );
+    }
+  },
+);
 
+export const registerVendor = createAsyncThunk(
+  'registerVendor',
+  async (payload, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(endpoints.REGISTERVENDOR, payload);
+      const data = response.data;
+      console.log('Register Vendor API response:', data);
+
+      if (data?.status === 200) {
+        return fulfillWithValue(data);
+      } else {
+        return rejectWithValue(data?.msg || 'Vendor registration failed');
+      }
+    } catch (error) {
+      console.error('Register Vendor error:', error);
+      return rejectWithValue(
+        error.response?.data?.msg ||
+          'Something went wrong while registering vendor',
+      );
+    }
+  },
+);
 
 export const requestLoginOtp = createAsyncThunk(
   'requestLoginOtp',
@@ -156,9 +214,6 @@ export const requestLoginOtp = createAsyncThunk(
     }
   },
 );
-
-
-
 
 export const AuthSlice = createSlice({
   name: 'authlice',

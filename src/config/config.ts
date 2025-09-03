@@ -7,8 +7,9 @@ export const endpoints = {
   LOGIN:'vendor_app/submitvendorlogin',
   CHECKTHEMOBILENUMBER:'vendor_app/checkthemobilenumber',
   UPDATENEWPASSWORD:'vendor_app/updatenewpassword',
-  VENDOR_REGISTRATION:'signupregister',
   GETLOCATION:'dashboard_api/getlocation',
-  GETCATEGORIES:'dashboard_api/getcategory'
-  
+  GETCATEGORIES:'dashboard_api/getcategory',
+  GETSUBCATEGORIES:'dashboard_api/getmatchedcategory',
+  GETFILTERS:'dashboard_api/getmatchedfilter',
+  REGISTERVENDOR:'vendor_app/signupregister',
 };
