@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import RNFS from 'react-native-fs'; 
+import RNFS from 'react-native-fs';
 import {
   View,
   Text,
@@ -120,33 +120,31 @@ export default function RegisterScreen() {
     setTimePickerVisible(false);
   };
 
+  const pickImage = async setter => {
+    try {
+      const result = await launchImageLibrary({mediaType: 'photo'});
 
+      if (result.assets?.length > 0) {
+        const selectedImage = result.assets[0];
+        if (selectedImage.fileSize > 2 * 1024 * 1024) {
+          Alert.alert('File too large', 'Please select an image under 2MB.');
+          return;
+        }
 
-const pickImage = async (setter) => {
-  try {
-    const result = await launchImageLibrary({ mediaType: 'photo' });
+        // Convert to base64
+        const base64Data = await RNFS.readFile(selectedImage.uri, 'base64');
+        const base64Image = `data:${selectedImage.type};base64,${base64Data}`;
 
-    if (result.assets?.length > 0) {
-      const selectedImage = result.assets[0];
-if (selectedImage.fileSize > 2 * 1024 * 1024) {
-  Alert.alert('File too large', 'Please select an image under 2MB.');
-  return;
-}
-
-      // Convert to base64
-      const base64Data = await RNFS.readFile(selectedImage.uri, 'base64');
-      const base64Image = `data:${selectedImage.type};base64,${base64Data}`;
-
-      setter(base64Image); // ✅ store as Base64 directly
+        setter(base64Image); // ✅ store as Base64 directly
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
     }
-  } catch (error) {
-    console.error('Error picking image:', error);
-  }
-};
+  };
 
   const validateAll = () => {
     const newErrors = {
-       location: !location ? 'Location is required' : '',
+      location: !location ? 'Location is required' : '',
       category: !category ? 'Category is required' : '',
       subCategory: !subCategory.length ? 'Select at least one subcategory' : '',
       filter: !filter.length ? 'Select at least one filter' : '',
@@ -182,18 +180,25 @@ if (selectedImage.fileSize > 2 * 1024 * 1024) {
   const handleSubmit = async () => {
     if (!validateAll()) return;
 
-    if (!selectedLocation) {
-      Alert.alert('Please select a location');
-      return;
-    }
+    const selectedCategoryObj = categoryOptions.find(c => c.name === category);
+    const tableName = selectedCategoryObj?.shop_items_tb_nm || 'a';
+
+    const subCategoryImages = subCategory
+      .map(sc => sc.sub_category_image)
+      .filter(Boolean)
+      .join(',');
+
+    // ✅ Extract latitude & longitude from selected location
+    const latitude = selectedLocation?.location_latitude;
+    const longitude = selectedLocation?.location_longitude;
 
     const payload = {
       location: selectedLocation.id,
-      category_id: categoryOptions.find(c => c.name === category)?.id, // send ID instead of name
-      subcategory_id: subCategory.map(sc => sc.id).join(','), // send IDs
-      name: subCategory.map(sc => sc.name).join(','), // ✅ subcategory names
-      filter: filter.map(f => f.id).join(','), // send IDs
-      filter_name: filter.map(f => f.name).join(','), // ✅ filter names
+      category_id: categoryOptions.find(c => c.name === category)?.id,
+      subcategory_id: subCategory.map(sc => sc.id).join(','),
+      name: subCategory.map(sc => sc.name).join(','),
+      filter: filter.map(f => f.id).join(','),
+      filter_name: filter.map(f => f.name).join(','),
       shop_name: shopName,
       phone_number: phone,
       password: password,
@@ -208,32 +213,28 @@ if (selectedImage.fileSize > 2 * 1024 * 1024) {
       shop_gst_number: gst,
       shop_img: shopImage,
       passbook: passbookImage,
-      table_name: "a",
-      sub_category_image:shopImage,
-      shopinnerone:"",
-      shopinnertwo:"",
-      shopinnerthree:"",
-      latitude: null,
-      longitude: null
-
-
-
+      table_name: tableName,
+      sub_category_image: subCategoryImages,
+      latitude,
+      longitude,
+      shopinnerone: '',
+      shopinnertwo: '',
+      shopinnerthree: '',
     };
 
     console.log('Submitting payload:', payload);
 
-   try {
-  setLoading(true);
-  const result = await dispatch(registerVendor(payload)).unwrap();
+    try {
+      setLoading(true);
+      await dispatch(registerVendor(payload)).unwrap();
 
-  Alert.alert('Success', 'Vendor registered successfully!');
-  navigation.goBack();
-} catch (err) {
-  Alert.alert('Failed', err || 'Registration failed. Try again.');
-} finally {
-  setLoading(false);
-}
-
+      Alert.alert('Success', 'Vendor registered successfully!');
+      navigation.goBack();
+    } catch (err) {
+      Alert.alert('Failed', err || 'Registration failed. Try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // For Subcategories

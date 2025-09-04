@@ -59,22 +59,22 @@ const allOrders = [
     total: 1900,
     paymentMethod: 'cash',
   },
-  {
-    id: '230820257934324',
-    status: 'Preparing',
-    time: '8:05 PM',
-    date: '23/08/2025',
-    address:
-      '14-105/1, Vl puram, Rehamanth nagar colony, rajamahendravaram,andhrapradesh,533102, india ',
-    items: [
-      {name: 'Paneer Butter Masala', quantity: 2, price: 250, isVeg: true},
-      {name: 'Naan', quantity: 4, price: 50, isVeg: true},
-      {name: 'Paneer Butter Masala', quantity: 1, price: 350, isVeg: true},
-      {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
-    ],
-    total: 700,
-    paymentMethod: 'Online',
-  },
+  // {
+  //   id: '230820257934324',
+  //   status: 'Preparing',
+  //   time: '8:05 PM',
+  //   date: '23/08/2025',
+  //   address:
+  //     '14-105/1, Vl puram, Rehamanth nagar colony, rajamahendravaram,andhrapradesh,533102, india ',
+  //   items: [
+  //     {name: 'Paneer Butter Masala', quantity: 2, price: 250, isVeg: true},
+  //     {name: 'Naan', quantity: 4, price: 50, isVeg: true},
+  //     {name: 'Paneer Butter Masala', quantity: 1, price: 350, isVeg: true},
+  //     {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
+  //   ],
+  //   total: 700,
+  //   paymentMethod: 'Online',
+  // },
   {
     id: '230820257934325',
     status: 'Ready',
@@ -94,7 +94,7 @@ const allOrders = [
   },
   {
     id: '230820257934326',
-    status: 'Picked up',
+    status: 'Ongoing',
     paymentMethod: 'COD',
 
     time: '8:00 PM',
@@ -112,7 +112,7 @@ const allOrders = [
   },
   {
     id: '230820257934327',
-    status: 'Picked up',
+    status: 'Ongoing',
     paymentMethod: 'cash',
 
     time: '8:10 PM',
@@ -151,9 +151,9 @@ export default function OrdersScreen({navigation}) {
 
   const tabs = [
     {label: 'Pending', count: getTabCount('Pending')},
-    {label: 'Preparing', count: getTabCount('Preparing')},
-    {label: 'Ready', count: getTabCount('Ready')},
-    {label: 'Picked up', count: getTabCount('Picked up')},
+    // {label: 'Preparing', count: getTabCount('Preparing')},
+    // {label: 'Ready', count: getTabCount('Ready')},
+    {label: 'Ongoing', count: getTabCount('Ongoing')},
   ];
 
   const renderOrderCard = order => {
@@ -181,18 +181,18 @@ export default function OrdersScreen({navigation}) {
           </OrderCard>
         );
 
-      case 'Preparing':
-        return (
-          <OrderCard
-            key={order.id}
-            {...commonProps}
-            statusColor={colors.primarySemi}
-            statusLabel="Preparing">
-            <TouchableOpacity style={styles.orderReadyButton}>
-              <Text style={styles.orderReadyButtonText}>Order Ready</Text>
-            </TouchableOpacity>
-          </OrderCard>
-        );
+      // case 'Preparing':
+      //   return (
+      //     <OrderCard
+      //       key={order.id}
+      //       {...commonProps}
+      //       statusColor={colors.primarySemi}
+      //       statusLabel="Preparing">
+      //       <TouchableOpacity style={styles.orderReadyButton}>
+      //         <Text style={styles.orderReadyButtonText}>Order Ready</Text>
+      //       </TouchableOpacity>
+      //     </OrderCard>
+      //   );
 
       case 'Ready':
         return (
@@ -217,13 +217,13 @@ export default function OrdersScreen({navigation}) {
           </OrderCard>
         );
 
-      case 'Picked up':
+      case 'Ongoing':
         return (
           <OrderCard
             key={order.id}
             {...commonProps}
             statusColor={colors.primarySemi}
-            statusLabel="Picked up"
+            statusLabel="Ongoing"
           />
         );
 
@@ -366,11 +366,14 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     paddingVertical: 11,
-    paddingHorizontal: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    // paddingHorizontal: 8,
     borderRadius: 5,
     marginVertical: 3,
     borderWidth: 1,
     borderColor: colors.border,
+    width: '47%',
   },
   tabButtonActive: {
     backgroundColor: colors.primaryLight,
@@ -378,12 +381,12 @@ const styles = StyleSheet.create({
     borderColor: colors.primaryLight,
   },
   tabText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '700',
     color: colors.textLight,
   },
   tabTextActive: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textMuted,
     fontWeight: 'bold',
   },

@@ -70,21 +70,22 @@ export const fetchLocations = createAsyncThunk(
       // ✅ Use your API + endpoint constant
       const response = await api.get(endpoints.GETLOCATION);
       const data = response.data; // axios automatically parses JSON
-      console.log('Fetched locations from API:', data);
+      // console.log('Fetched locations from API:', data);
 
       if (data?.status === 200 && Array.isArray(data?.data)) {
         return fulfillWithValue(
           data.data.map(loc => ({
             id: loc.id,
             name: loc.location_name,
-            location_latitude: loc.location_latitude,
+            location_latitude: loc.location_latitude, // ✅ include
+            location_longitude: loc.location_longitude, // ✅ include
           })),
         );
       } else {
         return rejectWithValue('No locations found or invalid response');
       }
     } catch (error) {
-      console.error('Fetch locations error:', error);
+      // console.error('Fetch locations error:', error);
       return rejectWithValue(
         error.response?.data?.msg || 'Failed to fetch locations',
       );
@@ -98,22 +99,25 @@ export const fetchCategories = createAsyncThunk(
     try {
       const response = await api.get(endpoints.GETCATEGORIES);
       const data = response.data;
-      console.log('Fetched categories from API:', data);
+      // console.log('Fetched categories from API:', data);
 
       if (data?.status === 200 && Array.isArray(data?.data)) {
         return fulfillWithValue(
           data.data.map(cat => ({
             id: cat.id,
-            name: cat.category_name, // ✅ we only need these two
+            name: cat.category_name, 
+            shop_items_tb_nm: cat.shop_items_tb_nm, // ✅ include table name
+
           })),
         );
       } else {
         return rejectWithValue('No categories found or invalid response');
       }
     } catch (error) {
-      console.error('Fetch categories error:', error);
+      // console.error('Fetch categories error:', error);
       return rejectWithValue(
         error.response?.data?.msg || 'Failed to fetch categories',
+        
       );
     }
   },
@@ -127,20 +131,22 @@ export const fetchSubCategories = createAsyncThunk(
         `${endpoints.GETSUBCATEGORIES}/${categoryId}`,
       );
       const data = response.data;
-      console.log('Fetched subcategories from API:', data);
+      // console.log('Fetched subcategories from API:', data);
 
       if (data?.status === 200 && Array.isArray(data?.data)) {
         return fulfillWithValue(
           data.data.map(sub => ({
             id: sub.id,
-            name: sub.sub_category_name, // adjust based on your API response
+            name: sub.sub_category_name,
+            sub_category_image: sub.sub_category_image, // ✅ include image
+
           })),
         );
       } else {
         return rejectWithValue('No subcategories found or invalid response');
       }
     } catch (error) {
-      console.error('Fetch subcategories error:', error);
+      // console.error('Fetch subcategories error:', error);
       return rejectWithValue(
         error.response?.data?.msg || 'Failed to fetch subcategories',
       );
@@ -154,7 +160,7 @@ export const fetchFilters = createAsyncThunk(
     try {
       const response = await api.get(`${endpoints.GETFILTERS}/${categoryId}`);
       const data = response.data;
-      console.log('Fetched filters from API:', data);
+      // console.log('Fetched filters from API:', data);
 
       if (data?.status === 200 && Array.isArray(data?.data)) {
         return fulfillWithValue(
@@ -167,7 +173,7 @@ export const fetchFilters = createAsyncThunk(
         return rejectWithValue('No filters found or invalid response');
       }
     } catch (error) {
-      console.error('Fetch filters error:', error);
+      // console.error('Fetch filters error:', error);
       return rejectWithValue(
         error.response?.data?.msg || 'Failed to fetch filters',
       );
