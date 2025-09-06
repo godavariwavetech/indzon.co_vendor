@@ -11,6 +11,9 @@ import {
   KeyboardAvoidingView,
   ScrollView,
 } from 'react-native';
+
+import CustomAlertModal from '../../components/CustomAlertModal';
+
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -29,6 +32,20 @@ export default function ChangeForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
+  // ✅ Modal state
+const [modalVisible, setModalVisible] = useState(false);
+const [modalTitle, setModalTitle] = useState('');
+const [modalMessage, setModalMessage] = useState('');
+const [modalType, setModalType] = useState('error');
+
+const showModal = (title, message, type = 'error') => {
+  setModalTitle(title);
+  setModalMessage(message);
+  setModalType(type);
+  setModalVisible(true);
+};
+
+
   // 👁 Password visibility toggles
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -38,7 +55,7 @@ export default function ChangeForgotPassword() {
   /** STEP 1: Verify Number */
   const handleVerify = async () => {
     if (!validatePhoneNumber(phoneNumber)) {
-      Alert.alert(
+      showModal(
         'Invalid Phone Number',
         'Please enter a valid 10-digit number',
       );
@@ -54,10 +71,10 @@ export default function ChangeForgotPassword() {
         const data = response?.payload?.data;
 
         if (data && data.length > 0) {
-          Alert.alert('Success', 'Phone number verified.');
+          showModal('Success', 'Phone number verified.');
           setIsVerified(true); // ✅ Only after success
         } else {
-          Alert.alert(
+          showModal(
             'Not Registered',
             'This phone number is not registered with us.',
           );
@@ -67,10 +84,10 @@ export default function ChangeForgotPassword() {
           response?.payload?.msg ||
           response?.error?.message ||
           'Verification failed. Please try again.';
-        Alert.alert('Verification Failed', errorMessage);
+        showModal('Verification Failed', errorMessage);
       }
     } catch (error) {
-      Alert.alert('Error', 'Verification failed, please try again.');
+     showModal('Error', 'Verification failed, please try again.');
     } finally {
       setLoading(false);
     }
@@ -79,11 +96,11 @@ export default function ChangeForgotPassword() {
   /** STEP 2: Change Password */
   const handleChangePassword = async () => {
     if (!newPassword || !confirmPassword) {
-      Alert.alert('Error', 'Please fill out both fields.');
+    showModal('Error', 'Please fill out both fields.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match.');
+  showModal('Error', 'Passwords do not match.');
       return;
     }
 
@@ -95,17 +112,17 @@ export default function ChangeForgotPassword() {
       console.log('Change Password API response:', response);
 
       if (response?.payload?.status === 200) {
-        Alert.alert('Success', 'Password changed successfully!');
+        showModal('Success', 'Password changed successfully!');
         navigation.goBack();
       } else {
         const errorMessage =
           response?.payload?.msg ||
           response?.error?.message ||
           'Password change failed.';
-        Alert.alert('Failed', errorMessage);
+       showModal('Failed', errorMessage);
       }
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Try again.');
+     showModal('Error', 'Something went wrong. Try again.');
     } finally {
       setLoading(false);
     }
@@ -230,6 +247,14 @@ export default function ChangeForgotPassword() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <CustomAlertModal
+  visible={modalVisible}
+  title={modalTitle}
+  message={modalMessage}
+  type={modalType}
+  onClose={() => setModalVisible(false)}
+/>
+
     </View>
   );
 }

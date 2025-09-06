@@ -67,9 +67,8 @@ export const fetchLocations = createAsyncThunk(
   'fetchLocations',
   async (_, {rejectWithValue, fulfillWithValue}) => {
     try {
-      // ✅ Use your API + endpoint constant
       const response = await api.get(endpoints.GETLOCATION);
-      const data = response.data; // axios automatically parses JSON
+      const data = response.data;
       // console.log('Fetched locations from API:', data);
 
       if (data?.status === 200 && Array.isArray(data?.data)) {
@@ -77,8 +76,8 @@ export const fetchLocations = createAsyncThunk(
           data.data.map(loc => ({
             id: loc.id,
             name: loc.location_name,
-            location_latitude: loc.location_latitude, // ✅ include
-            location_longitude: loc.location_longitude, // ✅ include
+            location_latitude: loc.location_latitude, 
+            location_longitude: loc.location_longitude, 
           })),
         );
       } else {
@@ -106,7 +105,7 @@ export const fetchCategories = createAsyncThunk(
           data.data.map(cat => ({
             id: cat.id,
             name: cat.category_name, 
-            shop_items_tb_nm: cat.shop_items_tb_nm, // ✅ include table name
+            shop_items_tb_nm: cat.shop_items_tb_nm, 
 
           })),
         );
