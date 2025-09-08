@@ -9,7 +9,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
 import AdvertisementsCarousel from '../components/AdvertisementsCarousel';
-import  {colors}  from '../config/theme'; 
+import {colors} from '../config/theme'; 
 
 export default function MoreScreen() {
   const navigation = useNavigation();
@@ -20,7 +20,7 @@ export default function MoreScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>My Account</Text>
-<MenuItem
+        <MenuItem
           icon="account"
           title="Profile"
           onPress={() => navigation.navigate('Profile')}
@@ -45,7 +45,7 @@ export default function MoreScreen() {
           title="Terms & Conditions"
           onPress={() => navigation.navigate('TermsScreen')}
         />
-        <MenuItem 
+        <MenuItem
           icon="logout"
           title="Logout"
           onPress={() => {

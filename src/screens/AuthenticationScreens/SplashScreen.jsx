@@ -16,7 +16,7 @@ const SplashScreen = ({ navigation }) => {
 
         const timer = setTimeout(() => {
             navigation.replace("SignInScreen");
-        }, 2000);
+        }, 1000);
 
         return () => clearTimeout(timer);
     });

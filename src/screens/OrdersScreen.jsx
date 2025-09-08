@@ -152,7 +152,7 @@ export default function OrdersScreen({navigation}) {
     if (orders.length === 0) {
       return (
         <View>
-          <AdvertisementsCarousel />
+{!showToggleModal && <AdvertisementsCarousel />}
           <View style={styles.onlineSection}>
             <Image source={Ordersscreenimage} style={styles.emptyOrdersImage} />
             <Text

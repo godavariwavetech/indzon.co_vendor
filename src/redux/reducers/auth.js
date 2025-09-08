@@ -76,8 +76,8 @@ export const fetchLocations = createAsyncThunk(
           data.data.map(loc => ({
             id: loc.id,
             name: loc.location_name,
-            location_latitude: loc.location_latitude, 
-            location_longitude: loc.location_longitude, 
+            location_latitude: loc.location_latitude,
+            location_longitude: loc.location_longitude,
           })),
         );
       } else {
@@ -104,9 +104,8 @@ export const fetchCategories = createAsyncThunk(
         return fulfillWithValue(
           data.data.map(cat => ({
             id: cat.id,
-            name: cat.category_name, 
-            shop_items_tb_nm: cat.shop_items_tb_nm, 
-
+            name: cat.category_name,
+            shop_items_tb_nm: cat.shop_items_tb_nm,
           })),
         );
       } else {
@@ -116,7 +115,6 @@ export const fetchCategories = createAsyncThunk(
       // console.error('Fetch categories error:', error);
       return rejectWithValue(
         error.response?.data?.msg || 'Failed to fetch categories',
-        
       );
     }
   },
@@ -138,7 +136,6 @@ export const fetchSubCategories = createAsyncThunk(
             id: sub.id,
             name: sub.sub_category_name,
             sub_category_image: sub.sub_category_image, // ✅ include image
-
           })),
         );
       } else {
@@ -247,7 +244,7 @@ export const AuthSlice = createSlice({
     });
     builder.addCase(vendorLogin.fulfilled, (state, action) => {
       state.message = null;
-      console.log(action.payload, '>>>>>>>>>>>>>>>>>>>>responseses');
+      console.log(action.payload, '>>>>>>>>>>>>>>>responseses');
     });
     builder.addCase(vendorLogin.rejected, state => {
       state.message = 'Please try again!';

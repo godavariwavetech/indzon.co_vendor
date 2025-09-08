@@ -9,8 +9,9 @@ const {width} = Dimensions.get('window');
 const banners = [
   {id: 1, image: bannerimage1},
   {id: 2, image: bannerimage1},
-  {id: 3, image:bannerimage1},
+  {id: 3, image: bannerimage1},
 ];
+
 
 export default function CarouselComponent({navigation}) {
   const [currentIndex, setCurrentIndex] = useState(0);
