@@ -8,6 +8,8 @@ const initialState = {
   token: null,
   userRole: 1,
   userId: null,
+    pendingOrders: [],   // ✅ NEW
+  OrdersInProcess: [],   // ✅ NEW
 };
 
 export const vendorLogin = createAsyncThunk(
@@ -119,7 +121,6 @@ export const fetchCategories = createAsyncThunk(
     }
   },
 );
-
 export const fetchSubCategories = createAsyncThunk(
   'fetchSubCategories',
   async (categoryId, {rejectWithValue, fulfillWithValue}) => {
@@ -149,7 +150,6 @@ export const fetchSubCategories = createAsyncThunk(
     }
   },
 );
-
 export const fetchFilters = createAsyncThunk(
   'fetchFilters',
   async (categoryId, {rejectWithValue, fulfillWithValue}) => {
@@ -176,7 +176,6 @@ export const fetchFilters = createAsyncThunk(
     }
   },
 );
-
 export const registerVendor = createAsyncThunk(
   'registerVendor',
   async (payload, {rejectWithValue, fulfillWithValue}) => {
@@ -191,7 +190,7 @@ export const registerVendor = createAsyncThunk(
         return rejectWithValue(data?.msg || 'Vendor registration failed');
       }
     } catch (error) {
-      console.error('Register Vendor error:', error);
+      // console.error('Register Vendor error:', error);
       return rejectWithValue(
         error.response?.data?.msg ||
           'Something went wrong while registering vendor',
@@ -199,6 +198,96 @@ export const registerVendor = createAsyncThunk(
     }
   },
 );
+export const fetchShopDetails = createAsyncThunk(
+  'fetchShopDetails',
+  async (userId, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(
+        endpoints.GETPROFILEDETAILS,
+        {user_id: userId},
+      );
+
+      const data = response.data;
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        const shop = data.data[0]; // Take first shop from array
+
+        return fulfillWithValue({
+          id: shop.id,
+          name: shop.shop_name,
+          address: shop.shop_address,
+          timing: `${shop.shop_open_time} - ${shop.shop_close_time}`,
+          mobile: shop.shop_phone_number,
+          email: shop.shop_email,
+          image: shop.shop_image,
+        });
+      } else {
+        return rejectWithValue('No shop found or invalid response');
+      }
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch shop details',
+      );
+    }
+  },
+);
+
+export const fetchCurrentOrders = createAsyncThunk(
+  'fetchCurrentOrders',
+  async (userId, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(endpoints.GETCURRENTORDERS, {
+        user_id: userId,
+      });
+
+      const data = response.data;
+      console.log('GETCURRENTORDERS response:', data);
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        // Separate orders by status
+        const pendingOrders = [];
+        const OrdersInProcess = [];
+
+        data.data.forEach(order => {
+          const formattedOrder = {
+            id: order.order_id,
+            status: order.order_status === 0 ? 'Pending' : 'Orders In Process',
+            date: order.order_date,
+            time: order.order_time,
+            address: order.delivery_address,
+            total: order.grand_total,
+            paymentMethod: order.payment_type,
+            cookingRequest: order.order_instructions,
+            customerOtp: order.customer_otp,
+            shopName: order.shop_name,
+            shopPhone: order.shop_phone_number,
+            shopAddress: order.shop_address,
+            shopImage: order.shop_image,
+            items: [], // ✅ You can fetch items with another API if available
+          };
+
+          if (order.order_status === 0) {
+            pendingOrders.push(formattedOrder);
+          } else {
+            OrdersInProcess.push(formattedOrder);
+          }
+        });
+
+        return fulfillWithValue({pendingOrders, OrdersInProcess});
+      } else {
+        return rejectWithValue('No current orders found');
+      }
+    } catch (error) {
+      console.error('Fetch Current Orders error:', error);
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch current orders',
+      );
+    }
+  },
+);
+
+
+
 
 export const requestLoginOtp = createAsyncThunk(
   'requestLoginOtp',
@@ -242,10 +331,39 @@ export const AuthSlice = createSlice({
     builder.addCase(vendorLogin.pending, state => {
       state.message = null;
     });
-    builder.addCase(vendorLogin.fulfilled, (state, action) => {
-      state.message = null;
-      console.log(action.payload, '>>>>>>>>>>>>>>>responseses');
-    });
+builder.addCase(vendorLogin.fulfilled, (state, action) => {
+  state.message = null;
+  console.log(action.payload, '>>>>>>>responseses');
+
+  // FIX: use "id" instead of "user_id"
+  state.userId = action.payload?.data?.id || null;
+  state.token = action.payload?.token || null;
+});
+
+builder.addCase(registerVendor.fulfilled, (state, action) => {
+  console.log('Vendor Registered:', action.payload);
+  state.userId = action.payload?.data?.id || null;
+  state.token = action.payload?.token || null;
+});
+builder.addCase(fetchCurrentOrders.pending, state => {
+  state.loading = true;
+});
+
+builder.addCase(fetchCurrentOrders.fulfilled, (state, action) => {
+  state.loading = false;
+  state.pendingOrders = action.payload.pendingOrders;
+  state.OrdersInProcess = action.payload.OrdersInProcess;
+});
+
+builder.addCase(fetchCurrentOrders.rejected, (state, action) => {
+  state.loading = false;
+  state.pendingOrders = [];
+  state.OrdersInProcess = [];
+  state.message = action.payload || 'Failed to load current orders';
+});
+
+
+
     builder.addCase(vendorLogin.rejected, state => {
       state.message = 'Please try again!';
     });

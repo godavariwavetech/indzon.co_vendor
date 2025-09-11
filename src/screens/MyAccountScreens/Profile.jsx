@@ -1,4 +1,6 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
+import {useSelector} from 'react-redux';
+
 import {
   View,
   Text,
@@ -6,21 +8,52 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
+import {useDispatch} from 'react-redux';
+import {fetchShopDetails} from '../../redux/reducers/auth';
 import {colors} from '../../config/theme';
 import {RestaurantLogo} from '../../assets/index';
 
 const RestaurantProfileScreen = () => {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
 
-  const restaurant = {
-    name: 'Add Your Restaurant Name',
-    address: '123 Main Street, Rajahmundry, India',
-    timing: 'Mon - Sun | 10:00 AM - 11:00 PM',
-    mobile: '9876543210',
-    email: 'addyouremail@gmail.com',
+    const userId = useSelector(state => state.Auth.userId);
+
+
+  const [shop, setShop] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const [password, setPassword] = useState('');
+  const [secureText, setSecureText] = useState(true);
+
+  useEffect(() => {
+
+     if (!userId) return;
+
+    const getShopData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await dispatch(fetchShopDetails(userId)).unwrap();
+        setShop(result);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getShopData();
+  }, [dispatch, userId]);
+
+  const handlePasswordUpdate = () => {
+    console.log('Password Updated:', password);
   };
 
   return (
@@ -31,43 +64,79 @@ const RestaurantProfileScreen = () => {
         <Icon name="arrow-back" size={24} color={colors.textPrimary} />
       </TouchableOpacity>
 
-      <View style={styles.logoContainer}>
-        <Image source={RestaurantLogo} style={styles.logo} />
-        <Text style={styles.name}>{restaurant.name}</Text>
-      </View>
+      {/* Loading and Error States */}
+      {loading && (
+        <ActivityIndicator size="large" color={colors.brandPrimary} />
+      )}
+      {error && <Text style={{color: 'red', marginBottom: 10}}>{error}</Text>}
 
-      <View style={styles.card}>
-        <View style={styles.infoRow}>
-          <Icon name="location" size={22} color={colors.brandPrimary} />
-          <Text style={styles.infoText}>{restaurant.address}</Text>
-        </View>
+      {shop && (
+        <>
+          <View style={styles.logoContainer}>
+            <Image
+              source={shop.image ? {uri: shop.image} : RestaurantLogo}
+              style={styles.logo}
+            />
+            <Text style={styles.name}>{shop.name}</Text>
+          </View>
 
-        <View style={styles.infoRow}>
-          <Icon name="time" size={22} color={colors.brandPrimary} />
-          <Text style={styles.infoText}>{restaurant.timing}</Text>
-        </View>
+          <View style={styles.card}>
+            <View style={styles.infoRow}>
+              <Icon name="location" size={22} color={colors.brandPrimary} />
+              <Text style={styles.infoText}>Address: {shop.address}</Text>
+            </View>
 
-        <View style={styles.infoRow}>
-          <Icon name="call" size={22} color={colors.brandPrimary} />
-          <Text style={styles.infoText}>{restaurant.mobile}</Text>
-        </View>
+            <View style={styles.infoRow}>
+              <Icon name="time" size={22} color={colors.brandPrimary} />
+              <Text style={styles.infoText}>Timings: {shop.timing}</Text>
+            </View>
 
-        <View style={styles.infoRow}>
-          <Icon name="mail" size={22} color={colors.brandPrimary} />
-          <Text style={styles.infoText}>{restaurant.email}</Text>
-        </View>
-      </View>
+            <View style={styles.infoRow}>
+              <Icon name="call" size={22} color={colors.brandPrimary} />
+              <Text style={styles.infoText}>Mobile: {shop.mobile}</Text>
+            </View>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('EditProfile')}>
-        <Text style={styles.buttonText}>Edit Profile</Text>
-      </TouchableOpacity>
+            <View style={styles.infoRow}>
+              <Icon name="mail" size={22} color={colors.brandPrimary} />
+              <Text style={styles.infoText}>Email: {shop.email}</Text>
+            </View>
+
+            {/* Password Field */}
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Enter New Password"
+                placeholderTextColor={colors.textSecondary2}
+                secureTextEntry={secureText}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setSecureText(!secureText)}
+                style={styles.eyeIcon}>
+                <Icon
+                  name={secureText ? 'eye-off' : 'eye'}
+                  size={22}
+                  color={colors.textSecondary2}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={handlePasswordUpdate}>
+              <Text style={styles.submitText}>Update Password</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
     </ScrollView>
   );
 };
 
 export default RestaurantProfileScreen;
+
+// styles remain same as your code
 
 const styles = StyleSheet.create({
   container: {
@@ -121,18 +190,35 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     flex: 1,
   },
-  button: {
-    marginTop: 30,
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    marginTop: 10,
+    paddingHorizontal: 10,
+    backgroundColor: colors.backgroundLight,
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 10,
+    color: colors.textPrimary,
+  },
+  eyeIcon: {
+    marginLeft: 5,
+  },
+  submitButton: {
     backgroundColor: colors.brandPrimary,
     paddingVertical: 12,
-    paddingHorizontal: 40,
     borderRadius: 10,
-    elevation: 3,
+    marginTop: 15,
+    alignItems: 'center',
   },
-  buttonText: {
+  submitText: {
+    color: '#fff',
     fontSize: 16,
-    color: colors.buttonTextLight,
     fontWeight: '600',
-    textAlign: 'center',
   },
 });

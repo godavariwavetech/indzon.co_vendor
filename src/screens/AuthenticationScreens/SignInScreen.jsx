@@ -24,7 +24,7 @@ export default function LoginScreen() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
-  const [phoneNumber, setPhoneNumber] = useState('9999999999');
+  const [phoneNumber, setPhoneNumber] = useState('8978979879');
   const [password, setPassword] = useState('123456');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -57,11 +57,11 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       const response = await dispatch(vendorLogin({ phoneNumber, password }));
-      console.log('Login API response:', response);
+      // console.log('Login API response:', response);
 
       if (response?.payload?.status === 200) {
         const successMessage = response?.payload?.msg || 'Login Successful';
-        showModal('Success', successMessage, 'success');
+        // showModal('Success', successMessage, 'success');
         setTimeout(() => {
           setModalVisible(false);
           navigation.navigate('BottomTabNavigation');

@@ -141,6 +141,7 @@ export const colors = {
 black7:"#00000024",
   bgColor: '#FFFFFF',
   mainColor:'#1A43BF',
+  black8:"#00000033"
 
 
 

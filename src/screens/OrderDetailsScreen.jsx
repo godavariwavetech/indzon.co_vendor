@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+
 import {
   View,
   Text,
@@ -15,13 +16,20 @@ import {colors} from '../config/theme';
 import {ItemLogo} from '../assets/index';
 import emoji from '../assets/emoji.png';
 
+
 export default function OrderDetailsScreen({route}) {
   const {order} = route.params;
   const navigation = useNavigation();
 
   const [showRejectModal, setShowRejectModal] = useState(false);
-  const [orderStatus, setOrderStatus] = useState('Placed');
-  const [otp, setOtp] = useState(null); // ⬅️ NEW STATE
+  const [orderStatus, setOrderStatus] = useState(
+  order.status === 'Pending' ? 'Placed' : 'Accepted'
+);
+
+const [otp, setOtp] = useState(
+  order.status !== 'Pending' ? order.customerOtp?.toString() || null : null
+);
+
 
   const handleRejectConfirm = () => {
     console.log(`Order ${order.id} rejected`);
@@ -58,51 +66,44 @@ export default function OrderDetailsScreen({route}) {
 
           {/* ✅ Status Tracker Row */}
           <View style={styles.statusRow}>
-            {['Placed', 'Accepted', 'Ongoing', 'Delivered'].map(
-              (step, index) => {
-                const isActive =
-                  orderStatus === step ||
-                  (['Accepted', 'Ongoing', 'Delivered'].includes(orderStatus) &&
-                    step === 'Placed') ||
-                  (['Ongoing', 'Delivered'].includes(orderStatus) &&
-                    step === 'Accepted') ||
-                  (['Delivered'].includes(orderStatus) && step === 'Ongoing');
+           {['Placed', 'Accepted', 'Ongoing', 'Delivered'].map((step, index) => {
+  const stepOrder = ['Placed', 'Accepted', 'Ongoing', 'Delivered'];
+  const currentIndex = stepOrder.indexOf(orderStatus);
+  const isActive = stepOrder.indexOf(step) <= currentIndex;
 
-                return (
-                  <View key={index} style={styles.statusItem}>
-                    <View
-                      style={[
-                        styles.statusCircle,
-                        {backgroundColor: isActive ? colors.success : '#ccc'},
-                      ]}>
-                      <MaterialCommunityIcons
-                        name={
-                          step === 'Placed'
-                            ? 'map-marker'
-                            : step === 'Accepted'
-                            ? 'check'
-                            : step === 'Ongoing'
-                            ? 'bike'
-                            : 'map-marker-check'
-                        }
-                        size={16}
-                        color={'#fff'}
-                      />
-                    </View>
-                    <Text
-                      style={[
-                        styles.statusLabel,
-                        {color: isActive ? colors.success : '#999'},
-                      ]}>
-                      {step}
-                    </Text>
+  return (
+    <View key={index} style={styles.statusItem}>
+      <View
+        style={[
+          styles.statusCircle,
+          {backgroundColor: isActive ? colors.success : '#ccc'},
+        ]}>
+        <MaterialCommunityIcons
+          name={
+            step === 'Placed'
+              ? 'map-marker'
+              : step === 'Accepted'
+              ? 'check'
+              : step === 'Ongoing'
+              ? 'bike'
+              : 'map-marker-check'
+          }
+          size={16}
+          color={'#fff'}
+        />
+      </View>
+      <Text
+        style={[
+          styles.statusLabel,
+          {color: isActive ? colors.success : '#999'},
+        ]}>
+        {step}
+      </Text>
+      {index < 3 && <View style={styles.statusLine} />}
+    </View>
+  );
+})}
 
-                    {/* Divider Line */}
-                    {index < 3 && <View style={styles.statusLine} />}
-                  </View>
-                );
-              },
-            )}
           </View>
 
           <View style={styles.divider2} />
@@ -170,7 +171,7 @@ export default function OrderDetailsScreen({route}) {
 
               {/* //after otp entered by delivery boy */}
 
-              <View style={styles.card3}>
+              {/* <View style={styles.card3}>
                 <Image source={emoji} style={styles.avatar3} />
                 <View style={styles.textContainer}>
                   <Text style={styles.subtitle3}>Manoj is on the way</Text>
@@ -181,7 +182,7 @@ export default function OrderDetailsScreen({route}) {
                 <TouchableOpacity>
                   <Icon name="call" size={20} color="#1A43BF" />
                 </TouchableOpacity>
-              </View>
+              </View> */}
             </View>
           )}
         </View>

@@ -7,13 +7,11 @@ import CustomerSupportScreen from '../screens/MyAccountScreens/CustomerSupportSc
 import PrivacyPolicyScreen from '../screens/MyAccountScreens/PrivacyPolicyScreen';
 import TermsScreen from '../screens/MyAccountScreens/TermsScreen';
 import Profile from '../screens/MyAccountScreens/Profile';
-import EditProfile from '../screens/MyAccountScreens/EditProfile';
 
 import SplashScreen from '../screens/AuthenticationScreens/SplashScreen';
 import SignInScreen from '../screens/AuthenticationScreens/SignInScreen';
 import ChangeForgotPassword from '../screens/AuthenticationScreens/ChangeForgotPassword';
 import RegisterScreen from '../screens/AuthenticationScreens/RegisterScreen';
-
 
 import BottomTabNavigation from './BottomTabNavigation';
 import AdvertisementsCarousel from '../components/AdvertisementsCarousel';
@@ -38,10 +36,7 @@ const AppNavigation = () => {
           component={ChangeForgotPassword}
         />
 
-        <Stack.Screen
-          name="RegisterScreen"
-          component={RegisterScreen}
-        />
+        <Stack.Screen name="RegisterScreen" component={RegisterScreen} />
         <Stack.Screen
           name="BottomTabNavigation"
           component={BottomTabNavigation}
@@ -71,7 +66,6 @@ const AppNavigation = () => {
         />
         <Stack.Screen name="TermsScreen" component={TermsScreen} />
         <Stack.Screen name="Profile" component={Profile} />
-        <Stack.Screen name="EditProfile" component={EditProfile} />
 
         <Stack.Screen
           name="AdvertisementsCarousel"
