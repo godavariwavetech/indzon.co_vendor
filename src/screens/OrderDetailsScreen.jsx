@@ -1,4 +1,7 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
+import {useDispatch} from 'react-redux';
+import {fetchOrderDetails} from './../redux/reducers/auth';
+import {updateOrderStatus} from './../redux/reducers/auth';
 
 import {
   View,
@@ -13,35 +16,82 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
 import {colors} from '../config/theme';
-import {ItemLogo} from '../assets/index';
-import emoji from '../assets/emoji.png';
-
 
 export default function OrderDetailsScreen({route}) {
   const {order} = route.params;
   const navigation = useNavigation();
+  const dispatch = useDispatch();
 
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [orderStatus, setOrderStatus] = useState(
-  order.status === 'Pending' ? 'Placed' : 'Accepted'
-);
+    {0: 'Placed', 1: 'Accepted', 8: 'Ongoing', 3: 'Delivered'}[
+      order.order_status
+    ] || 'Placed',
+  );
 
-const [otp, setOtp] = useState(
-  order.status !== 'Pending' ? order.customerOtp?.toString() || null : null
-);
+  const [items, setItems] = useState([]); // ✅ store fetched items
+  const [loadingItems, setLoadingItems] = useState(true);
 
+ // console.log(order, 'order');
 
-  const handleRejectConfirm = () => {
-    console.log(`Order ${order.id} rejected`);
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        setLoadingItems(true);
+        const resultAction = await dispatch(fetchOrderDetails(order.id));
+        if (fetchOrderDetails.fulfilled.match(resultAction)) {
+          setItems(resultAction.payload);
+        }
+      } catch (err) {
+        console.error('Error fetching order items', err);
+      } finally {
+        setLoadingItems(false);
+      }
+    };
+    fetchItems();
+  }, [order.id, dispatch]);
+  
+
+const handleRejectConfirm = async () => {
+  try {
+    const resultAction = await dispatch(
+      updateOrderStatus({orderId: order.id, orderStatus: "5"}), // 🔹 reject → status 5
+    );
+
+    if (updateOrderStatus.fulfilled.match(resultAction)) {
+      setOrderStatus('Rejected'); // update UI tracker
+    } else {
+      console.error('Failed to reject order:', resultAction.payload);
+    }
+  } catch (error) {
+    console.error('Error rejecting order:', error);
+  } finally {
     setShowRejectModal(false);
-  };
+  }
+};
 
-  const handleConfirm = () => {
-    setOrderStatus('Accepted');
-    // Generate random 4-digit OTP
-    const generatedOtp = Math.floor(1000 + Math.random() * 9000);
-    setOtp(generatedOtp.toString());
-  };
+
+
+
+
+const handleConfirm = async () => {
+  try {
+    const resultAction = await dispatch(
+      updateOrderStatus({orderId: order.id, orderStatus: "1"}),
+    );
+
+    if (updateOrderStatus.fulfilled.match(resultAction)) {
+      setOrderStatus('Accepted'); // update UI tracker
+    } else {
+      console.error('Failed to update status:', resultAction.payload);
+    }
+  } catch (error) {
+    console.error('Error confirming order:', error);
+  }
+};
+
+
+
 
   return (
     <View style={styles.container}>
@@ -60,68 +110,80 @@ const [otp, setOtp] = useState(
         <View style={styles.orderCard}>
           <Text style={styles.orderId}>Order ID - {order.id}</Text>
           <Text style={styles.orderTime}>
-            {order.date} {order.time}
+            {order.order_date} {order.order_time}
           </Text>
           <View style={styles.divider} />
 
           {/* ✅ Status Tracker Row */}
           <View style={styles.statusRow}>
-           {['Placed', 'Accepted', 'Ongoing', 'Delivered'].map((step, index) => {
-  const stepOrder = ['Placed', 'Accepted', 'Ongoing', 'Delivered'];
-  const currentIndex = stepOrder.indexOf(orderStatus);
-  const isActive = stepOrder.indexOf(step) <= currentIndex;
+            {['Placed', 'Accepted', 'Ongoing', 'Delivered'].map(
+              (step, index) => {
+                const stepOrder = [
+                  'Placed',
+                  'Accepted',
+                  'Ongoing',
+                  'Delivered',
+                ];
+                const currentIndex = stepOrder.indexOf(orderStatus);
+                const isActive = stepOrder.indexOf(step) <= currentIndex;
 
-  return (
-    <View key={index} style={styles.statusItem}>
-      <View
-        style={[
-          styles.statusCircle,
-          {backgroundColor: isActive ? colors.success : '#ccc'},
-        ]}>
-        <MaterialCommunityIcons
-          name={
-            step === 'Placed'
-              ? 'map-marker'
-              : step === 'Accepted'
-              ? 'check'
-              : step === 'Ongoing'
-              ? 'bike'
-              : 'map-marker-check'
-          }
-          size={16}
-          color={'#fff'}
-        />
-      </View>
-      <Text
-        style={[
-          styles.statusLabel,
-          {color: isActive ? colors.success : '#999'},
-        ]}>
-        {step}
-      </Text>
-      {index < 3 && <View style={styles.statusLine} />}
-    </View>
-  );
-})}
-
+                return (
+                  <View key={index} style={styles.statusItem}>
+                    <View
+                      style={[
+                        styles.statusCircle,
+                        {backgroundColor: isActive ? colors.success : '#ccc'},
+                      ]}>
+                      <MaterialCommunityIcons
+                        name={
+                          step === 'Placed'
+                            ? 'map-marker'
+                            : step === 'Accepted'
+                            ? 'check'
+                            : step === 'Ongoing'
+                            ? 'bike'
+                            : 'map-marker-check'
+                        }
+                        size={16}
+                        color={'#fff'}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.statusLabel,
+                        {color: isActive ? colors.success : '#999'},
+                      ]}>
+                      {step}
+                    </Text>
+                    {index < 3 && <View style={styles.statusLine} />}
+                  </View>
+                );
+              },
+            )}
           </View>
 
           <View style={styles.divider2} />
 
-          {order.items.map((item, index) => (
-            <View key={index} style={styles.itemContainer}>
-              <Text style={styles.itemQuantity}>x{item.quantity}</Text>
-              <Image source={ItemLogo} style={styles.logo} />
-              <MaterialCommunityIcons
-                name="square-circle"
-                size={16}
-                color={item.isVeg ? 'green' : 'red'}
-                style={{marginRight: 6}}
-              />
-              <Text style={styles.itemName}>{item.name}</Text>
-              <Text style={styles.itemPrice}>₹{item.price}</Text>
-            </View>
-          ))}
+          {loadingItems ? (
+            <Text style={{textAlign: 'center', marginVertical: 10}}>
+              Loading items...
+            </Text>
+          ) : (
+            items.map((item, index) => (
+              <View key={index} style={styles.itemContainer}>
+                <Text style={styles.itemQuantity}>x{item.quantity}</Text>
+                <Image source={{uri: item.image}} style={styles.logo} />
+                <MaterialCommunityIcons
+                  name="square-circle"
+                  size={16}
+                  color={item.isVeg ? 'green' : 'red'} // ✅ Veg/Non-Veg from API
+                  style={{marginRight: 6}}
+                />
+                <Text style={styles.itemName}>{item.name}</Text>
+                <Text style={styles.itemPrice}>₹{item.price}</Text>
+              </View>
+            ))
+          )}
 
           <View style={styles.divider} />
 
@@ -130,59 +192,27 @@ const [otp, setOtp] = useState(
             <View style={styles.billLeft}>
               <Text style={styles.totalBillLabel}>Total Bill</Text>
               <View style={styles.paymentBadge}>
-                <View style={styles.dot} />
-                <Text style={styles.paymentText}>
-                  {order.paymentMethod || 'COD'}
-                </Text>
+                  <Text style={styles.paymentText}>{order.payment_type}</Text>
               </View>
             </View>
-            <Text style={styles.totalPrice}>₹{order.total}</Text>
+            <Text style={styles.totalPrice}>₹{order.grand_total}</Text>
           </View>
+          
+          {/* Action buttons */}
 
-          {/* ✅ Replace buttons with OTP after confirmation */}
-          {!otp ? (
-            order.status === 'Pending' && (
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={styles.rejectButton}
-                  onPress={() => setShowRejectModal(true)}>
-                  <Text style={styles.rejectButtonText}>Reject</Text>
-                </TouchableOpacity>
+          {order.order_status === 0 && orderStatus === 'Placed' && (
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.rejectButton}
+                onPress={() => setShowRejectModal(true)}>
+                <Text style={styles.rejectButtonText}>Reject</Text>
+              </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.confirmButton}
-                  onPress={handleConfirm}>
-                  <Text style={styles.confirmButtonText}>Confirm Now</Text>
-                </TouchableOpacity>
-              </View>
-            )
-          ) : (
-            <View>
-              <View style={styles.otpContainer}>
-                <Text style={styles.otpTitle}>Order OTP</Text>
-                <View style={styles.otpBox}>
-                  {otp.split('').map((digit, index) => (
-                    <Text key={index} style={styles.otpDigit}>
-                      {digit}
-                    </Text>
-                  ))}
-                </View>
-              </View>
-
-              {/* //after otp entered by delivery boy */}
-
-              {/* <View style={styles.card3}>
-                <Image source={emoji} style={styles.avatar3} />
-                <View style={styles.textContainer}>
-                  <Text style={styles.subtitle3}>Manoj is on the way</Text>
-                  <Text style={styles.orderId3}>
-                    ORDER ID : <Text style={styles.bold}>4254248142121</Text>
-                  </Text>
-                </View>
-                <TouchableOpacity>
-                  <Icon name="call" size={20} color="#1A43BF" />
-                </TouchableOpacity>
-              </View> */}
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={handleConfirm}>
+                <Text style={styles.confirmButtonText}>Confirm Now</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -218,7 +248,6 @@ const [otp, setOtp] = useState(
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.background},
   header: {
@@ -259,7 +288,6 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
 
-  /* ✅ Status Row Styles */
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -267,11 +295,7 @@ const styles = StyleSheet.create({
     marginVertical: 12,
     position: 'relative',
   },
-  statusItem: {
-    alignItems: 'center',
-    flex: 1,
-    position: 'relative',
-  },
+  statusItem: {alignItems: 'center', flex: 1, position: 'relative'},
   statusCircle: {
     width: 28,
     height: 28,
@@ -280,11 +304,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
-  statusLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
+  statusLabel: {fontSize: 12, fontWeight: '600', textAlign: 'center'},
   statusLine: {
     position: 'absolute',
     top: 14,
@@ -295,7 +315,6 @@ const styles = StyleSheet.create({
     zIndex: -1,
   },
 
-  /* Item Styles */
   itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -335,17 +354,16 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 6,
   },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#1E40AF',
-    marginRight: 5,
-  },
+  // dot: {
+  //   width: 7,
+  //   height: 7,
+  //   borderRadius: 4,
+  //   backgroundColor: '#1E40AF',
+  //   marginRight: 5,
+  // },
   paymentText: {fontSize: 12, fontWeight: '500', color: '#1E40AF'},
   totalPrice: {fontSize: 16, fontWeight: 'bold', color: '#000'},
 
-  // Buttons
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -371,7 +389,6 @@ const styles = StyleSheet.create({
   },
   confirmButtonText: {color: colors.textWhite, fontWeight: 'bold'},
 
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -403,70 +420,4 @@ const styles = StyleSheet.create({
   cancelButtonText: {color: '#333', fontWeight: 'bold'},
   confirmButton2: {backgroundColor: colors.primarySemi},
   confirmButton2Text: {color: '#fff', fontWeight: 'bold'},
-  otpContainer: {
-    marginTop: 20,
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  otpTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  otpBox: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    width: '70%',
-  },
-  otpDigit: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'green',
-    marginHorizontal: 6,
-  },
-
-
-  card3: {
-    borderRadius: 5,
-    borderWidth: 0.65,
-    borderColor: colors.borderLight,
-    opacity: 1,
-    backgroundColor: colors.background,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 15,
-    marginVertical: 10,
-  },
-  avatar3: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginRight: 12,
-    backgroundColor: colors.primary,
-  },
-  textContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  subtitle3: {
-    fontSize: 13,
-    color: colors.textMedium,
-    marginBottom: 2,
-  },
-  orderId3: {
-    fontSize: 13,
-    color: colors.textDark,
-  },
-  bold: {
-    fontWeight: '600',
-  },
-
-
-
 });

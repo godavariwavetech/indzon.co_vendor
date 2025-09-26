@@ -1,5 +1,9 @@
 import React, {useEffect, useState} from 'react';
-import {useSelector} from 'react-redux';
+import {useSelector, useDispatch} from 'react-redux';
+import {
+  updateVendorPassword,
+  fetchShopDetails,
+} from '../../redux/reducers/auth';
 
 import {
   View,
@@ -13,8 +17,6 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
-import {useDispatch} from 'react-redux';
-import {fetchShopDetails} from '../../redux/reducers/auth';
 import {colors} from '../../config/theme';
 import {RestaurantLogo} from '../../assets/index';
 
@@ -22,8 +24,7 @@ const RestaurantProfileScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
-    const userId = useSelector(state => state.Auth.userId);
-
+  const userId = useSelector(state => state.Auth.userId);
 
   const [shop, setShop] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -33,8 +34,7 @@ const RestaurantProfileScreen = () => {
   const [secureText, setSecureText] = useState(true);
 
   useEffect(() => {
-
-     if (!userId) return;
+    if (!userId) return;
 
     const getShopData = async () => {
       setLoading(true);
@@ -52,8 +52,30 @@ const RestaurantProfileScreen = () => {
     getShopData();
   }, [dispatch, userId]);
 
-  const handlePasswordUpdate = () => {
-    console.log('Password Updated:', password);
+  const handlePasswordUpdate = async () => {
+    if (!password) {
+      alert('Please enter a new password');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const resultAction = await dispatch(
+        updateVendorPassword({newPassword: password}),
+      );
+
+      if (updateVendorPassword.fulfilled.match(resultAction)) {
+        alert(resultAction.payload); // ✅ success message
+        setPassword('');
+      } else {
+        alert(resultAction.payload || 'Failed to update password');
+      }
+    } catch (error) {
+      console.error('Password update error:', error);
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,79 +86,75 @@ const RestaurantProfileScreen = () => {
         <Icon name="arrow-back" size={24} color={colors.textPrimary} />
       </TouchableOpacity>
 
-      {/* Loading and Error States */}
+      {/* Loader */}
       {loading && (
         <ActivityIndicator size="large" color={colors.brandPrimary} />
       )}
+      {/* Error message */}
       {error && <Text style={{color: 'red', marginBottom: 10}}>{error}</Text>}
 
-      {shop && (
-        <>
-          <View style={styles.logoContainer}>
-            <Image
-              source={shop.image ? {uri: shop.image} : RestaurantLogo}
-              style={styles.logo}
+      {/* Shop Info (with fallback placeholders) */}
+      <View style={styles.logoContainer}>
+        <Image
+          source={shop?.image ? {uri: shop.image} : RestaurantLogo}
+          style={styles.logo}
+        />
+        <Text style={styles.name}>{shop?.name || '--'}</Text>
+      </View>
+
+      <View style={styles.card}>
+        <View style={styles.infoRow}>
+          <Icon name="location" size={22} color={colors.brandPrimary} />
+          <Text style={styles.infoText}>Address: {shop?.address || '--'}</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Icon name="time" size={22} color={colors.brandPrimary} />
+          <Text style={styles.infoText}>Timings: {shop?.timing || '--'}</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Icon name="call" size={22} color={colors.brandPrimary} />
+          <Text style={styles.infoText}>Mobile: {shop?.mobile || '--'}</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Icon name="mail" size={22} color={colors.brandPrimary} />
+          <Text style={styles.infoText}>Email: {shop?.email || '--'}</Text>
+        </View>
+
+        {/* Password Field */}
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Enter New Password"
+            placeholderTextColor={colors.textSecondary2}
+            secureTextEntry={secureText}
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TouchableOpacity
+            onPress={() => setSecureText(!secureText)}
+            style={styles.eyeIcon}>
+            <Icon
+              name={secureText ? 'eye-off' : 'eye'}
+              size={22}
+              color={colors.textSecondary2}
             />
-            <Text style={styles.name}>{shop.name}</Text>
-          </View>
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.card}>
-            <View style={styles.infoRow}>
-              <Icon name="location" size={22} color={colors.brandPrimary} />
-              <Text style={styles.infoText}>Address: {shop.address}</Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Icon name="time" size={22} color={colors.brandPrimary} />
-              <Text style={styles.infoText}>Timings: {shop.timing}</Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Icon name="call" size={22} color={colors.brandPrimary} />
-              <Text style={styles.infoText}>Mobile: {shop.mobile}</Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Icon name="mail" size={22} color={colors.brandPrimary} />
-              <Text style={styles.infoText}>Email: {shop.email}</Text>
-            </View>
-
-            {/* Password Field */}
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Enter New Password"
-                placeholderTextColor={colors.textSecondary2}
-                secureTextEntry={secureText}
-                value={password}
-                onChangeText={setPassword}
-              />
-              <TouchableOpacity
-                onPress={() => setSecureText(!secureText)}
-                style={styles.eyeIcon}>
-                <Icon
-                  name={secureText ? 'eye-off' : 'eye'}
-                  size={22}
-                  color={colors.textSecondary2}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handlePasswordUpdate}>
-              <Text style={styles.submitText}>Update Password</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={handlePasswordUpdate}>
+          <Text style={styles.submitText}>Update Password</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 };
 
 export default RestaurantProfileScreen;
-
-// styles remain same as your code
 
 const styles = StyleSheet.create({
   container: {

@@ -1,6 +1,6 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
-import {fetchCurrentOrders} from '../redux/reducers/auth';
+import {fetchCurrentOrders, fetchShopDetails,updateShopStatus} from '../redux/reducers/auth';
 
 import {
   View,
@@ -18,55 +18,55 @@ import AdvertisementsCarousel from '../components/AdvertisementsCarousel';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {colors} from '../config/theme';
 import {Ordersscreenimage, RestaurantLogo} from '../assets/index';
-
-// const allOrders = [
-//   {
-//     id: '230820257934322',
-//     status: 'Pending',
-//     date: '10/09/2025',
-//     time: '8:00 PM',
-//     address:
-//       '14-105/1, Vl puram, Rehamanth nagar colony, rajamahendravaram,andhrapradesh,533102, india',
-
-//     items: [
-//       {name: 'Paneer Butter Masala', quantity: 1, price: 350, isVeg: true},
-//       {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
-//     ],
-//     total: 800,
-//     paymentMethod: 'COD',
-//     cookingRequest: 'Please send extra tissues and spoons.',
-//   },
-
-//   {
-//     id: '230820257934322',
-//     status: 'Ongoing',
-//     paymentMethod: 'COD',
-//     time: '8:00 PM',
-//     date: '03/09/2025',
-//     address:
-//       '14-105/1, Vl puram, Rehamanth nagar colony, rajamahendravaram,andhrapradesh,533102, india',
-//     items: [
-//       {name: 'Mutton Dum Biryani', quantity: 1, price: 450, isVeg: false},
-//       {name: 'Paneer Butter Masala', quantity: 1, price: 350, isVeg: true},
-//     ],
-//     total: 900,
-//   },
-// ];
+import {useFocusEffect} from '@react-navigation/native';
 
 export default function OrdersScreen({navigation}) {
   const dispatch = useDispatch();
-  const {pendingOrders, OrdersInProcess, loading, userId} = useSelector(
-    state => state.Auth,
-  );
+  const {pendingOrders, OrdersInProcess, loading, userId, shopDetails} =
+    useSelector(state => state.Auth);
   const [isOn, setIsOn] = useState(true);
   const [selectedTab, setSelectedTab] = useState('Pending');
   const [showToggleModal, setShowToggleModal] = useState(false);
 
-  useEffect(() => {
-    if (userId) {
-      dispatch(fetchCurrentOrders(userId));
-    }
-  }, [userId, dispatch]);
+const translateX = React.useRef(new Animated.Value(0)).current;
+
+
+useEffect(() => {
+  if (shopDetails?.shop_active_status !== undefined) {
+    const newState = shopDetails.shop_active_status === 1; // 0=online
+    setIsOn(newState);
+  }
+}, [shopDetails]);
+
+useEffect(() => {
+  Animated.timing(translateX, {
+    toValue: isOn ? 30 : 0,
+    duration: 200,
+    useNativeDriver: true,
+  }).start();
+}, [isOn, translateX]);
+
+
+ const handleToggleConfirm = () => {
+  const newStatus = isOn ? 0 : 1; // if currently on → set 0 (offline), else 1 (online)
+
+  dispatch(updateShopStatus({ shop_id: userId, shop_active_status: newStatus }));
+
+  setIsOn(!isOn);
+  setShowToggleModal(false);
+};
+
+  useFocusEffect(
+    useCallback(() => {
+      if (userId) {
+        dispatch(fetchCurrentOrders(userId));
+        if (!shopDetails) {
+          // ✅ fetch only if not already in Redux
+          dispatch(fetchShopDetails(userId));
+        }
+      }
+    }, [userId, dispatch, shopDetails]),
+  );
 
   const orders = selectedTab === 'Pending' ? pendingOrders : OrdersInProcess;
 
@@ -75,92 +75,98 @@ export default function OrdersScreen({navigation}) {
     {label: 'Orders In Process', count: OrdersInProcess.length},
   ];
 
-  const translateX = new Animated.Value(isOn ? 32 : 0);
-
-  const handleToggleConfirm = () => {
-    Animated.timing(translateX, {
-      toValue: isOn ? 0 : 32,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-    setIsOn(!isOn);
-    setShowToggleModal(false);
-  };
-
   // ✅ Inline OrderCard Component
   const OrderCard = ({order, statusColor, statusLabel, onPressAddress}) => (
-         <TouchableOpacity activeOpacity={0.5} onPress={onPressAddress}>
-
-   <View style={styles.card}>
-      {/* Header */}
-      <View style={styles.cardHeader}>
-        <Text style={styles.orderId}>ID-{order.id}</Text>
-        <View style={styles.dateTimeContainer}>
-          <Text style={styles.orderTime}>{order.date}</Text>
-          <Text style={styles.orderTime}>{order.time}</Text>
-        </View>
-      </View>
-
-      {/* Status Badge */}
-      <View style={[styles.statusBadge, {backgroundColor: statusColor}]}>
-        <Text style={styles.statusBadgeText}>{statusLabel}</Text>
-      </View>
-
-          <View style={styles.divider} />
-
-
-      {/* Address */}
-        <View style={styles.addressCard}>
-          <Text style={styles.addressTitle}>Delivery Address</Text>
-          <Text style={styles.addressText}>{order.address}</Text>
-        </View>
-
-      {/* Total Bill */}
-      <View style={styles.totalContainer}>
-        <View style={styles.Totalbillcontainer}>
-          <Text style={styles.totalBill}>Total Bill</Text>
-          <View style={styles.paymentMethod}>
-            <Text style={styles.codText}>{order.paymentMethod}</Text>
+    <TouchableOpacity activeOpacity={0.5} onPress={onPressAddress}>
+      <View style={styles.card}>
+        {/* Header */}
+        <View style={styles.cardHeader}>
+          <Text style={styles.orderId}>ID-{order.order_id}</Text>
+          <View style={styles.dateTimeContainer}>
+            <Text style={styles.orderTime}>{order.order_date}</Text>
+            <Text style={styles.orderTime}>{order.order_time}</Text>
           </View>
         </View>
-        <Text style={styles.totalPrice}>₹{order.total}</Text>
-      </View>
-    </View>
-          </TouchableOpacity>
 
+        {/* Status Badge */}
+        <View style={[styles.statusBadge, {backgroundColor: statusColor}]}>
+          <Text style={styles.statusBadgeText}>{statusLabel}</Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        {/* Address */}
+        <View style={styles.addressCard}>
+          <Text style={styles.addressTitle}>Delivery Address</Text>
+          <Text style={styles.addressText}>{order.delivery_address}</Text>
+        </View>
+
+        {/* Total Bill */}
+        <View style={styles.totalContainer}>
+          <View style={styles.Totalbillcontainer}>
+            <Text style={styles.totalBill}>Total Bill</Text>
+            <View style={styles.paymentMethod}>
+              <Text style={styles.codText}>{order.payment_type}</Text>
+            </View>
+          </View>
+          <Text style={styles.totalPrice}>₹{order.grand_total}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 
-  const renderOrderCard = order => {
-    const commonProps = {
-      order,
-      onPressAddress: () => navigation.navigate('OrderDetailsScreen', {order}),
-    };
-
-    switch (order.status) {
-      case 'Pending':
-        return (
-          <OrderCard
-            key={order.id}
-            {...commonProps}
-            statusColor={colors.primarySemi}
-            statusLabel="Pending"
-          />
-        );
-
-      case 'Orders In Process':
-        return (
-          <OrderCard
-            key={order.id}
-            {...commonProps}
-            statusColor={colors.primarySemi}
-            statusLabel="Ongoing"
-          />
-        );
-
-      default:
-        return null;
-    }
+ const renderOrderCard = order => {
+  const commonProps = {
+    order,
+    onPressAddress: () =>
+      navigation.navigate('OrderDetailsScreen', {order}),
   };
+
+  switch (order.order_status) {
+    case 0:
+      return (
+        <OrderCard
+          key={order.id}
+          {...commonProps}
+          statusColor={colors.primarySemi}
+          statusLabel="Pending"
+        />
+      );
+
+    case 1:
+      return (
+        <OrderCard
+          key={order.id}
+          {...commonProps}
+          statusColor={colors.primarySemi}
+          statusLabel="Accepted"
+        />
+      );
+
+    case 8:
+      return (
+        <OrderCard
+          key={order.id}
+          {...commonProps}
+          statusColor={colors.primarySemi}
+          statusLabel="Ongoing"
+        />
+      );
+
+    default:
+      return (
+        <OrderCard
+          key={order.id}
+          {...commonProps}
+          statusColor={colors.primarySemi}
+          statusLabel={`Status ${order.order_status}`}
+        />
+      );
+  }
+};
+
+
+  // console.log(orders, '>>>>>>>>>>>>>ORders');
 
   const renderContent = () => {
     if (loading) {
@@ -206,9 +212,14 @@ export default function OrdersScreen({navigation}) {
 
       {/* Header with Online Toggle */}
       <View style={styles.header}>
-        <Image source={RestaurantLogo} style={styles.avatar} />
+        <Image
+          source={
+            shopDetails?.image ? {uri: shopDetails.image} : RestaurantLogo
+          }
+          style={styles.avatar}
+        />
         <Text style={styles.restaurantName}>
-          Bismillah Family Indian Restaurant
+          {shopDetails?.name || 'Restaurant Name'}
         </Text>
         <TouchableOpacity
           style={[
@@ -299,20 +310,21 @@ const styles = StyleSheet.create({
     color: colors.textDark,
   },
   toggleContainer: {
-    width: 64,
-    height: 32,
-    borderRadius: 16,
+    width: 60,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     padding: 4,
   },
-  toggleOn: {backgroundColor: '#00CE9C'},
-  toggleOff: {backgroundColor: '#ccc'},
   circle: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     borderRadius: 12,
     backgroundColor: colors.background,
   },
+
+  toggleOn: {backgroundColor: '#00CE9C'},
+  toggleOff: {backgroundColor: '#ccc'},
 
   tabContainer: {
     flexDirection: 'row',
@@ -391,15 +403,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 15,
     // borderWidth: 2,
     borderColor: colors.black7,
-     shadowColor: '#000', 
-      shadowOffset: {
+    shadowColor: '#000',
+    shadowOffset: {
       width: 0,
-      height: 4,                  // 4px down
-    }, 
-     shadowOpacity: 0.25,          // 40 hex = 25% opacity
-    shadowRadius: 4,              // blur radius
-    elevation: 4, 
-
+      height: 4, // 4px down
+    },
+    shadowOpacity: 0.25, // 40 hex = 25% opacity
+    shadowRadius: 4, // blur radius
+    elevation: 4,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -417,9 +428,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   statusBadgeText: {fontSize: 12, fontWeight: '500', color: colors.textWhite},
-  
-  
-  
+
   addressCard: {
     borderWidth: 0.8,
     borderColor: colors.black8,
