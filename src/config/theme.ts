@@ -6,7 +6,7 @@ export const colors = {
   success: "#0AA007",
   danger: "#FF4D4D",
   accent: "#00CE9C",
-  veg: "#00C48C",
+  veg: "#0AA007",
   nonVeg: "#FF4D4D",
 
   // 🔹 Global text colors

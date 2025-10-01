@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -6,28 +6,72 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
-import AdvertisementsCarousel from '../components/AdvertisementsCarousel';
-import {colors} from '../config/theme'; 
+import {useDispatch, useSelector} from 'react-redux';
+import {colors} from '../config/theme';
+import {RestaurantLogo} from '../assets';
+import {fetchShopDetails} from '../redux/reducers/auth';
+
 export default function MoreScreen() {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
+
+  const userId = useSelector(state => state.Auth.userId);
+
   const [logoutVisible, setLogoutVisible] = useState(false);
+  const [shop, setShop] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!userId) return;
+    const getShop = async () => {
+      setLoading(true);
+      try {
+        const result = await dispatch(fetchShopDetails(userId)).unwrap();
+        setShop(result);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    getShop();
+  }, [dispatch, userId]);
 
   const handleConfirmLogout = () => {
     setLogoutVisible(false);
-   
+    navigation.reset({
+      index: 0,
+      routes: [{name: 'SignInScreen'}], // 👈 Replace with your signin screen
+    });
   };
 
   return (
     <View style={{flex: 1}}>
-      <ScrollView style={styles.container}>
-        {/* 🔹 Hide carousel when modal is visible */}
-        {!logoutVisible && (
-          <AdvertisementsCarousel navigation={navigation} />
-        )}
+      {/* 🔹 Custom Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="arrow-left" size={24} color={colors.moreTextDark} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>More Details</Text>
+        <View style={{width: 24}} />
+      </View>
 
+      {/* 🔹 Shop Info (Trendy Look) */}
+      <View style={styles.shopCard}>
+    <Image
+  source={shop?.image && !loading ? {uri: shop.image} : RestaurantLogo}
+  style={styles.shopImage}
+/>
+<Text style={styles.shopName}>{!loading && shop?.name ? shop.name : '--'}</Text>
+
+      </View>
+
+      <ScrollView style={styles.container}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>My Account</Text>
           <MenuItem
@@ -36,24 +80,9 @@ export default function MoreScreen() {
             onPress={() => navigation.navigate('Profile')}
           />
           <MenuItem
-            icon="silverware-fork-knife"
-            title="Add Food"
-            onPress={() => navigation.navigate('AddFoodScreen')}
-          />
-          <MenuItem
             icon="message-text-outline"
             title="Customer care support"
             onPress={() => navigation.navigate('CustomerSupportScreen')}
-          />
-          <MenuItem
-            icon="file-lock-outline"
-            title="Privacy Policy"
-            onPress={() => navigation.navigate('PrivacyPolicyScreen')}
-          />
-          <MenuItem
-            icon="file-lock-outline"
-            title="Terms & Conditions"
-            onPress={() => navigation.navigate('TermsScreen')}
           />
           <MenuItem
             icon="logout"
@@ -63,7 +92,7 @@ export default function MoreScreen() {
         </View>
       </ScrollView>
 
-      {/* 🔹 Modal */}
+      {/* 🔹 Logout Modal */}
       <Modal
         transparent
         visible={logoutVisible}
@@ -95,7 +124,6 @@ export default function MoreScreen() {
   );
 }
 
-
 function MenuItem({icon, title, onPress}) {
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
@@ -109,10 +137,56 @@ function MenuItem({icon, title, onPress}) {
 }
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    paddingVertical: 20,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderColor: '#ddd',
+    paddingTop: 45,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: {width: 0, height: 3},
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.moreTextDark,
+    marginLeft: 15,
+  },
+
+  // 🔹 Shop card below header
+  shopCard: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    backgroundColor: '#fff',
+    //borderBottomWidth: 1,
+    borderColor: '#eee',
+    shadowColor: '#000',
+    //shadowOpacity: 0.08,
+    //shadowRadius: 5,
+   // shadowOffset: {width: 0, height: 2},
+  },
+  shopImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    marginBottom: 10,
+   // borderWidth: 2,
+   // borderColor: colors.morePrimary,
+  },
+  shopName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.moreTextDark,
+  },
+
   container: {
     flex: 1,
     backgroundColor: colors.moreBackground,
-    paddingTop: 40,
   },
   section: {
     backgroundColor: colors.moreBackground,
@@ -151,6 +225,7 @@ const styles = StyleSheet.create({
     color: colors.moreTextDark,
     marginLeft: 10,
   },
+
   // 🔹 Modal styles
   modalOverlay: {
     flex: 1,
@@ -164,8 +239,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     elevation: 10,
-        alignItems: 'center',
-
+    alignItems: 'center',
   },
   modalTitle: {
     fontSize: 18,

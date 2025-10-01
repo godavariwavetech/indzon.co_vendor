@@ -1,6 +1,10 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
-import {fetchCurrentOrders, fetchShopDetails,updateShopStatus} from '../redux/reducers/auth';
+import {
+  fetchCurrentOrders,
+  fetchShopDetails,
+  updateShopStatus,
+} from '../redux/reducers/auth';
 
 import {
   View,
@@ -13,8 +17,8 @@ import {
   StatusBar,
   SafeAreaView,
   Modal,
+  ActivityIndicator
 } from 'react-native';
-import AdvertisementsCarousel from '../components/AdvertisementsCarousel';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {colors} from '../config/theme';
 import {Ordersscreenimage, RestaurantLogo} from '../assets/index';
@@ -28,33 +32,33 @@ export default function OrdersScreen({navigation}) {
   const [selectedTab, setSelectedTab] = useState('Pending');
   const [showToggleModal, setShowToggleModal] = useState(false);
 
-const translateX = React.useRef(new Animated.Value(0)).current;
+  const translateX = React.useRef(new Animated.Value(0)).current;
 
+  useEffect(() => {
+    if (shopDetails?.shop_active_status !== undefined) {
+      const newState = shopDetails.shop_active_status === 1; // 0=online
+      setIsOn(newState);
+    }
+  }, [shopDetails]);
 
-useEffect(() => {
-  if (shopDetails?.shop_active_status !== undefined) {
-    const newState = shopDetails.shop_active_status === 1; // 0=online
-    setIsOn(newState);
-  }
-}, [shopDetails]);
+  useEffect(() => {
+    Animated.timing(translateX, {
+      toValue: isOn ? 30 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [isOn, translateX]);
 
-useEffect(() => {
-  Animated.timing(translateX, {
-    toValue: isOn ? 30 : 0,
-    duration: 200,
-    useNativeDriver: true,
-  }).start();
-}, [isOn, translateX]);
+  const handleToggleConfirm = () => {
+    const newStatus = isOn ? 0 : 1; // if currently on → set 0 (offline), else 1 (online)
 
+    dispatch(
+      updateShopStatus({shop_id: userId, shop_active_status: newStatus}),
+    );
 
- const handleToggleConfirm = () => {
-  const newStatus = isOn ? 0 : 1; // if currently on → set 0 (offline), else 1 (online)
-
-  dispatch(updateShopStatus({ shop_id: userId, shop_active_status: newStatus }));
-
-  setIsOn(!isOn);
-  setShowToggleModal(false);
-};
+    setIsOn(!isOn);
+    setShowToggleModal(false);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -115,92 +119,82 @@ useEffect(() => {
     </TouchableOpacity>
   );
 
- const renderOrderCard = order => {
-  const commonProps = {
-    order,
-    onPressAddress: () =>
-      navigation.navigate('OrderDetailsScreen', {order}),
+  const renderOrderCard = order => {
+    const commonProps = {
+      order,
+      onPressAddress: () => navigation.navigate('OrderDetailsScreen', {order}),
+    };
+
+    switch (order.order_status) {
+      case 0:
+        return (
+          <OrderCard
+            key={order.id}
+            {...commonProps}
+            statusColor={colors.primary}
+            statusLabel="Pending"
+          />
+        );
+
+      case 1:
+        return (
+          <OrderCard
+            key={order.id}
+            {...commonProps}
+            statusColor={colors.primary}
+            statusLabel="Accepted"
+          />
+        );
+
+      case 8:
+        return (
+          <OrderCard
+            key={order.id}
+            {...commonProps}
+            statusColor={colors.primary}
+            statusLabel="Ongoing"
+          />
+        );
+
+      default:
+        return (
+          <OrderCard
+            key={order.id}
+            {...commonProps}
+            statusColor={colors.primarySemi}
+            statusLabel={`Status ${order.order_status}`}
+          />
+        );
+    }
   };
-
-  switch (order.order_status) {
-    case 0:
-      return (
-        <OrderCard
-          key={order.id}
-          {...commonProps}
-          statusColor={colors.primarySemi}
-          statusLabel="Pending"
-        />
-      );
-
-    case 1:
-      return (
-        <OrderCard
-          key={order.id}
-          {...commonProps}
-          statusColor={colors.primarySemi}
-          statusLabel="Accepted"
-        />
-      );
-
-    case 8:
-      return (
-        <OrderCard
-          key={order.id}
-          {...commonProps}
-          statusColor={colors.primarySemi}
-          statusLabel="Ongoing"
-        />
-      );
-
-    default:
-      return (
-        <OrderCard
-          key={order.id}
-          {...commonProps}
-          statusColor={colors.primarySemi}
-          statusLabel={`Status ${order.order_status}`}
-        />
-      );
-  }
-};
-
 
   // console.log(orders, '>>>>>>>>>>>>>ORders');
 
-  const renderContent = () => {
-    if (loading) {
-      return (
-        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-          <Text>Loading orders...</Text>
+const renderContent = () => {
+  if (orders.length === 0) {
+    return (
+      <View>
+        <View style={styles.onlineSection}>
+          <Image source={Ordersscreenimage} style={styles.emptyOrdersImage} />
+          <Text
+            style={[
+              styles.onlineText,
+              {color: isOn ? colors.onlineGreen : colors.danger},
+            ]}>
+            You are {isOn ? 'online' : 'offline'}.
+          </Text>
+          <Text style={styles.waitingText}>
+            {isOn
+              ? 'waiting for new orders'
+              : 'switch on to start receiving orders'}
+          </Text>
         </View>
-      );
-    }
+      </View>
+    );
+  }
+  return orders.map(order => renderOrderCard(order));
+};
 
-    if (orders.length === 0) {
-      return (
-        <View>
-          {!showToggleModal && <AdvertisementsCarousel />}
-          <View style={styles.onlineSection}>
-            <Image source={Ordersscreenimage} style={styles.emptyOrdersImage} />
-            <Text
-              style={[
-                styles.onlineText,
-                {color: isOn ? colors.onlineGreen : colors.danger},
-              ]}>
-              You are {isOn ? 'online' : 'offline'}.
-            </Text>
-            <Text style={styles.waitingText}>
-              {isOn
-                ? 'waiting for new orders'
-                : 'switch on to start receiving orders'}
-            </Text>
-          </View>
-        </View>
-      );
-    }
-    return orders.map(order => renderOrderCard(order));
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -254,9 +248,16 @@ useEffect(() => {
       </View>
 
       {/* Orders List */}
-      <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        {renderContent()}
-      </ScrollView>
+{loading ? (
+  <View style={styles.loaderContainer}>
+    <ActivityIndicator size="large" color={colors.primary} />
+    <Text style={styles.loaderText}>Loading orders...</Text>
+  </View>
+) : (
+  <ScrollView contentContainerStyle={styles.scrollViewContent}>
+    {renderContent()}
+  </ScrollView>
+)}
 
       {/* Toggle Confirmation Modal */}
       <Modal
@@ -323,7 +324,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
 
-  toggleOn: {backgroundColor: '#00CE9C'},
+  toggleOn: {backgroundColor: 'green'},
   toggleOff: {backgroundColor: '#ccc'},
 
   tabContainer: {
@@ -345,11 +346,11 @@ const styles = StyleSheet.create({
     width: '47%',
   },
   tabButtonActive: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.primary,
     borderColor: colors.primaryLight,
   },
   tabText: {fontSize: 14, fontWeight: '700', color: colors.textLight},
-  tabTextActive: {fontSize: 14, color: colors.textMuted, fontWeight: 'bold'},
+  tabTextActive: {fontSize: 14, color: colors.textWhite, fontWeight: 'bold'},
 
   scrollViewContent: {paddingBottom: 10},
   onlineSection: {alignItems: 'center', marginTop: 30},
@@ -391,14 +392,14 @@ const styles = StyleSheet.create({
   },
   cancelButton: {backgroundColor: '#ddd'},
   cancelButtonText: {color: '#333', fontWeight: 'bold'},
-  confirmButton2: {backgroundColor: colors.primarySemi},
+  confirmButton2: {backgroundColor: colors.primary},
   confirmButton2Text: {color: '#fff', fontWeight: 'bold'},
 
   // ✅ OrderCard Styles
   card: {
     backgroundColor: colors.cardBackground,
     padding: 12,
-    borderRadius: 5,
+    borderRadius: 10,
     marginVertical: 12,
     marginHorizontal: 15,
     // borderWidth: 2,
@@ -449,10 +450,22 @@ const styles = StyleSheet.create({
   totalBill: {fontSize: 14, color: colors.textDark, fontWeight: '500'},
   paymentMethod: {
     borderRadius: 5,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.primary,
     paddingHorizontal: 6,
     padding: 2,
   },
-  codText: {fontSize: 11, color: colors.primary, fontWeight: '500'},
+  codText: {fontSize: 11, color: colors.textWhite, fontWeight: '500'},
   totalPrice: {fontSize: 14, fontWeight: 'bold', color: colors.totalPrice},
+loaderContainer: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  paddingVertical: 20,
+},
+loaderText: {
+  marginTop: 10,
+  fontSize: 16,
+  color: colors.textSecondary || '#555',
+},
+
 });
