@@ -12,9 +12,11 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {colors} from '../config/theme';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchDashboardOrders} from '../redux/reducers/auth';
+import {useNavigation} from '@react-navigation/native'; // ✅ add this
 
 export default function ReportsScreen() {
   const dispatch = useDispatch();
+  const navigation = useNavigation(); // ✅ navigation hook
   const {userId, dashboardOrders, loading} = useSelector(state => state.Auth);
 
   // ===================== Helpers =====================
@@ -37,10 +39,11 @@ export default function ReportsScreen() {
   const statusMap = {
     0: 'Placed',
     1: 'Accepted',
-    2: 'Ongoing',
+    2: 'Delivery Boy Accepted',
+    8: 'Ongoing',
     3: 'Delivered',
     5: 'Rejected',
-    8: 'Cancelled',
+    4: 'User Cancelled',
   };
 
   // ===================== State =====================
@@ -78,47 +81,54 @@ export default function ReportsScreen() {
 
   // ===================== Render Order =====================
   const renderOrder = ({item}) => (
-    <View style={styles.orderCardContainer}>
-      <View style={styles.orderCardHeader}>
-        <Text style={styles.orderCardId} numberOfLines={1}>
-          ID-{item.order_id}
-        </Text>
-        <View style={styles.rightHeaderBox}>
-          <Text style={styles.orderCardTime}>
-            {new Date(item.order_date_time).toLocaleDateString()} |{' '}
-            {item.order_time}
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={() => navigation.navigate('OrderDetailsScreen', {order: item})} // ✅ navigate with order
+    >
+      <View style={styles.orderCardContainer}>
+        <View style={styles.orderCardHeader}>
+          <Text style={styles.orderCardId} numberOfLines={1}>
+            ID-{item.order_id}
           </Text>
-          <View style={styles.orderCardStatusBox}>
-            {item.order_rating > 0 && (
-              <Text style={styles.orderCardRating}>{item.order_rating} ⭐</Text>
-            )}
-            <Text
-              style={[
-                styles.orderCardStatus,
-                item.order_status === 3
-                  ? styles.delivered
-                  : item.order_status === 8
-                  ? styles.cancelled
-                  : item.order_status === 5
-                  ? styles.rejected
-                  : styles.otherStatus,
-              ]}>
-              {statusMap[item.order_status] || 'Unknown'}
+          <View style={styles.rightHeaderBox}>
+            <Text style={styles.orderCardTime}>
+              {new Date(item.order_date_time).toLocaleDateString()} |{' '}
+              {item.order_time}
             </Text>
+            <View style={styles.orderCardStatusBox}>
+              {item.order_rating > 0 && (
+                <Text style={styles.orderCardRating}>{item.order_rating} ⭐</Text>
+              )}
+              <Text
+                style={[
+                  styles.orderCardStatus,
+                  item.order_status === 3
+                    ? styles.delivered
+                    : item.order_status === 8
+                    ? styles.cancelled
+                    : item.order_status === 4
+                    ? styles.rejected
+                    : item.order_status === 5
+                    ? styles.rejected
+                    : styles.otherStatus,
+                ]}>
+                {statusMap[item.order_status] || 'Unknown'}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.addressCard}>
-        <Text style={styles.addressTitle}>Delivery Address</Text>
-        <Text style={styles.addressText}>{item.delivery_address}</Text>
-      </View>
+        <View style={styles.addressCard}>
+          <Text style={styles.addressTitle}>Delivery Address</Text>
+          <Text style={styles.addressText}>{item.delivery_address}</Text>
+        </View>
 
-      <View style={styles.totalContainer}>
-        <Text style={styles.totalBill}>Total Bill</Text>
-        <Text style={styles.totalPrice}>₹{item.grand_total}</Text>
+        <View style={styles.totalContainer}>
+          <Text style={styles.totalBill}>Total Bill</Text>
+          <Text style={styles.totalPrice}>₹{item.grand_total}</Text>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   // ===================== JSX =====================
@@ -151,8 +161,8 @@ export default function ReportsScreen() {
           <Text style={styles.dateText}>{formatDisplayDate(endDate)}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.downloadBtn} onPress={fetchOrders}>
-          <Text style={styles.downloadText}>Apply</Text>
+        <TouchableOpacity style={styles.downloadBtn}>
+          <Text style={styles.downloadText}>Download</Text>
           <Icon
             name="checkmark-done-outline"
             size={18}
@@ -162,15 +172,18 @@ export default function ReportsScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color={colors.primary} />
-      ) : (
-        <FlatList
-          data={[...dashboardOrders].reverse()}
-          keyExtractor={(item, index) => `${item.id}-${index}`}
-          renderItem={renderOrder}
-          contentContainerStyle={styles.listContent}
-        />
-      )}
+  <View style={styles.loaderContainer}>
+    <ActivityIndicator size="large" color={colors.primary} />
+  </View>
+) : (
+  <FlatList
+    data={[...dashboardOrders].reverse()}
+    keyExtractor={(item, index) => `${item.id}-${index}`}
+    renderItem={renderOrder}
+    contentContainerStyle={styles.listContent}
+  />
+)}
+
 
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
@@ -181,6 +194,7 @@ export default function ReportsScreen() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -292,7 +306,7 @@ const styles = StyleSheet.create({
   delivered: {backgroundColor: colors.reportsDelivered},
   cancelled: {backgroundColor: colors.reportsCancelled},
   otherStatus: {backgroundColor: colors.primarySemi},
-  rejected: {backgroundColor: colors.reportsCancelled},
+  rejected: {backgroundColor: "#c30a0aff"},
 
   orderCardBody: {
     flexDirection: 'row',
@@ -324,6 +338,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.reportsPrice,
   },
+loaderContainer: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
 
   listContent: {paddingBottom: 10},
 

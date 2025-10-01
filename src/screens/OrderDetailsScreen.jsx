@@ -1,7 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {useDispatch} from 'react-redux';
-import {fetchOrderDetails} from './../redux/reducers/auth';
-import {updateOrderStatus} from './../redux/reducers/auth';
+import {fetchOrderDetails, updateOrderStatus} from './../redux/reducers/auth';
 
 import {
   View,
@@ -11,6 +10,7 @@ import {
   TouchableOpacity,
   Image,
   Modal,
+  Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -23,16 +23,25 @@ export default function OrderDetailsScreen({route}) {
   const dispatch = useDispatch();
 
   const [showRejectModal, setShowRejectModal] = useState(false);
-  const [orderStatus, setOrderStatus] = useState(
-    {0: 'Placed', 1: 'Accepted', 8: 'Ongoing', 3: 'Delivered'}[
-      order.order_status
-    ] || 'Placed',
-  );
-
-  const [items, setItems] = useState([]); // ✅ store fetched items
+  const [orderStatus, setOrderStatus] = useState(order.order_status); // numeric status
+  const [items, setItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(true);
 
- // console.log(order, 'order');
+  // ✅ Parse rider info if available
+  let riderInfo = null;
+  if (order.order_status === 8 && order.delivery_boy_array) {
+    try {
+      const parsed = JSON.parse(order.delivery_boy_array);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        riderInfo = parsed[0];
+      }
+    } catch (e) {
+      console.warn('Failed to parse delivery_boy_array:', e);
+    }
+  }
+
+  const statusSteps = ['Placed', 'Accepted', 'Ongoing', 'Delivered'];
+  const statusMap = {0: 'Placed', 1: 'Accepted', 8: 'Ongoing', 3: 'Delivered'};
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -50,48 +59,32 @@ export default function OrderDetailsScreen({route}) {
     };
     fetchItems();
   }, [order.id, dispatch]);
-  
 
-const handleRejectConfirm = async () => {
-  try {
-    const resultAction = await dispatch(
-      updateOrderStatus({orderId: order.id, orderStatus: "5"}), // 🔹 reject → status 5
-    );
-
-    if (updateOrderStatus.fulfilled.match(resultAction)) {
-      setOrderStatus('Rejected'); // update UI tracker
-    } else {
-      console.error('Failed to reject order:', resultAction.payload);
+  const handleRejectConfirm = async () => {
+    try {
+      const resultAction = await dispatch(
+        updateOrderStatus({orderId: order.id, orderStatus: '5'}),
+      );
+      if (updateOrderStatus.fulfilled.match(resultAction)) {
+        setOrderStatus(5);
+      }
+    } finally {
+      setShowRejectModal(false);
     }
-  } catch (error) {
-    console.error('Error rejecting order:', error);
-  } finally {
-    setShowRejectModal(false);
-  }
-};
+  };
 
-
-
-
-
-const handleConfirm = async () => {
-  try {
-    const resultAction = await dispatch(
-      updateOrderStatus({orderId: order.id, orderStatus: "1"}),
-    );
-
-    if (updateOrderStatus.fulfilled.match(resultAction)) {
-      setOrderStatus('Accepted'); // update UI tracker
-    } else {
-      console.error('Failed to update status:', resultAction.payload);
+  const handleConfirm = async () => {
+    try {
+      const resultAction = await dispatch(
+        updateOrderStatus({orderId: order.id, orderStatus: '1'}),
+      );
+      if (updateOrderStatus.fulfilled.match(resultAction)) {
+        setOrderStatus(1);
+      }
+    } catch (error) {
+      console.error('Error confirming order:', error);
     }
-  } catch (error) {
-    console.error('Error confirming order:', error);
-  }
-};
-
-
-
+  };
 
   return (
     <View style={styles.container}>
@@ -105,61 +98,53 @@ const handleConfirm = async () => {
         <Text style={styles.headerTitle}>Order Tracking</Text>
       </View>
 
-      {/* Content */}
       <ScrollView style={styles.contentContainerStyle}>
         <View style={styles.orderCard}>
-          <Text style={styles.orderId}>Order ID - {order.id}</Text>
+          <Text style={styles.orderId}>Order ID - {order.order_id}</Text>
           <Text style={styles.orderTime}>
             {order.order_date} {order.order_time}
           </Text>
           <View style={styles.divider} />
 
-          {/* ✅ Status Tracker Row */}
+          {/* Status Tracker */}
           <View style={styles.statusRow}>
-            {['Placed', 'Accepted', 'Ongoing', 'Delivered'].map(
-              (step, index) => {
-                const stepOrder = [
-                  'Placed',
-                  'Accepted',
-                  'Ongoing',
-                  'Delivered',
-                ];
-                const currentIndex = stepOrder.indexOf(orderStatus);
-                const isActive = stepOrder.indexOf(step) <= currentIndex;
-
-                return (
-                  <View key={index} style={styles.statusItem}>
-                    <View
-                      style={[
-                        styles.statusCircle,
-                        {backgroundColor: isActive ? colors.success : '#ccc'},
-                      ]}>
-                      <MaterialCommunityIcons
-                        name={
-                          step === 'Placed'
-                            ? 'map-marker'
-                            : step === 'Accepted'
-                            ? 'check'
-                            : step === 'Ongoing'
-                            ? 'bike'
-                            : 'map-marker-check'
-                        }
-                        size={16}
-                        color={'#fff'}
-                      />
-                    </View>
-                    <Text
-                      style={[
-                        styles.statusLabel,
-                        {color: isActive ? colors.success : '#999'},
-                      ]}>
-                      {step}
-                    </Text>
-                    {index < 3 && <View style={styles.statusLine} />}
+            {statusSteps.map((step, index) => {
+              const currentStepIndex = statusSteps.indexOf(statusMap[orderStatus]);
+              const isActive = index <= currentStepIndex;
+              return (
+                <View key={index} style={styles.statusItem}>
+                  <View
+                    style={[
+                      styles.statusCircle,
+                      {backgroundColor: isActive ? colors.success : '#ccc'},
+                    ]}>
+                    <MaterialCommunityIcons
+                      name={
+                        step === 'Placed'
+                          ? 'map-marker'
+                          : step === 'Accepted'
+                          ? 'check'
+                          : step === 'Ongoing'
+                          ? 'bike'
+                          : 'map-marker-check'
+                      }
+                      size={16}
+                      color={'#fff'}
+                    />
                   </View>
-                );
-              },
-            )}
+                  <Text
+                    style={[
+                      styles.statusLabel,
+                      {color: isActive ? colors.success : '#999'},
+                    ]}>
+                    {step}
+                  </Text>
+                  {index < statusSteps.length - 1 && (
+                    <View style={styles.statusLine} />
+                  )}
+                </View>
+              );
+            })}
           </View>
 
           <View style={styles.divider2} />
@@ -176,7 +161,7 @@ const handleConfirm = async () => {
                 <MaterialCommunityIcons
                   name="square-circle"
                   size={16}
-                  color={item.isVeg ? 'green' : 'red'} // ✅ Veg/Non-Veg from API
+                  color={item.isVeg ? 'green' : 'red'}
                   style={{marginRight: 6}}
                 />
                 <Text style={styles.itemName}>{item.name}</Text>
@@ -192,15 +177,14 @@ const handleConfirm = async () => {
             <View style={styles.billLeft}>
               <Text style={styles.totalBillLabel}>Total Bill</Text>
               <View style={styles.paymentBadge}>
-                  <Text style={styles.paymentText}>{order.payment_type}</Text>
+                <Text style={styles.paymentText}>{order.payment_type}</Text>
               </View>
             </View>
             <Text style={styles.totalPrice}>₹{order.grand_total}</Text>
           </View>
-          
-          {/* Action buttons */}
 
-          {order.order_status === 0 && orderStatus === 'Placed' && (
+          {/* Action buttons */}
+          {order.order_status === 0 && orderStatus === 0 && (
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={styles.rejectButton}
@@ -216,6 +200,37 @@ const handleConfirm = async () => {
             </View>
           )}
         </View>
+
+        {/* ✅ Cooking Request (from API) */}
+        {(orderStatus === 0 || orderStatus === 1) && order.order_instructions && (
+          <View style={styles.requestCard}>
+            <View style={{flex: 1}}>
+              <Text style={styles.requestTitle}>Cooking Request</Text>
+              <Text style={styles.requestMessage}>
+                {order.order_instructions}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* ✅ Rider Details (Ongoing) */}
+        {orderStatus === 8 && riderInfo && (
+          <View style={styles.deliveryCard}>
+            <View style={{flex: 1}}>
+              <Text style={styles.deliveryHeading}>Rider Details</Text>
+              <Text style={styles.deliveryText}>
+                {riderInfo.delivery_boy_name} is on the way
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.callButton}
+              onPress={() =>
+                Linking.openURL(`tel:${riderInfo.delivery_boy_mobile_number}`)
+              }>
+              <Icon name="call" size={25} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
       {/* Reject Confirmation Modal */}
@@ -248,6 +263,7 @@ const handleConfirm = async () => {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.background},
   header: {
@@ -420,4 +436,49 @@ const styles = StyleSheet.create({
   cancelButtonText: {color: '#333', fontWeight: 'bold'},
   confirmButton2: {backgroundColor: colors.primarySemi},
   confirmButton2Text: {color: '#fff', fontWeight: 'bold'},
+
+
+  requestCard: {
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+  backgroundColor: '#1A43BF33',
+  marginHorizontal: 16,
+  padding: 13,
+  borderRadius:5,
+  marginTop: 10,
+  borderColor:'#1A43BF',
+  borderWidth:0.5
+},
+requestTitle: {color: '#000000', fontWeight: '500', marginBottom: 4, },
+requestMessage: {color: '#393838', fontSize: 13},
+
+deliveryCard: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#fff',
+  marginHorizontal: 16,
+  padding: 12,
+  borderRadius: 8,
+  marginTop: 10,
+  elevation: 2,
+  borderColor:"#00000040",
+  borderWidth:0.6,
+  paddingVertical:18
+},
+deliveryText: {fontWeight: '600', fontSize: 14, color: '#000'},
+callButton: {
+  width: 35,
+  height: 35,
+  borderRadius: 18,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+deliveryHeading: {
+  fontSize: 15,
+  fontWeight: 'bold',
+  color: colors.primary,
+  marginBottom: 4,
+},
+
+
 });

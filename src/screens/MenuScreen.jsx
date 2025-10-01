@@ -1,5 +1,6 @@
 // src/screens/MenuScreen.jsx
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
+
 import {
   View,
   Text,
@@ -14,27 +15,32 @@ import {
 } from 'react-native';
 
 import {useSelector, useDispatch} from 'react-redux';
-import {fetchShopDetails, fetchProductsList,updateProduct,updateProductStatus} from '../redux/reducers/auth';
+import {
+  fetchShopDetails,
+  fetchProductsList,
+  updateProduct,
+  updateProductStatus,
+} from '../redux/reducers/auth';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {colors} from '../config/theme';
 import {RestaurantLogo} from '../assets/index';
 import ConfirmationModal from '../components/ConfirmationModal';
 
-
-
 const CustomToggle = ({value, onChange}) => {
-  const translateX = new Animated.Value(value ? 19 : 0);
+  // keep Animated.Value stable across renders
+  const translateRef = React.useRef(new Animated.Value(value ? 19 : 0));
 
-  const toggleSwitch = () => {
-    Animated.timing(translateX, {
-      toValue: value ? 0 : 19,
+  // animate only when `value` changes
+  React.useEffect(() => {
+    Animated.timing(translateRef.current, {
+      toValue: value ? 19 : 0,
       duration: 200,
       useNativeDriver: true,
     }).start();
-    onChange(!value);
-  };
+  }, [value]);
 
+  // call parent handler (which now opens confirmation modal)
   return (
     <TouchableOpacity
       style={[
@@ -42,9 +48,13 @@ const CustomToggle = ({value, onChange}) => {
         value ? styles.toggleOn : styles.toggleOff,
       ]}
       activeOpacity={0.8}
-      onPress={toggleSwitch}>
+      onPress={() => onChange(!value)} // keep your existing prop name
+    >
       <Animated.View
-        style={[styles.toggleCircle, {transform: [{translateX}]}]}
+        style={[
+          styles.toggleCircle,
+          {transform: [{translateX: translateRef.current}]},
+        ]}
       />
     </TouchableOpacity>
   );
@@ -52,6 +62,8 @@ const CustomToggle = ({value, onChange}) => {
 
 export default function MenuScreen() {
   const dispatch = useDispatch();
+  const [searchQuery, setSearchQuery] = useState('');
+
   const {userId, shopDetails, products, loading} = useSelector(
     state => state.Auth,
   );
@@ -61,6 +73,10 @@ export default function MenuScreen() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [confirmationVisible, setConfirmationVisible] = useState(false);
 
+  // 🔹 toggle confirmation modal state
+  const [toggleConfirmVisible, setToggleConfirmVisible] = useState(false);
+  const [pendingToggle, setPendingToggle] = useState(null);
+
   useEffect(() => {
     if (userId) {
       dispatch(fetchShopDetails(userId));
@@ -69,63 +85,72 @@ export default function MenuScreen() {
   }, [dispatch, userId]);
 
   useEffect(() => {
-  if (products.length > 0) {
-    const initialToggles = {};
-    products.forEach(item => {
-      // active_status: "0" = ON, "1" = OFF
-      initialToggles[item.id] = item.active_status === "0";
-    });
-    setToggles(initialToggles);
-  }
-}, [products]);
-
+    if (products.length > 0) {
+      const initialToggles = {};
+      products.forEach(item => {
+        // active_status: "0" = ON, "1" = OFF
+        initialToggles[item.id] = item.active_status === '0';
+      });
+      setToggles(initialToggles);
+    }
+  }, [products]);
 
   // 🔹 Group products by sub_category_id
-  const groupedProducts = products.reduce((acc, item) => {
-    if (!acc[item.sub_category_id]) {
-      acc[item.sub_category_id] = {
-        title: item.sub_category_name,
-        data: [],
-      };
-    }
-    acc[item.sub_category_id].data.push(item);
-    return acc;
-  }, {});
+ // Filter products by name
+const filteredProducts = products.filter(item =>
+  item.item_name.toLowerCase().includes(searchQuery.toLowerCase())
+);
 
+// Group filtered products by sub_category_id
+const groupedProducts = filteredProducts.reduce((acc, item) => {
+  if (!acc[item.sub_category_id]) {
+    acc[item.sub_category_id] = {
+      title: item.sub_category_name,
+      data: [],
+    };
+  }
+  acc[item.sub_category_id].data.push(item);
+  return acc;
+}, {});
+
+
+  // 🔹 show toggle confirmation instead of direct update
   const handleToggle = (id, newValue) => {
-    setToggles(prev => ({...prev, [id]: newValue}));
-
-      const active_status = newValue ? "0" : "1"; 
-  dispatch(updateProductStatus({ id, shop_id: userId, active_status }))
-    .unwrap()
-    .then(() => {
-      console.log(`Product ${id} status updated to ${active_status}`);
-    })
-    .catch(err => {
-      console.error('Status update failed:', err);
-    });
+    setPendingToggle({id, newValue});
+    setToggleConfirmVisible(true);
   };
 
+  const confirmToggle = () => {
+    if (!pendingToggle) return;
+    const {id, newValue} = pendingToggle;
 
-  
+    setToggleConfirmVisible(false); // close first
+    setToggles(prev => ({...prev, [id]: newValue}));
+
+    const active_status = newValue ? '0' : '1';
+    dispatch(updateProductStatus({id, shop_id: userId, active_status}))
+      .unwrap()
+      .catch(err => console.error('Status update failed:', err));
+  };
+
+  const cancelToggle = () => {
+    setPendingToggle(null);
+    setToggleConfirmVisible(false);
+  };
 
   const openEditCard = item => {
     setSelectedItem(item);
     setModalVisible(true);
   };
 
- const handleUpdate = updatedValues => {
-  dispatch(updateProduct({ ...updatedValues, shop_id: userId }))
-    .unwrap()
-    .then(() => {
-      console.log('Product updated successfully');
-      setModalVisible(false);
-      setConfirmationVisible(true);
-    })
-    .catch(err => {
-      console.error('Update failed:', err);
-    });
-};
+  const handleUpdate = updatedValues => {
+    setModalVisible(false); // close immediately
+    dispatch(updateProduct({...updatedValues, shop_id: userId}))
+      .unwrap()
+      .then(() => console.log('Product updated successfully'))
+      .catch(err => console.error('Update failed:', err));
+  };
+
   useEffect(() => {
     if (confirmationVisible) {
       const timer = setTimeout(() => {
@@ -135,52 +160,72 @@ export default function MenuScreen() {
     }
   }, [confirmationVisible]);
 
-  const renderCard = ({item}) => (
-    <View style={styles.card}>
-      <Image
-        source={{uri: item.item_image}}
-        style={styles.foodImage}
-        resizeMode="cover"
-      />
-      <View style={styles.cardContent}>
-        <View style={styles.row}>
-          <MaterialCommunityIcons
-            name="square-circle"
-            size={16}
-            color={item.filter_one === 'Veg' ? colors.veg : colors.nonVeg}
-            style={{marginRight: 6}}
+  const renderCard = useCallback(
+    ({item}) => (
+      <View style={styles.card}>
+        {item.item_image ? (
+          <Image
+            source={{uri: item.item_image}}
+            style={styles.foodImage}
+            resizeMode="cover"
           />
-          <Text style={styles.foodName}>{item.item_name}</Text>
-        </View>
-        <View style={styles.priceRow}>
-          {/* Always show selling price */}
-          <Text style={styles.price}>₹{item.selling_price}</Text>
+        ) : (
+          <View
+            style={[
+              styles.foodImage,
+              {
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: '#eee',
+              },
+            ]}>
+            <Text style={{color: '#888', fontSize: 12, textAlign: 'center'}}>
+              Image Not Available
+            </Text>
+          </View>
+        )}
 
-          {/* Show actual price only when it's greater than selling */}
-          {item.actual_price &&
-            parseFloat(item.actual_price) > parseFloat(item.selling_price) && (
-              <Text style={styles.actualPrice}>₹{item.actual_price}</Text>
-            )}
+        <View style={styles.cardContent}>
+          <View style={styles.row}>
+            <MaterialCommunityIcons
+              name="square-circle"
+              size={16}
+              color={item.filter_one === 'Veg' ? colors.veg : colors.nonVeg}
+              style={{marginRight: 6}}
+            />
+            <Text style={styles.foodName}>{item.item_name}</Text>
+          </View>
+          <View style={styles.priceRow}>
+            <Text style={styles.price}>₹{item.selling_price}</Text>
+            {item.actual_price &&
+              parseFloat(item.actual_price) >
+                parseFloat(item.selling_price) && (
+                <Text style={styles.actualPrice}>₹{item.actual_price}</Text>
+              )}
+          </View>
+        </View>
+
+        <View style={styles.rightSection}>
+          <CustomToggle
+            value={toggles[item.id] || false}
+            onChange={value => handleToggle(item.id, value)}
+          />
+
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => openEditCard(item)}>
+            <Text style={styles.editText}>Edit</Text>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={16}
+              color="#fff" // icon white to match button
+            />
+          </TouchableOpacity>
         </View>
       </View>
+    ),
 
-      <View style={styles.rightSection}>
-        <CustomToggle
-          value={toggles[item.id] || false}
-          onChange={value => handleToggle(item.id, value)}
-        />
-        <TouchableOpacity
-          style={styles.editBtn}
-          onPress={() => openEditCard(item)}>
-          <Text style={styles.editText}>Edit</Text>
-          <MaterialCommunityIcons
-            name="chevron-right"
-            size={16}
-            color={colors.editBtn}
-          />
-        </TouchableOpacity>
-      </View>
-    </View>
+    [toggles],
   );
 
   return (
@@ -217,51 +262,103 @@ export default function MenuScreen() {
           color={colors.searchOutline}
           style={styles.icon}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Search item..."
-          placeholderTextColor={colors.searchOutline}
-        />
+       <TextInput
+  style={styles.input}
+  placeholder="Search item..."
+  placeholderTextColor={colors.searchOutline}
+  value={searchQuery}
+  onChangeText={setSearchQuery}
+/>
       </View>
 
       {/* 🔹 Menu Lists from API */}
-      <ScrollView>
-        {Object.values(groupedProducts).map(section => (
-          <View key={section.title}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-            <FlatList
-              data={section.data}
-              renderItem={renderCard}
-              keyExtractor={item => item.id.toString()}
-              scrollEnabled={false}
-            />
-          </View>
-        ))}
-      </ScrollView>
+     <ScrollView>
+      {Object.keys(groupedProducts).length === 0 ? (
+  <Text style={{textAlign: 'center', marginTop: 20, color: '#888'}}>
+    No items found
+  </Text>
+) : (
+  Object.values(groupedProducts).map(section => (
+    <View key={section.title}>
+      <Text style={styles.sectionTitle}>{section.title}</Text>
+      <FlatList
+        data={section.data}
+        renderItem={renderCard}
+        keyExtractor={item => item.id.toString()}
+        scrollEnabled={false}
+      />
+    </View>
+  ))
+  )}
+</ScrollView>
+
 
       {/* 🔹 Update Modal */}
-      <UpdateModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        item={selectedItem}
-        onUpdate={handleUpdate}
-        userId={userId} 
-      />
+      {modalVisible && (
+        <UpdateModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          item={selectedItem}
+          onUpdate={handleUpdate}
+          userId={userId}
+        />
+      )}
 
-      <ConfirmationModal
-        visible={confirmationVisible}
-        onClose={() => setConfirmationVisible(false)}
-      />
+      {/* 🔹 Success Confirmation */}
+      {confirmationVisible && (
+        <ConfirmationModal
+          visible={confirmationVisible}
+          onClose={() => setConfirmationVisible(false)}
+        />
+      )}
+
+      {/* 🔹 Toggle Confirmation Modal */}
+      <Modal
+        visible={toggleConfirmVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelToggle}>
+        <View style={styles.overlay}>
+          <View style={styles.updateCard}>
+            <Text style={{fontSize: 15, fontWeight: '500', marginBottom: 15}}>
+              {pendingToggle?.newValue
+                ? 'Do you want to make this item available?'
+                : 'Do you want to remove this item from menu?'}
+            </Text>
+
+            <View
+              style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+              <TouchableOpacity
+                style={[
+                  styles.updateBtn,
+                  {backgroundColor: colors.danger, flex: 1, marginRight: 8},
+                ]}
+                onPress={cancelToggle}>
+                <Text style={styles.updateBtnText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.updateBtn,
+                  {backgroundColor: colors.success, flex: 1},
+                ]}
+                onPress={confirmToggle}>
+                <Text style={styles.updateBtnText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-/* ---------- UpdateModal Component (merged inline) ---------- */
-const UpdateModal = ({visible, onClose, item, onUpdate,userId}) => {
+const UpdateModal = ({visible, onClose, item, onUpdate, userId}) => {
   const [actualPrice, setActualPrice] = useState('');
   const [sellingPrice, setSellingPrice] = useState('');
   const [discountPercent, setDiscountPercent] = useState('');
   const [discountAmount, setDiscountAmount] = useState('');
+  const [confirmVisible, setConfirmVisible] = useState(false);
 
   useEffect(() => {
     if (item) {
@@ -284,12 +381,25 @@ const UpdateModal = ({visible, onClose, item, onUpdate,userId}) => {
     }
   }, [actualPrice, sellingPrice]);
 
+  const handleConfirmUpdate = () => {
+    onUpdate({
+      id: item.id,
+      shop_id: userId,
+      item_name: item.item_name,
+      actual_price: actualPrice,
+      selling_price: sellingPrice,
+      discount_percentage: discountPercent,
+      discount_amount: discountAmount,
+    });
+    setConfirmVisible(false);
+  };
+
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.updateCard}>
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-            <Ionicons name="close" size={22} color="#333" />
+            <Ionicons name="close" size={24} color="#333" />
           </TouchableOpacity>
 
           <View style={styles.row}>
@@ -324,7 +434,7 @@ const UpdateModal = ({visible, onClose, item, onUpdate,userId}) => {
             onChangeText={setSellingPrice}
           />
 
-          {/* Discount % (read-only) */}
+          {/* Discount % */}
           <Text style={styles.label}>Discount (%)</Text>
           <TextInput
             style={[styles.inputBox, styles.readOnly]}
@@ -332,7 +442,7 @@ const UpdateModal = ({visible, onClose, item, onUpdate,userId}) => {
             editable={false}
           />
 
-          {/* Discount Amount (read-only) */}
+          {/* Discount Amount */}
           <Text style={styles.label}>Discount Amount</Text>
           <TextInput
             style={[styles.inputBox, styles.readOnly]}
@@ -340,24 +450,50 @@ const UpdateModal = ({visible, onClose, item, onUpdate,userId}) => {
             editable={false}
           />
 
+          {/* Update button */}
           <TouchableOpacity
-  style={styles.updateBtn}
-  onPress={() => {
-    onUpdate({
-      id: item.id,                 // from products list
-      shop_id: userId,             // from vendor login
-      item_name: item.item_name,   // keep same name
-      actual_price: actualPrice,
-      selling_price: sellingPrice,
-      discount_percentage: discountPercent,
-      discount_amount: discountAmount,
-    });
-  }}>
-  <Text style={styles.updateBtnText}>Update</Text>
-</TouchableOpacity>
-
+            style={styles.updateBtn}
+            onPress={() => setConfirmVisible(true)}>
+            <Text style={styles.updateBtnText}>Update</Text>
+          </TouchableOpacity>
         </View>
       </View>
+
+      {/* 🔹 Confirmation Popup */}
+      <Modal
+        visible={confirmVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setConfirmVisible(false)}>
+        <View style={styles.overlay}>
+          <View style={styles.updateCard}>
+            <Text style={{fontSize: 15, fontWeight: '500', marginBottom: 15}}>
+              Are you sure you want to update this product?
+            </Text>
+
+            <View
+              style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+              <TouchableOpacity
+                style={[
+                  styles.updateBtn,
+                  {backgroundColor: colors.danger, flex: 1, marginRight: 8},
+                ]}
+                onPress={() => setConfirmVisible(false)}>
+                <Text style={styles.updateBtnText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.updateBtn,
+                  {backgroundColor: colors.success, flex: 1},
+                ]}
+                onPress={handleConfirmUpdate}>
+                <Text style={styles.updateBtnText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 };
@@ -412,6 +548,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'lightgrey',
   },
   icon: {marginRight: 5},
   input: {flex: 1, fontSize: 16, color: colors.grey},
@@ -442,28 +580,43 @@ const styles = StyleSheet.create({
   row: {flexDirection: 'row', alignItems: 'center'},
   foodName: {fontSize: 14, fontWeight: '500'},
   price: {fontSize: 14, fontWeight: 'bold', marginRight: 8},
-
   rightSection: {
     alignItems: 'center',
     justifyContent: 'space-between',
     height: '100%',
     paddingVertical: 10,
   },
-  editBtn: {flexDirection: 'row', alignItems: 'center', marginTop: 10},
-  editText: {
-    color: colors.editBtn,
-    fontWeight: '500',
-    fontSize: 13,
-    marginRight: 3,
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
+  editText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 13,
+    marginRight: 4,
+  },
+
   toggleContainer: {
     width: 38,
     height: 19,
     borderRadius: 59,
     padding: 2,
     justifyContent: 'center',
+    marginLeft: 10,
   },
-  toggleOn: {backgroundColor: colors.accent},
+  toggleOn: {backgroundColor: 'green'},
   toggleOff: {backgroundColor: colors.toggleOff},
   toggleCircle: {
     width: 15,
@@ -482,7 +635,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
 
-  /* UpdateModal styles */
+  /* Modal styles */
   overlay: {
     flex: 1,
     backgroundColor: colors.black5,
@@ -497,7 +650,12 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   closeBtn: {position: 'absolute', top: 10, right: 10, padding: 6, zIndex: 1},
-  modalTitle: {fontSize: 15, fontWeight: '500', color: '#1A43BF'},
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#1A43BF',
+    marginRight: 30,
+  },
   divider: {
     borderBottomWidth: 1,
     borderStyle: 'dashed',

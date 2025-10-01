@@ -11,11 +11,10 @@ const initialState = {
   pendingOrders: [],
   OrdersInProcess: [],
   shopPayments: null,
-  shopDetails: null,   
+  shopDetails: null,
   paymentHistory: [],
   products: [],
-  dashboardOrders: []
-
+  dashboardOrders: [],
 };
 
 export const vendorLogin = createAsyncThunk(
@@ -35,8 +34,6 @@ export const vendorLogin = createAsyncThunk(
     }
   },
 );
-
-
 
 export const verifyNumber = createAsyncThunk(
   'verifyNumber',
@@ -238,7 +235,10 @@ export const fetchShopDetails = createAsyncThunk(
 );
 export const updateShopStatus = createAsyncThunk(
   'updateShopStatus',
-  async ({shop_id, shop_active_status}, {rejectWithValue, fulfillWithValue}) => {
+  async (
+    {shop_id, shop_active_status},
+    {rejectWithValue, fulfillWithValue},
+  ) => {
     try {
       const payload = {
         shop_id: Number(shop_id),
@@ -247,10 +247,7 @@ export const updateShopStatus = createAsyncThunk(
 
       console.log('📤 Sending shop status update payload:', payload);
 
-      const response = await api.post(
-        'https://melocalapp.com:1035/vendor_app/updateshopstatuss',
-        payload,
-      );
+      const response = await api.post(endpoints.UPDATESHOPSTATUSS, payload);
 
       console.log('📥 API Response (updateShopStatus):', response.data);
 
@@ -272,7 +269,6 @@ export const updateShopStatus = createAsyncThunk(
     }
   },
 );
-
 
 export const updateVendorPassword = createAsyncThunk(
   'updateVendorPassword',
@@ -307,7 +303,7 @@ export const fetchCurrentOrders = createAsyncThunk(
       });
 
       const data = response.data;
-    //  console.log('GETCURRENTORDERS response:', data);
+      //  console.log('GETCURRENTORDERS response:', data);
 
       if (data?.status === 200 && Array.isArray(data?.data)) {
         // Separate orders by status
@@ -350,13 +346,13 @@ export const fetchOrderDetails = createAsyncThunk(
   'fetchOrderDetails',
   async (orderId, {rejectWithValue, fulfillWithValue}) => {
     try {
-    //  console.log(orderId, '>>>>>>>>>>>>>>>>orderId');
+      //  console.log(orderId, '>>>>>>>>>>>>>>>>orderId');
       const response = await api.post(endpoints.NEWGETORDERDETAILS, {
         orderid: orderId,
       });
 
       const data = response.data;
-    //  console.log('ORDER DETAILS API response:', data);
+      //  console.log('ORDER DETAILS API response:', data);
 
       if (data?.status === 200 && Array.isArray(data?.data)) {
         const items = data.data.map(item => ({
@@ -383,13 +379,10 @@ export const updateOrderStatus = createAsyncThunk(
   'updateOrderStatus',
   async ({orderId, orderStatus}, {rejectWithValue, fulfillWithValue}) => {
     try {
-      const response = await api.post(
-        'https://melocalapp.com:1035/vendor_app/updateorderstatus',
-        {
-          order_status: orderStatus, 
-          order_id: orderId,
-        },
-      );
+      const response = await api.post(endpoints.UPDATEORDERSTATUS, {
+        order_status: orderStatus,
+        order_id: orderId,
+      });
 
       const data = response.data;
       console.log('UPDATE ORDER STATUS response:', data);
@@ -411,10 +404,9 @@ export const fetchShopPayments = createAsyncThunk(
   'fetchShopPayments',
   async (userId, {rejectWithValue, fulfillWithValue}) => {
     try {
-      const response = await api.post(
-        'https://melocalapp.com:1035/vendor_app/getshopsforpayments',
-        {user_id: userId},
-      );
+      const response = await api.post(endpoints.GETSHOPSFORPAYMENTS, {
+        user_id: userId,
+      });
 
       const data = response.data;
       console.log('getshopsforpayments API response:', data);
@@ -435,10 +427,11 @@ export const fetchPaymentHistory = createAsyncThunk(
   'fetchPaymentHistory',
   async ({f_date, t_date, userId}, {rejectWithValue, fulfillWithValue}) => {
     try {
-      const response = await api.post(
-        'https://melocalapp.com:1035/vendor_app/getpaymenthistory',
-        { f_date, t_date, shop_id:userId }
-      );
+      const response = await api.post(endpoints.GETPAYMENTHISTORY, {
+        f_date,
+        t_date,
+        shop_id: userId,
+      });
 
       const data = response.data;
       console.log('Payment History API:', data);
@@ -450,21 +443,19 @@ export const fetchPaymentHistory = createAsyncThunk(
       }
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.msg || 'Failed to fetch transactions'
+        error.response?.data?.msg || 'Failed to fetch transactions',
       );
     }
-  }
+  },
 );
-
 
 export const fetchProductsList = createAsyncThunk(
   'fetchProductsList',
   async (shopId, {rejectWithValue, fulfillWithValue}) => {
     try {
-      const response = await api.post(
-        'https://melocalapp.com:1035/vendor_app/getproductslistdata',
-        { shop_id: shopId }
-      );
+      const response = await api.post(endpoints.GETPRODUCTSLISTDATA, {
+        shop_id: shopId,
+      });
 
       const data = response.data;
       console.log('Products API response:', data);
@@ -475,23 +466,20 @@ export const fetchProductsList = createAsyncThunk(
         return rejectWithValue('No products found');
       }
     } catch (error) {
-      return rejectWithValue(error.response?.data?.msg || 'Failed to fetch products');
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch products',
+      );
     }
-  }
+  },
 );
-
-
 
 // src/redux/reducers/auth.js
 
 export const updateProduct = createAsyncThunk(
   'updateProduct',
-  async (payload, { rejectWithValue, fulfillWithValue }) => {
+  async (payload, {rejectWithValue, fulfillWithValue}) => {
     try {
-      const response = await api.post(
-        'https://melocalapp.com:1035/vendor_app/updateshopproducts',
-        payload
-      );
+      const response = await api.post(endpoints.UPDATESHOPPRODUCTS, payload);
 
       const data = response.data;
       console.log('Update Product API response:', data);
@@ -504,18 +492,14 @@ export const updateProduct = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.response?.data?.msg || 'API Error');
     }
-  }
+  },
 );
-
 
 export const updateProductStatus = createAsyncThunk(
   'updateProductStatus',
-  async (payload, { rejectWithValue, fulfillWithValue }) => {
+  async (payload, {rejectWithValue, fulfillWithValue}) => {
     try {
-      const response = await api.post(
-        'https://melocalapp.com:1035/vendor_app/updateproductactive',
-        payload
-      );
+      const response = await api.post(endpoints.UPDATEPRODUCTACTIVE, payload);
 
       const data = response.data;
       console.log('Update Product Status API response:', data);
@@ -528,17 +512,18 @@ export const updateProductStatus = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.response?.data?.msg || 'API Error');
     }
-  }
+  },
 );
 
 export const fetchDashboardOrders = createAsyncThunk(
   'fetchDashboardOrders',
   async ({f_date, t_date, userId}, {rejectWithValue, fulfillWithValue}) => {
     try {
-      const response = await api.post(
-        'https://melocalapp.com:1035/vendor_app/getdashboardorders',
-        { f_date, t_date, shop_id: userId }
-      );
+      const response = await api.post(endpoints.GETDASHBOARDORDERS, {
+        f_date,
+        t_date,
+        shop_id: userId,
+      });
 
       const data = response.data;
       console.log('Dashboard Orders API:', data);
@@ -550,14 +535,11 @@ export const fetchDashboardOrders = createAsyncThunk(
       }
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.msg || 'Failed to fetch orders'
+        error.response?.data?.msg || 'Failed to fetch orders',
       );
     }
-  }
+  },
 );
-
-
-
 
 export const AuthSlice = createSlice({
   name: 'authlice',
@@ -571,7 +553,6 @@ export const AuthSlice = createSlice({
     },
   },
   extraReducers: builder => {
-   
     builder.addCase(vendorLogin.pending, state => {
       state.message = null;
     });
@@ -597,7 +578,7 @@ export const AuthSlice = createSlice({
 
     builder.addCase(fetchCurrentOrders.fulfilled, (state, action) => {
       state.loading = false;
-     // console.log(action.payload, '>>>>>>>responseses');
+      // console.log(action.payload, '>>>>>>>responseses');
       state.pendingOrders = action.payload.pendingOrders;
       state.OrdersInProcess = action.payload.OrdersInProcess;
       // state.user_Id = action.payload?.data?.id || null;
@@ -624,73 +605,72 @@ export const AuthSlice = createSlice({
       state.message = action.payload || 'Failed to load shop payments';
     });
 
-builder.addCase(fetchShopDetails.fulfilled, (state, action) => {
-  state.shopDetails = action.payload;
-});
+    builder.addCase(fetchShopDetails.fulfilled, (state, action) => {
+      state.shopDetails = action.payload;
+    });
 
+    builder.addCase(fetchPaymentHistory.pending, state => {
+      state.loading = true;
+    });
+    builder.addCase(fetchPaymentHistory.fulfilled, (state, action) => {
+      state.loading = false;
+      state.paymentHistory = action.payload;
+    });
+    builder.addCase(fetchPaymentHistory.rejected, (state, action) => {
+      state.loading = false;
+      state.paymentHistory = [];
+      state.message = action.payload || 'Failed to load payment history';
+    });
 
-builder.addCase(fetchPaymentHistory.pending, state => {
-  state.loading = true;
-});
-builder.addCase(fetchPaymentHistory.fulfilled, (state, action) => {
-  state.loading = false;
-  state.paymentHistory = action.payload;
-});
-builder.addCase(fetchPaymentHistory.rejected, (state, action) => {
-  state.loading = false;
-  state.paymentHistory = [];
-  state.message = action.payload || 'Failed to load payment history';
-});
+    builder.addCase(fetchProductsList.pending, state => {
+      state.loading = true;
+    });
+    builder.addCase(fetchProductsList.fulfilled, (state, action) => {
+      state.loading = false;
+      state.products = action.payload; // ✅ keep full list in redux
+    });
+    builder.addCase(fetchProductsList.rejected, (state, action) => {
+      state.loading = false;
+      state.products = [];
+      state.message = action.payload || 'Failed to load products';
+    });
 
+    builder.addCase(updateProduct.fulfilled, (state, action) => {
+      const updated = action.payload;
+      state.products = state.products.map(p =>
+        p.id === updated.id ? {...p, ...updated} : p,
+      );
+    });
 
-builder.addCase(fetchProductsList.pending, (state) => {
-  state.loading = true;
-});
-builder.addCase(fetchProductsList.fulfilled, (state, action) => {
-  state.loading = false;
-  state.products = action.payload;  // ✅ keep full list in redux
-});
-builder.addCase(fetchProductsList.rejected, (state, action) => {
-  state.loading = false;
-  state.products = [];
-  state.message = action.payload || 'Failed to load products';
-});
+    builder.addCase(updateProductStatus.fulfilled, (state, action) => {
+      const updated = action.payload;
+      state.products = state.products.map(p =>
+        p.id === updated.id ? {...p, active_status: updated.active_status} : p,
+      );
+    });
 
- builder.addCase(updateProduct.fulfilled, (state, action) => {
-  const updated = action.payload;
-  state.products = state.products.map(p =>
-    p.id === updated.id ? { ...p, ...updated } : p
-  );
-});
+    builder.addCase(updateShopStatus.fulfilled, (state, action) => {
+      if (
+        state.shopDetails &&
+        state.shopDetails.id === action.payload.shop_id
+      ) {
+        state.shopDetails.shop_active_status =
+          action.payload.shop_active_status;
+      }
+    });
 
-builder.addCase(updateProductStatus.fulfilled, (state, action) => {
-  const updated = action.payload;
-  state.products = state.products.map(p =>
-    p.id === updated.id ? { ...p, active_status: updated.active_status } : p
-  );
-});
-
-
-builder.addCase(updateShopStatus.fulfilled, (state, action) => {
-  if (state.shopDetails && state.shopDetails.id === action.payload.shop_id) {
-    state.shopDetails.shop_active_status = action.payload.shop_active_status;
-  }
-});
-
-builder.addCase(fetchDashboardOrders.pending, state => {
-  state.loading = true;
-});
-builder.addCase(fetchDashboardOrders.fulfilled, (state, action) => {
-  state.loading = false;
-  state.dashboardOrders = action.payload;
-});
-builder.addCase(fetchDashboardOrders.rejected, (state, action) => {
-  state.loading = false;
-  state.dashboardOrders = [];
-  state.message = action.payload || 'Failed to load orders';
-});
-
-   
+    builder.addCase(fetchDashboardOrders.pending, state => {
+      state.loading = true;
+    });
+    builder.addCase(fetchDashboardOrders.fulfilled, (state, action) => {
+      state.loading = false;
+      state.dashboardOrders = action.payload;
+    });
+    builder.addCase(fetchDashboardOrders.rejected, (state, action) => {
+      state.loading = false;
+      state.dashboardOrders = [];
+      state.message = action.payload || 'Failed to load orders';
+    });
   },
 });
 

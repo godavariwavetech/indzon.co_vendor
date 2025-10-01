@@ -13,15 +13,8 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {colors} from '../config/theme';
-import WithdrawModal from '../components/WithdrawModal';
 
 export default function EarningsScreen() {
-  const [showWithdraw, setShowWithdraw] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showInfoModal, setShowInfoModal] = useState(false);
-  const [showTransactionModal, setShowTransactionModal] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState(null);
-
   const dispatch = useDispatch();
   const {userId, shopPayments, paymentHistory} = useSelector(
     state => state.Auth,
@@ -48,18 +41,6 @@ export default function EarningsScreen() {
       dispatch(fetchShopPayments(userId));
     }
   }, [userId, dispatch]);
-
-  // auto close withdraw success modal
-  useEffect(() => {
-    let timer;
-    if (showSuccess) {
-      timer = setTimeout(() => {
-        setShowWithdraw(false);
-        setShowSuccess(false);
-      }, 3000);
-    }
-    return () => clearTimeout(timer);
-  }, [showSuccess]);
 
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [selecting, setSelecting] = useState('start');
@@ -92,6 +73,10 @@ export default function EarningsScreen() {
     }
   };
 
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -107,54 +92,53 @@ export default function EarningsScreen() {
         <View style={styles.divider} />
 
         {/* Amount + Info icon row */}
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <Text style={styles.amountBig}>
-            ₹
-            {(
-              (shopPayments?.item_amount ?? 0) -
-              (shopPayments?.admin_service_fee ?? 0) -
-              (shopPayments?.vendor_coupon_amount ?? 0)
-            ).toFixed(2)}
-          </Text>
-          <TouchableOpacity onPress={() => setShowInfoModal(true)}>
-            <Icon
-              name="information-circle-outline"
-              size={24}
-              color={colors.textWhite}
-              style={{marginLeft: 12}}
-            />
-          </TouchableOpacity>
-        </View>
+      <View style={{flexDirection: 'row', alignItems: 'center'}}>
+  <Text style={styles.amountBig}>
+    ₹
+    {(
+      (shopPayments?.item_amount ?? 0) -
+      (shopPayments?.admin_service_fee ?? 0) -
+      (shopPayments?.vendor_coupon_amount ?? 0)
+    ).toFixed(2)}
+  </Text>
+</View>
 
-        <TouchableOpacity
-          style={styles.withdrawBtn}
-          onPress={() => {
-            setShowWithdraw(true);
-            setShowSuccess(false);
-          }}>
-          <Icon name="cash-outline" size={20} color={colors.textDark} />
-          <Text style={styles.withdrawText}>Withdraw</Text>
-        </TouchableOpacity>
+     <TouchableOpacity
+  style={styles.withdrawBtn}
+  onPress={() => setShowInfoModal(true)} // 🔹 Open Info Modal
+>
+  <Icon name="cash-outline" size={20} color={colors.textDark} />
+  <Text style={styles.withdrawText}>Payout Cycle</Text>
+</TouchableOpacity>
       </View>
 
       {/* Date Range */}
-     <View style={styles.headerSection}>
-  <Text style={styles.historyTitle}>Transaction History</Text>
+      <View style={styles.headerSection}>
+        <Text style={styles.historyTitle}>Transaction History</Text>
 
-  <View style={styles.dateRow}>
-    <TouchableOpacity style={styles.dateBtn} onPress={() => showDatePicker('start')}>
-      <Text style={styles.dateText}>Start: {formatDate(startDate)}</Text>
-    </TouchableOpacity>
+        <View style={styles.dateRow}>
+          <TouchableOpacity
+            style={styles.dateBtn}
+            onPress={() => showDatePicker('start')}>
+            <Text style={styles.dateText}>Start: {formatDate(startDate)}</Text>
+          </TouchableOpacity>
 
-    <TouchableOpacity style={styles.dateBtn} onPress={() => showDatePicker('end')}>
-      <Text style={styles.dateText}>End: {formatDate(endDate)}</Text>
-    </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.dateBtn}
+            onPress={() => showDatePicker('end')}>
+            <Text style={styles.dateText}>End: {formatDate(endDate)}</Text>
+          </TouchableOpacity>
 
-    <TouchableOpacity style={styles.applyBtn} onPress={applyDateFilter}>
-      <Text style={styles.applyText}>Apply</Text>
-    </TouchableOpacity>
-  </View>
-</View>
+          <TouchableOpacity style={styles.applyBtn} onPress={applyDateFilter}>
+          <Text style={styles.applyText}>Apply</Text>
+          <Icon
+            name="checkmark-done-outline"
+            size={18}
+            color={colors.reportsDownloadText}
+          />
+        </TouchableOpacity>
+        </View>
+      </View>
 
       <View style={styles.divider2} />
 
@@ -194,17 +178,6 @@ export default function EarningsScreen() {
         )}
       />
 
-      {/* Withdraw Modal */}
-      <WithdrawModal
-        visible={showWithdraw}
-        onClose={() => {
-          setShowWithdraw(false);
-          setShowSuccess(false);
-        }}
-        showSuccess={showSuccess}
-        setShowSuccess={setShowSuccess}
-      />
-
       {/* Date Picker */}
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
@@ -212,6 +185,8 @@ export default function EarningsScreen() {
         onConfirm={handleConfirm}
         onCancel={hideDatePicker}
       />
+
+      {/* Info Modal */}
       <Modal
         visible={showInfoModal}
         transparent
@@ -280,9 +255,11 @@ export default function EarningsScreen() {
                   paddingTop: 18,
                 },
               ]}>
-              <Text style={[styles.label, {fontWeight: 'bold'}]}>
-                Verify OTP: {shopPayments?.vendor_payment_otp ?? '--'}
-              </Text>
+             <View style={styles.row}>
+  <Text style={[styles.label, {fontWeight: 'bold'}]}>Verify OTP:</Text>
+  <Text style={styles.otpCode}>{shopPayments?.vendor_payment_otp ?? '--'}</Text>
+</View>
+
             </View>
 
             <TouchableOpacity
@@ -293,7 +270,6 @@ export default function EarningsScreen() {
           </View>
         </View>
       </Modal>
-
 
       {/* Transaction Details Modal */}
       <Modal
@@ -317,7 +293,6 @@ export default function EarningsScreen() {
               ]}
             />
 
-            {/* Table-like breakdown with zero values */}
             <View style={styles.row}>
               <Text style={styles.label}>Payment Date</Text>
               <Text style={styles.value}>
@@ -368,7 +343,7 @@ export default function EarningsScreen() {
                 },
               ]}></View>
 
-           <TouchableOpacity
+            <TouchableOpacity
               style={styles.modalCloseBtn}
               onPress={() => setShowTransactionModal(false)}>
               <Text style={styles.modalCloseText}>Close</Text>
@@ -379,6 +354,8 @@ export default function EarningsScreen() {
     </View>
   );
 }
+
+
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.background},
@@ -490,11 +467,11 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
 
-  modalTitle: {fontSize: 18, fontWeight: 'bold', marginBottom: 12},
+  modalTitle: {fontSize: 18, fontWeight: 'bold', marginBottom: 12, color:colors.primary},
   modalItem: {fontSize: 14, marginBottom: 8, color: '#333'},
   modalCloseBtn: {
     marginTop: 15,
-    alignSelf: 'flex-end',
+    alignSelf: 'center',
     backgroundColor: colors.earningsWithdrawBtnBg,
     paddingHorizontal: 15,
     paddingVertical: 8,
@@ -505,10 +482,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 10,
+    alignItems:"center"
   },
   label: {
     fontSize: 16,
     color: '#333',
+    marginRight:5
   },
   value: {
     fontSize: 16,
@@ -545,15 +524,28 @@ dateBtn: {
   alignItems: 'center',
 },
 
-applyBtn: {
-  paddingHorizontal: 16,
-  paddingVertical: 10,
-  backgroundColor:colors.primary,
-  borderRadius: 8,
-},
-applyText: {
-  color: '#fff',
+  applyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    height: 40,
+  },
+  applyText: {
+    color: colors.reportsDownloadText,
+    marginRight: 5,
+    fontSize: 13,
+  },
+otpCode: {
+  fontSize: 18,
   fontWeight: 'bold',
+  color: colors.textWhite, // red highlight (or use colors.primary)
+  backgroundColor: colors.primary, // light background highlight
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+  borderRadius: 6,
+  letterSpacing: 2, // spacing between digits
 },
 
 });

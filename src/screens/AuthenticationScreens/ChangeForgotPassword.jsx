@@ -26,7 +26,7 @@ export default function ChangeForgotPassword() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
-  const [phoneNumber, setPhoneNumber] = useState('8978979879');
+  const [phoneNumber, setPhoneNumber] = useState();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);

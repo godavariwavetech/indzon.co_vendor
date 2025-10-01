@@ -1,7 +1,7 @@
 import React, {useEffect, useRef} from 'react';
 import {View, StyleSheet, Image, Animated} from 'react-native';
 import {colors} from '../../config/theme';
-import {QUICKIEE} from '../../assets/index';
+import {appLogo} from '../../assets/index';
 import {useSelector} from 'react-redux';
 
 const SplashScreen = ({navigation}) => {
@@ -36,7 +36,7 @@ const SplashScreen = ({navigation}) => {
   return (
     <View style={styles.Container}>
       <Animated.View style={{opacity: fadeAnim}}>
-        <Image source={QUICKIEE} />
+        <Image source={appLogo} />
       </Animated.View>
     </View>
   );
@@ -45,7 +45,7 @@ const SplashScreen = ({navigation}) => {
 const styles = StyleSheet.create({
   Container: {
     flex: 1,
-    backgroundColor: colors.textDark,
+    backgroundColor: colors.textWhite,
     justifyContent: 'center',
     alignItems: 'center',
   },
