@@ -1,5 +1,5 @@
-// ✅ UPDATED RegisterScreen.js
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
+import RNFS from 'react-native-fs';
 import {
   View,
   Text,
@@ -8,11 +8,23 @@ import {
   StyleSheet,
   ScrollView,
   Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
+import CustomAlertModal from '../../components/CustomAlertModal';
+
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {launchImageLibrary} from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
+import {useDispatch} from 'react-redux';
+import {
+  fetchLocations,
+  fetchCategories,
+  fetchSubCategories,
+  fetchFilters,
+  registerVendor,
+} from '../../redux/reducers/auth';
 
 import LocationModal from '../../components/RegisterScreenLocationModal';
 import CategoryModal from '../../components/RegisterScreenCategoryModal';
@@ -21,6 +33,20 @@ import FilterModal from '../../components/RegisterScreenFilterModal';
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
+
+  // ✅ Modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState('error');
+
+  const showModal = (title, message, type = 'error') => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalType(type);
+    setModalVisible(true);
+  };
 
   // form states
   const [location, setLocation] = useState('');
@@ -42,6 +68,19 @@ export default function RegisterScreen() {
   const [gst, setGst] = useState('');
   const [shopImage, setShopImage] = useState(null);
   const [passbookImage, setPassbookImage] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const [locationOptions, setLocationOptions] = useState([]);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [categoryLoading, setCategoryLoading] = useState(false);
+
+  const [subCategoryOptions, setSubCategoryOptions] = useState([]);
+  const [filterOptions, setFilterOptions] = useState([]);
+  const [subCategoryLoading, setSubCategoryLoading] = useState(false);
+  const [filterLoading, setFilterLoading] = useState(false);
 
   // modal states
   const [timePickerVisible, setTimePickerVisible] = useState(false);
@@ -54,35 +93,63 @@ export default function RegisterScreen() {
   // errors
   const [errors, setErrors] = useState({});
 
-  const categoryData = {
-    Food: {
-      subCategories: ['Biryani', 'Curries', 'Desserts', 'Fried Rice', 'Noodles', 'Soup'],
-      filters: ['Veg', 'Non Veg'],
-    },
-    Grocery: {
-      subCategories: ['Dairy & Eggs', 'Oils', 'Rice & Grains', 'Snacks'],
-      filters: ['Organic', 'Non-Organic'],
-    },
-    Meat: {
-      subCategories: ['Chicken', 'Mutton', 'Fish'],
-      filters: ['Fresh', 'Frozen'],
-    },
-  };
+  useEffect(() => {
+    const handleFetchLocations = async () => {
+      try {
+        setLocationLoading(true);
+        const response = await dispatch(fetchLocations());
+        setLocationOptions(response?.payload || []);
+      } catch (error) {
+        setLocationOptions([]);
+      } finally {
+        setLocationLoading(false);
+      }
+    };
 
-  const locationOptions = ['Rajahmundry', 'Kakinada', 'Vijayawada', 'Visakapatnam'];
+    const handleFetchCategories = async () => {
+      try {
+        setCategoryLoading(true);
+        const response = await dispatch(fetchCategories());
+        setCategoryOptions(response?.payload || []);
+      } catch (error) {
+        setCategoryOptions([]);
+      } finally {
+        setCategoryLoading(false);
+      }
+    };
+
+    handleFetchLocations();
+    handleFetchCategories();
+  }, [dispatch]);
 
   const handleConfirmTime = date => {
-    const time = date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', hour12: true});
+    const time = date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
     isOpenTime ? setOpenTime(time) : setCloseTime(time);
     setTimePickerVisible(false);
   };
 
   const pickImage = async setter => {
-    const result = await launchImageLibrary({mediaType: 'photo'});
-    if (result.assets?.length > 0) setter(result.assets[0].uri);
+    try {
+      const result = await launchImageLibrary({mediaType: 'photo'});
+      if (result.assets?.length > 0) {
+        const selectedImage = result.assets[0];
+        if (selectedImage.fileSize > 2 * 1024 * 1024) {
+          showModal('File too large', 'Please select an image under 2MB.');
+          return;
+        }
+        const base64Data = await RNFS.readFile(selectedImage.uri, 'base64');
+        const base64Image = `data:${selectedImage.type};base64,${base64Data}`;
+        setter(base64Image);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+    }
   };
 
-  // ✅ Validate everything (now every field is mandatory)
   const validateAll = () => {
     const newErrors = {
       location: !location ? 'Location is required' : '',
@@ -92,42 +159,106 @@ export default function RegisterScreen() {
       shopName: !shopName ? 'Shop name is required' : '',
       phone: !/^\d{10}$/.test(phone) ? 'Phone number must be 10 digits' : '',
       password: !password ? 'Password is required' : '',
-      email: !email ? 'Email is required' : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? 'Invalid email' : '',
+      email: !email
+        ? 'Email is required'
+        : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+        ? 'Invalid email'
+        : '',
       address: !address ? 'Address is required' : '',
       openTime: !openTime ? 'Open time is required' : '',
       closeTime: !closeTime ? 'Close time is required' : '',
       fssai: !fssai ? 'FSSAI number is required' : '',
       license: !license ? 'License number is required' : '',
       pan: !pan ? 'PAN card number is required' : '',
-      account: !account ? 'Account number is required' : !/^\d+$/.test(account) ? 'Bank account must be digits only' : '',
+      account: !account
+        ? 'Account number is required'
+        : !/^\d+$/.test(account)
+        ? 'Bank account must be digits only'
+        : '',
       gst: !gst ? 'GST number is required' : '',
       shopImage: !shopImage ? 'Shop image is required' : '',
-      passbookImage: !passbookImage ? 'Passbook / Cheque image is required' : '',
+      passbookImage: !passbookImage
+        ? 'Passbook / Cheque image is required'
+        : '',
     };
-
     setErrors(newErrors);
     return Object.values(newErrors).every(err => !err);
   };
 
-  const handleSubmit = () => {
-    if (validateAll()) {
-      console.log('✅ All fields filled, form submitted');
-      // Call API here
+  const handleSubmit = async () => {
+    if (!validateAll()) return;
+
+    const selectedCategoryObj = categoryOptions.find(c => c.name === category);
+    const tableName = selectedCategoryObj?.shop_items_tb_nm || 'a';
+
+    const subCategoryImages = subCategory
+      .map(sc => sc.sub_category_image)
+      .filter(Boolean)
+      .join(',');
+
+    const latitude = selectedLocation?.location_latitude;
+    const longitude = selectedLocation?.location_longitude;
+
+    const payload = {
+      location: selectedLocation.id,
+      category_id: selectedCategoryObj?.id,
+      subcategory_id: subCategory.map(sc => sc.id).join(','),
+      name: subCategory.map(sc => sc.name).join(','),
+      filter: filter.map(f => f.id).join(','),
+      filter_name: filter.map(f => f.name).join(','),
+      shop_name: shopName,
+      phone_number: phone,
+      password: password,
+      email_id: email,
+      shop_address: address,
+      open_time: openTime,
+      close_time: closeTime,
+      shop_fssai_lic: fssai,
+      shop_lic: license,
+      shop_pancard: pan,
+      bankaccount_number: account,
+      shop_gst_number: gst,
+      shop_img: shopImage,
+      passbook: passbookImage,
+      table_name: tableName,
+      sub_category_image: subCategoryImages,
+      latitude,
+      longitude,
+      shopinnerone: '',
+      shopinnertwo: '',
+      shopinnerthree: '',
+    };
+
+    try {
+      setLoading(true);
+      await dispatch(registerVendor(payload)).unwrap();
+      showModal('Success', 'Vendor registered successfully!');
+      navigation.goBack();
+    } catch (err) {
+      showModal('Failed', err || 'Registration failed. Try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const toggleSubCategory = item =>
-    setSubCategory(prev =>
-      prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
+  const toggleSubCategory = item => {
+    setSubCategory(prevSelected =>
+      prevSelected.some(sc => sc.id === item.id)
+        ? prevSelected.filter(sc => sc.id !== item.id)
+        : [...prevSelected, item],
     );
+  };
 
-  const toggleFilter = item =>
-    setFilter(prev =>
-      prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
+  const toggleFilter = item => {
+    setFilter(prevSelected =>
+      prevSelected.some(f => f.id === item.id)
+        ? prevSelected.filter(f => f.id !== item.id)
+        : [...prevSelected, item],
     );
+  };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -135,139 +266,405 @@ export default function RegisterScreen() {
         </TouchableOpacity>
         <Text style={styles.heading}>Register Your Shop</Text>
       </View>
-
-      {/* LOCATION */}
-      <Text style={styles.label}>Location</Text>
-      <TouchableOpacity style={[styles.input, errors.location && styles.errorInput]} onPress={() => setLocationModalVisible(true)}>
-        <Text style={location ? styles.timeText : styles.placeholderText}>{location || 'Select Location'}</Text>
-      </TouchableOpacity>
-      {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
-
-      {/* CATEGORY */}
-      <Text style={styles.label}>Category</Text>
-      <TouchableOpacity style={[styles.input, errors.category && styles.errorInput]} onPress={() => setCategoryModalVisible(true)}>
-        <Text style={category ? styles.timeText : styles.placeholderText}>{category || 'Select Category'}</Text>
-      </TouchableOpacity>
-      {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
-
-      {/* SUBCATEGORY */}
-      {category ? (
-        <>
-          <Text style={styles.label}>SubCategory</Text>
-          <TouchableOpacity style={[styles.input, errors.subCategory && styles.errorInput]} onPress={() => setSubCategoryModalVisible(true)}>
-            <Text style={subCategory.length ? styles.timeText : styles.placeholderText}>
-              {subCategory.length ? subCategory.join(', ') : 'Select SubCategories'}
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.label}>Location</Text>
+        <TouchableOpacity
+          style={[styles.input, errors.location && styles.errorInput]}
+          onPress={() => setLocationModalVisible(true)}
+          disabled={locationLoading}>
+          {locationLoading ? (
+            <ActivityIndicator size="small" color="#555" />
+          ) : (
+            <Text style={location ? styles.timeText : styles.placeholderText}>
+              {location || 'Select Location'}
             </Text>
-          </TouchableOpacity>
-          {errors.subCategory && <Text style={styles.errorText}>{errors.subCategory}</Text>}
-        </>
-      ) : null}
-
-      {/* FILTER */}
-      {category ? (
-        <>
-          <Text style={styles.label}>Filter</Text>
-          <TouchableOpacity style={[styles.input, errors.filter && styles.errorInput]} onPress={() => setFilterModalVisible(true)}>
-            <Text style={filter.length ? styles.timeText : styles.placeholderText}>
-              {filter.length ? filter.join(', ') : 'Select Filters'}
-            </Text>
-          </TouchableOpacity>
-          {errors.filter && <Text style={styles.errorText}>{errors.filter}</Text>}
-        </>
-      ) : null}
-
-      {/* TEXT INPUTS */}
-      <TextInput style={[styles.input, errors.shopName && styles.errorInput]} placeholder="Shop Name" value={shopName} onChangeText={setShopName} placeholderTextColor="#999" />
-      {errors.shopName && <Text style={styles.errorText}>{errors.shopName}</Text>}
-
-      <TextInput style={[styles.input, errors.phone && styles.errorInput]} placeholder="Phone Number" keyboardType="phone-pad" maxLength={10} value={phone} onChangeText={setPhone} placeholderTextColor="#999" />
-      {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
-
-      <View style={[styles.passwordContainer, errors.password && styles.errorInput]}>
-        <TextInput style={[styles.input2, {flex: 1, marginTop: 0}]} placeholder="Password" secureTextEntry={!showPassword} value={password} onChangeText={setPassword} placeholderTextColor="#999" />
-        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-          <Icon name={showPassword ? 'eye-off' : 'eye'} size={22} color="#333" />
+          )}
         </TouchableOpacity>
-      </View>
-      {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+        {errors.location && (
+          <Text style={styles.errorText}>{errors.location}</Text>
+        )}
 
-      <TextInput style={[styles.input, errors.email && styles.errorInput]} placeholder="Email" keyboardType="email-address" value={email} onChangeText={setEmail} placeholderTextColor="#999" />
-      {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+        <Text style={styles.label}>Category</Text>
+        <TouchableOpacity
+          style={[styles.input, errors.category && styles.errorInput]}
+          onPress={() => setCategoryModalVisible(true)}>
+          <Text style={category ? styles.timeText : styles.placeholderText}>
+            {category || 'Select Category'}
+          </Text>
+        </TouchableOpacity>
+        {errors.category && (
+          <Text style={styles.errorText}>{errors.category}</Text>
+        )}
 
-      <TextInput style={[styles.input, errors.address && styles.errorInput]} placeholder="Address" value={address} onChangeText={setAddress} placeholderTextColor="#999" />
-      {errors.address && <Text style={styles.errorText}>{errors.address}</Text>}
+        {category ? (
+          <>
+            <Text style={styles.label}>SubCategory</Text>
+            <TouchableOpacity
+              style={[styles.input, errors.subCategory && styles.errorInput]}
+              onPress={() => setSubCategoryModalVisible(true)}>
+              <Text
+                style={
+                  subCategory.length ? styles.timeText : styles.placeholderText
+                }>
+                {subCategory.map(sc => sc.name).join(', ') ||
+                  'Select Subcategories'}
+              </Text>
+            </TouchableOpacity>
+            {errors.subCategory && (
+              <Text style={styles.errorText}>{errors.subCategory}</Text>
+            )}
+          </>
+        ) : null}
 
-      {/* SHOP TIMINGS */}
-      <TouchableOpacity style={[styles.input, errors.openTime && styles.errorInput]} onPress={() => {setIsOpenTime(true); setTimePickerVisible(true);}}>
-        <Text style={openTime ? styles.timeText : styles.placeholderText}>{openTime || 'Shop Open Time'}</Text>
-      </TouchableOpacity>
-      {errors.openTime && <Text style={styles.errorText}>{errors.openTime}</Text>}
+        {category ? (
+          <>
+            <Text style={styles.label}>Filter</Text>
+            <TouchableOpacity
+              style={[styles.input, errors.filter && styles.errorInput]}
+              onPress={() => setFilterModalVisible(true)}>
+              <Text
+                style={
+                  filter.length ? styles.timeText : styles.placeholderText
+                }>
+                {filter.map(f => f.name).join(', ') || 'Select Filters'}
+              </Text>
+            </TouchableOpacity>
+            {errors.filter && (
+              <Text style={styles.errorText}>{errors.filter}</Text>
+            )}
+          </>
+        ) : null}
 
-      <TouchableOpacity style={[styles.input, errors.closeTime && styles.errorInput]} onPress={() => {setIsOpenTime(false); setTimePickerVisible(true);}}>
-        <Text style={closeTime ? styles.timeText : styles.placeholderText}>{closeTime || 'Shop Close Time'}</Text>
-      </TouchableOpacity>
-      {errors.closeTime && <Text style={styles.errorText}>{errors.closeTime}</Text>}
+        <TextInput
+          style={[styles.input, errors.shopName && styles.errorInput]}
+          placeholder="Shop Name"
+          value={shopName}
+          onChangeText={setShopName}
+          placeholderTextColor="#999"
+        />
+        {errors.shopName && (
+          <Text style={styles.errorText}>{errors.shopName}</Text>
+        )}
 
-      <DateTimePickerModal isVisible={timePickerVisible} mode="time" onConfirm={handleConfirmTime} onCancel={() => setTimePickerVisible(false)} />
+        <TextInput
+          style={[styles.input, errors.phone && styles.errorInput]}
+          placeholder="Phone Number"
+          keyboardType="phone-pad"
+          maxLength={10}
+          value={phone}
+          onChangeText={setPhone}
+          placeholderTextColor="#999"
+        />
+        {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
 
-      {/* OTHER INPUTS (NOW MANDATORY) */}
-      <TextInput style={[styles.input, errors.fssai && styles.errorInput]} placeholder="FSSAI Licence Number" value={fssai} onChangeText={setFssai} placeholderTextColor="#999" />
-      {errors.fssai && <Text style={styles.errorText}>{errors.fssai}</Text>}
+        <View
+          style={[
+            styles.passwordContainer,
+            errors.password && styles.errorInput,
+          ]}>
+          <TextInput
+            style={[styles.input2, {flex: 1, marginTop: 0}]}
+            placeholder="Password"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+            placeholderTextColor="#999"
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Icon
+              name={showPassword ? 'eye-off' : 'eye'}
+              size={22}
+              color="#333"
+            />
+          </TouchableOpacity>
+        </View>
+        {errors.password && (
+          <Text style={styles.errorText}>{errors.password}</Text>
+        )}
 
-      <TextInput style={[styles.input, errors.license && styles.errorInput]} placeholder="Shop License Number" value={license} onChangeText={setLicense} placeholderTextColor="#999" />
-      {errors.license && <Text style={styles.errorText}>{errors.license}</Text>}
+        <TextInput
+          style={[styles.input, errors.email && styles.errorInput]}
+          placeholder="Email"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+          placeholderTextColor="#999"
+        />
+        {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
-      <TextInput style={[styles.input, errors.pan && styles.errorInput]} placeholder="Pan Card Number" value={pan} onChangeText={setPan} placeholderTextColor="#999" />
-      {errors.pan && <Text style={styles.errorText}>{errors.pan}</Text>}
+        <TextInput
+          style={[styles.input, errors.address && styles.errorInput]}
+          placeholder="Address"
+          value={address}
+          onChangeText={setAddress}
+          placeholderTextColor="#999"
+        />
+        {errors.address && (
+          <Text style={styles.errorText}>{errors.address}</Text>
+        )}
 
-      <TextInput style={[styles.input, errors.account && styles.errorInput]} placeholder="Bank Account Number" keyboardType="number-pad" value={account} onChangeText={setAccount} placeholderTextColor="#999" />
-      {errors.account && <Text style={styles.errorText}>{errors.account}</Text>}
+        <TouchableOpacity
+          style={[styles.input, errors.openTime && styles.errorInput]}
+          onPress={() => {
+            setIsOpenTime(true);
+            setTimePickerVisible(true);
+          }}>
+          <Text style={openTime ? styles.timeText : styles.placeholderText}>
+            {openTime || 'Shop Open Time'}
+          </Text>
+        </TouchableOpacity>
+        {errors.openTime && (
+          <Text style={styles.errorText}>{errors.openTime}</Text>
+        )}
 
-      <TextInput style={[styles.input, errors.gst && styles.errorInput]} placeholder="GSTIN" value={gst} onChangeText={setGst} placeholderTextColor="#999" />
-      {errors.gst && <Text style={styles.errorText}>{errors.gst}</Text>}
+        <TouchableOpacity
+          style={[styles.input, errors.closeTime && styles.errorInput]}
+          onPress={() => {
+            setIsOpenTime(false);
+            setTimePickerVisible(true);
+          }}>
+          <Text style={closeTime ? styles.timeText : styles.placeholderText}>
+            {closeTime || 'Shop Close Time'}
+          </Text>
+        </TouchableOpacity>
+        {errors.closeTime && (
+          <Text style={styles.errorText}>{errors.closeTime}</Text>
+        )}
 
-      {/* IMAGES */}
-      <Text style={styles.label}>Shop Image</Text>
-      <TouchableOpacity style={[styles.imageBox, errors.shopImage && {borderColor: 'red'}]} onPress={() => pickImage(setShopImage)}>
-        {shopImage ? <Image source={{uri: shopImage}} style={styles.image} /> : <Text style={styles.placeholderText}>+ Upload Shop Image</Text>}
-      </TouchableOpacity>
-      {errors.shopImage && <Text style={styles.errorText}>{errors.shopImage}</Text>}
+        <DateTimePickerModal
+          isVisible={timePickerVisible}
+          mode="time"
+          onConfirm={handleConfirmTime}
+          onCancel={() => setTimePickerVisible(false)}
+        />
 
-      <Text style={styles.label}>Pass Book / Cheque Image</Text>
-      <TouchableOpacity style={[styles.imageBox, errors.passbookImage && {borderColor: 'red'}]} onPress={() => pickImage(setPassbookImage)}>
-        {passbookImage ? <Image source={{uri: passbookImage}} style={styles.image} /> : <Text style={styles.placeholderText}>+ Upload Passbook</Text>}
-      </TouchableOpacity>
-      {errors.passbookImage && <Text style={styles.errorText}>{errors.passbookImage}</Text>}
+        <TextInput
+          style={[styles.input, errors.fssai && styles.errorInput]}
+          placeholder="FSSAI Licence Number"
+          value={fssai}
+          onChangeText={setFssai}
+          placeholderTextColor="#999"
+        />
+        {errors.fssai && <Text style={styles.errorText}>{errors.fssai}</Text>}
 
-      {/* SUBMIT BUTTON */}
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>SUBMIT</Text>
-      </TouchableOpacity>
+        <TextInput
+          style={[styles.input, errors.license && styles.errorInput]}
+          placeholder="Shop License Number"
+          value={license}
+          onChangeText={setLicense}
+          placeholderTextColor="#999"
+        />
+        {errors.license && (
+          <Text style={styles.errorText}>{errors.license}</Text>
+        )}
 
-      {/* MODALS */}
-      <LocationModal visible={locationModalVisible} locations={locationOptions} selectedLocation={location} onSelect={setLocation} onClose={() => setLocationModalVisible(false)} />
-      <CategoryModal visible={categoryModalVisible} categories={Object.keys(categoryData)} selectedCategory={category} onSelect={item => {setCategory(item); setSubCategory([]); setFilter([]);}} onClose={() => setCategoryModalVisible(false)} />
-      <SubCategoryModal visible={subCategoryModalVisible} subCategories={categoryData[category]?.subCategories || []} selected={subCategory} onToggle={toggleSubCategory} onClose={() => setSubCategoryModalVisible(false)} />
-      <FilterModal visible={filterModalVisible} filters={categoryData[category]?.filters || []} selected={filter} onToggle={toggleFilter} onClose={() => setFilterModalVisible(false)} />
-    </ScrollView>
+        <TextInput
+          style={[styles.input, errors.pan && styles.errorInput]}
+          placeholder="Pan Card Number"
+          value={pan}
+          onChangeText={setPan}
+          placeholderTextColor="#999"
+        />
+        {errors.pan && <Text style={styles.errorText}>{errors.pan}</Text>}
+
+        <TextInput
+          style={[styles.input, errors.account && styles.errorInput]}
+          placeholder="Bank Account Number"
+          keyboardType="number-pad"
+          value={account}
+          onChangeText={setAccount}
+          placeholderTextColor="#999"
+        />
+        {errors.account && (
+          <Text style={styles.errorText}>{errors.account}</Text>
+        )}
+
+        <TextInput
+          style={[styles.input, errors.gst && styles.errorInput]}
+          placeholder="GSTIN"
+          value={gst}
+          onChangeText={setGst}
+          placeholderTextColor="#999"
+        />
+        {errors.gst && <Text style={styles.errorText}>{errors.gst}</Text>}
+
+        <Text style={styles.label}>Shop Image</Text>
+        <TouchableOpacity
+          style={[styles.imageBox, errors.shopImage && {borderColor: 'red'}]}
+          onPress={() => pickImage(setShopImage)}>
+          {shopImage ? (
+            <Image source={{uri: shopImage}} style={styles.image} />
+          ) : (
+            <Text style={styles.placeholderText}>+ Upload Shop Image</Text>
+          )}
+        </TouchableOpacity>
+        {errors.shopImage && (
+          <Text style={styles.errorText}>{errors.shopImage}</Text>
+        )}
+
+        <Text style={styles.label}>Pass Book / Cheque Image</Text>
+        <TouchableOpacity
+          style={[
+            styles.imageBox,
+            errors.passbookImage && {borderColor: 'red'},
+          ]}
+          onPress={() => pickImage(setPassbookImage)}>
+          {passbookImage ? (
+            <Image source={{uri: passbookImage}} style={styles.image} />
+          ) : (
+            <Text style={styles.placeholderText}>+ Upload Passbook</Text>
+          )}
+        </TouchableOpacity>
+        {errors.passbookImage && (
+          <Text style={styles.errorText}>{errors.passbookImage}</Text>
+        )}
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleSubmit}
+          disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>SUBMIT</Text>
+          )}
+        </TouchableOpacity>
+
+        <LocationModal
+          visible={locationModalVisible}
+          locations={locationOptions}
+          selectedLocation={selectedLocation} // ✅ pass object
+          onSelect={item => {
+            setSelectedLocation(item); // ✅ store entire object
+            setLocation(item.name); // ✅ still show name in UI
+            setLocationModalVisible(false); // ✅ close modal after selection
+          }}
+          onClose={() => setLocationModalVisible(false)}
+        />
+
+        <CategoryModal
+          visible={categoryModalVisible}
+          categories={categoryOptions}
+          selectedCategory={category}
+          onSelect={async item => {
+            setCategory(item.name); // selected category name
+            setSubCategory([]); // reset previously selected subcategories
+            setFilter([]);
+            setCategoryModalVisible(false);
+
+            try {
+              setSubCategoryLoading(true);
+              const subCatResponse = await dispatch(
+                fetchSubCategories(item.id),
+              );
+              setSubCategoryOptions(subCatResponse?.payload || []);
+
+              setFilterLoading(true);
+              const filterResponse = await dispatch(fetchFilters(item.id));
+              setFilterOptions(filterResponse?.payload || []);
+            } finally {
+              setSubCategoryLoading(false);
+              setFilterLoading(false);
+            }
+          }}
+          onClose={() => setCategoryModalVisible(false)}
+        />
+
+        <SubCategoryModal
+          visible={subCategoryModalVisible}
+          subCategories={subCategoryOptions}
+          selected={subCategory}
+          onToggle={toggleSubCategory}
+          loading={subCategoryLoading}
+          onClose={() => setSubCategoryModalVisible(false)}
+        />
+
+        <FilterModal
+          visible={filterModalVisible}
+          filters={filterOptions}
+          selected={filter}
+          loading={filterLoading}
+          onToggle={toggleFilter}
+          onClose={() => setFilterModalVisible(false)}
+        />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#fff', paddingTop: 35},
-  scrollContent: {padding: 16, paddingBottom: 40},
-  header: {flexDirection: 'row', alignItems: 'center', marginBottom: 20},
+  container: {flex: 1, backgroundColor: '#fff', paddingTop: 30},
+  scrollContent: {padding: 18},
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    backgroundColor: '#fff',
+  },
   heading: {fontSize: 22, fontWeight: '700', marginLeft: 12, color: '#222'},
-  label: {fontSize: 14, fontWeight: '500', marginTop: 14, marginBottom: 6, color: '#333'},
-  input: {borderWidth: 1, borderColor: '#ccc', borderRadius: 10, padding: 14, fontSize: 14, marginBottom: 10, color: '#000', backgroundColor: '#fafafa'},
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 14,
+    marginBottom: 6,
+    color: '#333',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    padding: 14,
+    fontSize: 14,
+    marginBottom: 10,
+    color: '#000',
+    backgroundColor: '#fafafa',
+  },
   input2: {fontSize: 14, color: '#000', padding: 12},
-  passwordContainer: {flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#ccc', borderRadius: 10, paddingHorizontal: 10, marginBottom: 10, backgroundColor: '#fafafa'},
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+    backgroundColor: '#fafafa',
+  },
   timeText: {color: '#000', fontSize: 14},
   placeholderText: {color: '#999', fontSize: 14},
-  button: {backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 10, marginTop: 25, marginBottom: 50, shadowColor: '#000', shadowOpacity: 0.1, shadowOffset: {width: 0, height: 2}, shadowRadius: 4, elevation: 3},
-  buttonText: {color: '#fff', fontWeight: '700', fontSize: 16, textAlign: 'center'},
+  button: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 16,
+    borderRadius: 10,
+    marginTop: 25,
+    marginBottom: 50,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: {width: 0, height: 2},
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+    textAlign: 'center',
+  },
   errorInput: {borderColor: 'red'},
   errorText: {color: 'red', fontSize: 12, marginBottom: 6},
-  imageBox: {borderWidth: 1, borderColor: '#ccc', borderRadius: 10, height: 140, justifyContent: 'center', alignItems: 'center', marginBottom: 16, overflow: 'hidden', backgroundColor: '#fafafa'},
+  imageBox: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    height: 140,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    overflow: 'hidden',
+    backgroundColor: '#fafafa',
+  },
   image: {width: '100%', height: '100%', resizeMode: 'cover'},
 });

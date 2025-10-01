@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import {
   View,
   Text,
@@ -10,9 +10,25 @@ import {
 import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
 import { colors } from "../../config/theme"; 
+import CustomAlertModal from '../../components/CustomAlertModal';
+
 
 const CustomerSupportScreen = () => {
   const navigation = useNavigation();
+
+  // ✅ Modal state
+const [modalVisible, setModalVisible] = useState(false);
+const [modalTitle, setModalTitle] = useState('');
+const [modalMessage, setModalMessage] = useState('');
+const [modalType, setModalType] = useState('error');
+
+const showModal = (title, message, type = 'error') => {
+  setModalTitle(title);
+  setModalMessage(message);
+  setModalType(type);
+  setModalVisible(true);
+};
+
 
   const handlePress = async (type) => {
     try {
@@ -23,7 +39,7 @@ const CustomerSupportScreen = () => {
         if (supported) {
           await Linking.openURL(url);
         } else {
-          Alert.alert("WhatsApp not installed");
+          showModal("WhatsApp not installed");
         }
       } else if (type === "email") {
         const email = "support@example.com";
@@ -36,7 +52,7 @@ const CustomerSupportScreen = () => {
         await Linking.openURL(url);
       }
     } catch (error) {
-      Alert.alert("Error", "Unable to open app");
+    showModal("Error", "Unable to open app");
     }
   };
 
@@ -68,6 +84,14 @@ const CustomerSupportScreen = () => {
         <Icon name="call-outline" size={28} color="#007AFF" />
         <Text style={styles.cardText}>Call Support</Text>
       </TouchableOpacity>
+      <CustomAlertModal
+  visible={modalVisible}
+  title={modalTitle}
+  message={modalMessage}
+  type={modalType}
+  onClose={() => setModalVisible(false)}
+/>
+
     </View>
   );
 };

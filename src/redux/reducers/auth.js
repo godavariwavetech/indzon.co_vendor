@@ -8,6 +8,14 @@ const initialState = {
   token: null,
   userRole: 1,
   userId: null,
+  pendingOrders: [],
+  OrdersInProcess: [],
+  shopPayments: null,
+  shopDetails: null,   
+  paymentHistory: [],
+  products: [],
+  dashboardOrders: []
+
 };
 
 export const vendorLogin = createAsyncThunk(
@@ -28,11 +36,13 @@ export const vendorLogin = createAsyncThunk(
   },
 );
 
+
+
 export const verifyNumber = createAsyncThunk(
   'verifyNumber',
   async ({phoneNumber}, {rejectWithValue, fulfillWithValue}) => {
     const data = {
-      number: phoneNumber
+      number: phoneNumber,
     };
     const response = await api.post(endpoints.CHECKTHEMOBILENUMBER, data);
     if (response) {
@@ -44,14 +54,12 @@ export const verifyNumber = createAsyncThunk(
     }
   },
 );
-
-
 export const changePassword = createAsyncThunk(
   'changePassword',
-  async ({phoneNumber,newPassword}, {rejectWithValue, fulfillWithValue}) => {
+  async ({phoneNumber, newPassword}, {rejectWithValue, fulfillWithValue}) => {
     const data = {
       number: phoneNumber,
-      password:newPassword,
+      password: newPassword,
     };
     const response = await api.post(endpoints.UPDATENEWPASSWORD, data);
     if (response) {
@@ -63,25 +71,493 @@ export const changePassword = createAsyncThunk(
     }
   },
 );
+export const fetchLocations = createAsyncThunk(
+  'fetchLocations',
+  async (_, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.get(endpoints.GETLOCATION);
+      const data = response.data;
+      // console.log('Fetched locations from API:', data);
 
-
-
-export const requestLoginOtp = createAsyncThunk(
-  'requestLoginOtp',
-  async (mobileNumber, {rejectWithValue, fulfillWithValue}) => {
-    const data = {
-      number: mobileNumber,
-    };
-    const response = await api.post(endpoints.REQUEST_LOGIN_OPT, data);
-    if (response) {
-      if (response.data) {
-        return fulfillWithValue(response.data);
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        return fulfillWithValue(
+          data.data.map(loc => ({
+            id: loc.id,
+            name: loc.location_name,
+            location_latitude: loc.location_latitude,
+            location_longitude: loc.location_longitude,
+          })),
+        );
       } else {
-        return rejectWithValue('Something went wrong!');
+        return rejectWithValue('No locations found or invalid response');
       }
+    } catch (error) {
+      // console.error('Fetch locations error:', error);
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch locations',
+      );
     }
   },
 );
+export const fetchCategories = createAsyncThunk(
+  'fetchCategories',
+  async (_, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.get(endpoints.GETCATEGORIES);
+      const data = response.data;
+      // console.log('Fetched categories from API:', data);
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        return fulfillWithValue(
+          data.data.map(cat => ({
+            id: cat.id,
+            name: cat.category_name,
+            shop_items_tb_nm: cat.shop_items_tb_nm,
+          })),
+        );
+      } else {
+        return rejectWithValue('No categories found or invalid response');
+      }
+    } catch (error) {
+      // console.error('Fetch categories error:', error);
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch categories',
+      );
+    }
+  },
+);
+export const fetchSubCategories = createAsyncThunk(
+  'fetchSubCategories',
+  async (categoryId, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.get(
+        `${endpoints.GETSUBCATEGORIES}/${categoryId}`,
+      );
+      const data = response.data;
+      // console.log('Fetched subcategories from API:', data);
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        return fulfillWithValue(
+          data.data.map(sub => ({
+            id: sub.id,
+            name: sub.sub_category_name,
+            sub_category_image: sub.sub_category_image, // ✅ include image
+          })),
+        );
+      } else {
+        return rejectWithValue('No subcategories found or invalid response');
+      }
+    } catch (error) {
+      // console.error('Fetch subcategories error:', error);
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch subcategories',
+      );
+    }
+  },
+);
+export const fetchFilters = createAsyncThunk(
+  'fetchFilters',
+  async (categoryId, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.get(`${endpoints.GETFILTERS}/${categoryId}`);
+      const data = response.data;
+      // console.log('Fetched filters from API:', data);
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        return fulfillWithValue(
+          data.data.map(f => ({
+            id: f.id,
+            name: f.main_filter_name, // adjust based on your API response
+          })),
+        );
+      } else {
+        return rejectWithValue('No filters found or invalid response');
+      }
+    } catch (error) {
+      // console.error('Fetch filters error:', error);
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch filters',
+      );
+    }
+  },
+);
+export const registerVendor = createAsyncThunk(
+  'registerVendor',
+  async (payload, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(endpoints.REGISTERVENDOR, payload);
+      const data = response.data;
+      console.log('Register Vendor API response:', data);
+
+      if (data?.status === 200) {
+        return fulfillWithValue(data);
+      } else {
+        return rejectWithValue(data?.msg || 'Vendor registration failed');
+      }
+    } catch (error) {
+      // console.error('Register Vendor error:', error);
+      return rejectWithValue(
+        error.response?.data?.msg ||
+          'Something went wrong while registering vendor',
+      );
+    }
+  },
+);
+export const fetchShopDetails = createAsyncThunk(
+  'fetchShopDetails',
+  async (userId, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(endpoints.GETPROFILEDETAILS, {
+        user_id: userId,
+      });
+
+      const data = response.data;
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        const shop = data.data[0]; // Take first shop from array
+
+        return fulfillWithValue({
+          id: shop.id,
+          name: shop.shop_name,
+          address: shop.shop_address,
+          timing: `${shop.shop_open_time} - ${shop.shop_close_time}`,
+          mobile: shop.shop_phone_number,
+          email: shop.shop_email,
+          image: shop.shop_image,
+          shop_active_status: shop.shop_active_status,
+        });
+      } else {
+        return rejectWithValue('No shop found or invalid response');
+      }
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch shop details',
+      );
+    }
+  },
+);
+export const updateShopStatus = createAsyncThunk(
+  'updateShopStatus',
+  async ({shop_id, shop_active_status}, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const payload = {
+        shop_id: Number(shop_id),
+        shop_active_status: Number(shop_active_status),
+      };
+
+      console.log('📤 Sending shop status update payload:', payload);
+
+      const response = await api.post(
+        'https://melocalapp.com:1035/vendor_app/updateshopstatuss',
+        payload,
+      );
+
+      console.log('📥 API Response (updateShopStatus):', response.data);
+
+      const data = response.data;
+
+      if (data?.status === 200) {
+        return fulfillWithValue(payload); // normalized payload returned
+      } else {
+        return rejectWithValue(data?.msg || 'Failed to update shop status');
+      }
+    } catch (error) {
+      console.log(
+        '❌ API Error (updateShopStatus):',
+        error.response?.data || error.message,
+      );
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to update shop status',
+      );
+    }
+  },
+);
+
+
+export const updateVendorPassword = createAsyncThunk(
+  'updateVendorPassword',
+  async ({userId, newPassword}, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(endpoints.UPDATEVENDORSPASSWORD, {
+        user_id: userId,
+        newPassword: newPassword,
+      });
+
+      const data = response.data;
+      console.log('Update Password API response:', data);
+
+      if (data?.status === 200) {
+        return fulfillWithValue(data.msg || 'Password updated successfully');
+      } else {
+        return rejectWithValue(data?.msg || 'Failed to update password');
+      }
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.msg || 'Error updating password',
+      );
+    }
+  },
+);
+export const fetchCurrentOrders = createAsyncThunk(
+  'fetchCurrentOrders',
+  async (userId, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(endpoints.GETCURRENTORDERS, {
+        user_id: userId,
+      });
+
+      const data = response.data;
+    //  console.log('GETCURRENTORDERS response:', data);
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        // Separate orders by status
+        const pendingOrders = [];
+        const OrdersInProcess = [];
+
+        data.data.forEach(order => {
+          const formattedOrder = {
+            status: order.order_status === 0 ? 'Pending' : 'Orders In Process',
+
+            // id: order.id, //{order_id},
+            //date: order.order_date,
+            // time: order.order_time,
+            // address: order.delivery_address,
+            // total: order.grand_total,
+            // paymentMethod: order.payment_type,
+            //items: [], // ✅ You can fetch items with another API if available
+          };
+
+          if (order.order_status === 0) {
+            pendingOrders.push(order);
+          } else {
+            OrdersInProcess.push(order);
+          }
+        });
+
+        return fulfillWithValue({pendingOrders, OrdersInProcess});
+      } else {
+        return rejectWithValue('No current orders found');
+      }
+    } catch (error) {
+      console.error('Fetch Current Orders error:', error);
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch current orders',
+      );
+    }
+  },
+);
+export const fetchOrderDetails = createAsyncThunk(
+  'fetchOrderDetails',
+  async (orderId, {rejectWithValue, fulfillWithValue}) => {
+    try {
+    //  console.log(orderId, '>>>>>>>>>>>>>>>>orderId');
+      const response = await api.post(endpoints.NEWGETORDERDETAILS, {
+        orderid: orderId,
+      });
+
+      const data = response.data;
+    //  console.log('ORDER DETAILS API response:', data);
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        const items = data.data.map(item => ({
+          //id: item.item_id,
+          name: item.item_name,
+          image: item.item_image,
+          price: item.item_price,
+          quantity: item.item_count,
+
+          isVeg: item.filter_one?.toLowerCase() === 'veg', // ✅ true if veg
+        }));
+        return fulfillWithValue(items);
+      } else {
+        return rejectWithValue('No items found for this order');
+      }
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch order details',
+      );
+    }
+  },
+);
+export const updateOrderStatus = createAsyncThunk(
+  'updateOrderStatus',
+  async ({orderId, orderStatus}, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(
+        'https://melocalapp.com:1035/vendor_app/updateorderstatus',
+        {
+          order_status: orderStatus, 
+          order_id: orderId,
+        },
+      );
+
+      const data = response.data;
+      console.log('UPDATE ORDER STATUS response:', data);
+
+      if (data?.status === 200) {
+        return fulfillWithValue({orderId, orderStatus});
+      } else {
+        return rejectWithValue(data?.msg || 'Failed to update order status');
+      }
+    } catch (error) {
+      console.error('Update order status error:', error);
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to update order status',
+      );
+    }
+  },
+);
+export const fetchShopPayments = createAsyncThunk(
+  'fetchShopPayments',
+  async (userId, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(
+        'https://melocalapp.com:1035/vendor_app/getshopsforpayments',
+        {user_id: userId},
+      );
+
+      const data = response.data;
+      console.log('getshopsforpayments API response:', data);
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        return fulfillWithValue(data.data[0]); // take first shop
+      } else {
+        return rejectWithValue('No payment data found');
+      }
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch shop payments',
+      );
+    }
+  },
+);
+export const fetchPaymentHistory = createAsyncThunk(
+  'fetchPaymentHistory',
+  async ({f_date, t_date, userId}, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(
+        'https://melocalapp.com:1035/vendor_app/getpaymenthistory',
+        { f_date, t_date, shop_id:userId }
+      );
+
+      const data = response.data;
+      console.log('Payment History API:', data);
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        return fulfillWithValue(data.data);
+      } else {
+        return rejectWithValue('No transactions found');
+      }
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch transactions'
+      );
+    }
+  }
+);
+
+
+export const fetchProductsList = createAsyncThunk(
+  'fetchProductsList',
+  async (shopId, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(
+        'https://melocalapp.com:1035/vendor_app/getproductslistdata',
+        { shop_id: shopId }
+      );
+
+      const data = response.data;
+      console.log('Products API response:', data);
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        return fulfillWithValue(data.data);
+      } else {
+        return rejectWithValue('No products found');
+      }
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.msg || 'Failed to fetch products');
+    }
+  }
+);
+
+
+
+// src/redux/reducers/auth.js
+
+export const updateProduct = createAsyncThunk(
+  'updateProduct',
+  async (payload, { rejectWithValue, fulfillWithValue }) => {
+    try {
+      const response = await api.post(
+        'https://melocalapp.com:1035/vendor_app/updateshopproducts',
+        payload
+      );
+
+      const data = response.data;
+      console.log('Update Product API response:', data);
+
+      if (data?.status === 200) {
+        return fulfillWithValue(payload); // return updated data
+      } else {
+        return rejectWithValue(data?.msg || 'Failed to update product');
+      }
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.msg || 'API Error');
+    }
+  }
+);
+
+
+export const updateProductStatus = createAsyncThunk(
+  'updateProductStatus',
+  async (payload, { rejectWithValue, fulfillWithValue }) => {
+    try {
+      const response = await api.post(
+        'https://melocalapp.com:1035/vendor_app/updateproductactive',
+        payload
+      );
+
+      const data = response.data;
+      console.log('Update Product Status API response:', data);
+
+      if (data?.status === 200) {
+        return fulfillWithValue(payload);
+      } else {
+        return rejectWithValue(data?.msg || 'Failed to update product status');
+      }
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.msg || 'API Error');
+    }
+  }
+);
+
+export const fetchDashboardOrders = createAsyncThunk(
+  'fetchDashboardOrders',
+  async ({f_date, t_date, userId}, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(
+        'https://melocalapp.com:1035/vendor_app/getdashboardorders',
+        { f_date, t_date, shop_id: userId }
+      );
+
+      const data = response.data;
+      console.log('Dashboard Orders API:', data);
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        return fulfillWithValue(data.data);
+      } else {
+        return rejectWithValue('No orders found');
+      }
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch orders'
+      );
+    }
+  }
+);
+
+
+
 
 export const AuthSlice = createSlice({
   name: 'authlice',
@@ -95,26 +571,126 @@ export const AuthSlice = createSlice({
     },
   },
   extraReducers: builder => {
-    builder.addCase(requestLoginOtp.pending, state => {
-      state.message = null;
-    });
-    builder.addCase(requestLoginOtp.fulfilled, (state, action) => {
-      state.message = null;
-    });
-    builder.addCase(requestLoginOtp.rejected, state => {
-      state.message = 'Please try again!';
-    });
-
+   
     builder.addCase(vendorLogin.pending, state => {
       state.message = null;
     });
     builder.addCase(vendorLogin.fulfilled, (state, action) => {
       state.message = null;
-      console.log(action.payload, '>>>>>>>>>>>>>>>>>>>>responseses');
+      console.log(action.payload, '>>>>>>>responseses');
+      // FIX: use "id" instead of "user_id"
+      state.userId = action.payload?.data?.id || null;
+      //  state.token = action.payload?.token || null;
     });
     builder.addCase(vendorLogin.rejected, state => {
       state.message = 'Please try again!';
     });
+
+    builder.addCase(registerVendor.fulfilled, (state, action) => {
+      console.log('Vendor Registered:', action.payload);
+      // state.userId = action.payload?.data?.id || null;
+      // state.token = action.payload?.token || null;
+    });
+    builder.addCase(fetchCurrentOrders.pending, state => {
+      state.loading = true;
+    });
+
+    builder.addCase(fetchCurrentOrders.fulfilled, (state, action) => {
+      state.loading = false;
+     // console.log(action.payload, '>>>>>>>responseses');
+      state.pendingOrders = action.payload.pendingOrders;
+      state.OrdersInProcess = action.payload.OrdersInProcess;
+      // state.user_Id = action.payload?.data?.id || null;
+      //console.log(action.payload, '>>>>>>>responseses');
+    });
+
+    builder.addCase(fetchCurrentOrders.rejected, (state, action) => {
+      state.loading = false;
+      state.pendingOrders = [];
+      state.OrdersInProcess = [];
+      state.message = action.payload || 'Failed to load current orders';
+    });
+
+    builder.addCase(fetchShopPayments.pending, state => {
+      state.loading = true;
+    });
+    builder.addCase(fetchShopPayments.fulfilled, (state, action) => {
+      state.loading = false;
+      state.shopPayments = action.payload;
+    });
+    builder.addCase(fetchShopPayments.rejected, (state, action) => {
+      state.loading = false;
+      state.shopPayments = null;
+      state.message = action.payload || 'Failed to load shop payments';
+    });
+
+builder.addCase(fetchShopDetails.fulfilled, (state, action) => {
+  state.shopDetails = action.payload;
+});
+
+
+builder.addCase(fetchPaymentHistory.pending, state => {
+  state.loading = true;
+});
+builder.addCase(fetchPaymentHistory.fulfilled, (state, action) => {
+  state.loading = false;
+  state.paymentHistory = action.payload;
+});
+builder.addCase(fetchPaymentHistory.rejected, (state, action) => {
+  state.loading = false;
+  state.paymentHistory = [];
+  state.message = action.payload || 'Failed to load payment history';
+});
+
+
+builder.addCase(fetchProductsList.pending, (state) => {
+  state.loading = true;
+});
+builder.addCase(fetchProductsList.fulfilled, (state, action) => {
+  state.loading = false;
+  state.products = action.payload;  // ✅ keep full list in redux
+});
+builder.addCase(fetchProductsList.rejected, (state, action) => {
+  state.loading = false;
+  state.products = [];
+  state.message = action.payload || 'Failed to load products';
+});
+
+ builder.addCase(updateProduct.fulfilled, (state, action) => {
+  const updated = action.payload;
+  state.products = state.products.map(p =>
+    p.id === updated.id ? { ...p, ...updated } : p
+  );
+});
+
+builder.addCase(updateProductStatus.fulfilled, (state, action) => {
+  const updated = action.payload;
+  state.products = state.products.map(p =>
+    p.id === updated.id ? { ...p, active_status: updated.active_status } : p
+  );
+});
+
+
+builder.addCase(updateShopStatus.fulfilled, (state, action) => {
+  if (state.shopDetails && state.shopDetails.id === action.payload.shop_id) {
+    state.shopDetails.shop_active_status = action.payload.shop_active_status;
+  }
+});
+
+builder.addCase(fetchDashboardOrders.pending, state => {
+  state.loading = true;
+});
+builder.addCase(fetchDashboardOrders.fulfilled, (state, action) => {
+  state.loading = false;
+  state.dashboardOrders = action.payload;
+});
+builder.addCase(fetchDashboardOrders.rejected, (state, action) => {
+  state.loading = false;
+  state.dashboardOrders = [];
+  state.message = action.payload || 'Failed to load orders';
+});
+
+   
   },
 });
 

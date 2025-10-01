@@ -1,80 +1,32 @@
-import React, {useState} from 'react';
-import {View, Text, StyleSheet, FlatList, TouchableOpacity} from 'react-native';
+import React, {useState, useEffect, useCallback} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {colors} from '../config/theme';
-import {useNavigation} from '@react-navigation/native';
-
-const orders = [
-  {
-    id: '1',
-    orderNo: '121321',
-    items: [
-      '1 x Chicken Biryani',
-      '1 x Chicken Fry Biryani',
-      '1 x Mutton Fry Biryani',
-    ],
-    date: '09 June',
-    time: '8:40 PM',
-    status: 'DELIVERED',
-    rating: 4,
-    price: 1300,
-  },
-  {
-    id: '2',
-    orderNo: '121322',
-    items: [
-      '14 x Panner Butter Masala',
-      '1 x Alo Parota',
-      'Addons : 1x onions , 3x minis , 1x onions , 3x minis',
-    ],
-    date: '09 June',
-    time: '9:15 PM',
-    status: 'DELIVERED',
-    rating: 5,
-    price: 250,
-  },
-  {
-    id: '3',
-    orderNo: '121323',
-    items: [
-      '1 x Chicken Biryani',
-      '1 x Chicken Fry Biryani',
-      '1 x Mutton Fry Biryani',
-    ],
-    date: '09 June',
-    time: '10:05 PM',
-    status: 'CANCELLED',
-    rating: null,
-    price: null,
-  },
-];
+import {useDispatch, useSelector} from 'react-redux';
+import {fetchDashboardOrders} from '../redux/reducers/auth';
 
 export default function ReportsScreen() {
-  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
-  const [selecting, setSelecting] = useState('start');
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const dispatch = useDispatch();
+  const {userId, dashboardOrders, loading} = useSelector(state => state.Auth);
 
-  const navigation = useNavigation();
-
-  const showDatePicker = type => {
-    setSelecting(type);
-    setDatePickerVisible(true);
+  // ===================== Helpers =====================
+  const formatAPIDate = date => {
+    if (!date) return '';
+    const d = new Date(date);
+    return `${d.getFullYear()}-${(d.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
   };
 
-  const hideDatePicker = () => setDatePickerVisible(false);
-
-  const handleConfirm = date => {
-    if (selecting === 'start') {
-      setStartDate(date);
-    } else {
-      setEndDate(date);
-    }
-    hideDatePicker();
-  };
-
-  const formatDate = date => {
+  const formatDisplayDate = date => {
     if (!date) return '--';
     const d = new Date(date);
     return `${d.getDate().toString().padStart(2, '0')}-${(d.getMonth() + 1)
@@ -82,59 +34,94 @@ export default function ReportsScreen() {
       .padStart(2, '0')}-${d.getFullYear()}`;
   };
 
-  const renderOrder = ({item}) => {
-    return (
-      <TouchableOpacity onPress={() => navigation.navigate('BillSummary')}>
-        <View style={styles.orderCardContainer}>
-          <View style={styles.orderCardHeader}>
-            <Text style={styles.orderCardId}>Order # {item.orderNo}</Text>
-            <Text style={styles.orderCardItems}>
-              ({item.items.length} Items)
-            </Text>
-
-            <View style={styles.orderCardStatusBox}>
-              {item.rating ? (
-                <Text style={styles.orderCardRating}>{item.rating} ⭐</Text>
-              ) : null}
-              <Text
-                style={[
-                  styles.orderCardStatus,
-                  item.status === 'DELIVERED'
-                    ? styles.delivered
-                    : item.status === 'CANCELLED'
-                    ? styles.cancelled
-                    : styles.otherStatus,
-                ]}>
-                {item.status}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.orderCardBody}>
-            <View style={styles.orderItemsLeft}>
-              {item.items.map((food, index) => (
-                <Text key={index} style={styles.orderCardItem}>
-                  {food}
-                </Text>
-              ))}
-            </View>
-
-            <View style={styles.orderItemsRight}>
-              <Text style={styles.orderCardTime}>
-                {item.time} | {item.date}
-              </Text>
-              {item.price ? (
-                <View style={styles.orderCardPriceTag}>
-                  <Text style={styles.orderCardPrice}>₹{item.price}.00</Text>
-                </View>
-              ) : null}
-            </View>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
+  const statusMap = {
+    0: 'Placed',
+    1: 'Accepted',
+    2: 'Ongoing',
+    3: 'Delivered',
+    5: 'Rejected',
+    8: 'Cancelled',
   };
 
+  // ===================== State =====================
+  const today = new Date();
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(today.getDate() - 90);
+
+  const [startDate, setStartDate] = useState(ninetyDaysAgo);
+  const [endDate, setEndDate] = useState(today);
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  const [selecting, setSelecting] = useState('start');
+
+  // ===================== Fetch Orders =====================
+  const fetchOrders = useCallback(() => {
+    if (!userId) return;
+    const f_date = formatAPIDate(startDate);
+    const t_date = formatAPIDate(endDate);
+    dispatch(fetchDashboardOrders({f_date, t_date, userId}));
+  }, [startDate, endDate, userId, dispatch]);
+
+  useEffect(() => {
+    if (userId) fetchOrders();
+  }, [userId, fetchOrders]);
+
+  // ===================== Date Picker =====================
+  const showDatePicker = type => {
+    setSelecting(type);
+    setDatePickerVisible(true);
+  };
+  const hideDatePicker = () => setDatePickerVisible(false);
+  const handleConfirm = date => {
+    selecting === 'start' ? setStartDate(date) : setEndDate(date);
+    hideDatePicker();
+  };
+
+  // ===================== Render Order =====================
+  const renderOrder = ({item}) => (
+    <View style={styles.orderCardContainer}>
+      <View style={styles.orderCardHeader}>
+        <Text style={styles.orderCardId} numberOfLines={1}>
+          ID-{item.order_id}
+        </Text>
+        <View style={styles.rightHeaderBox}>
+          <Text style={styles.orderCardTime}>
+            {new Date(item.order_date_time).toLocaleDateString()} |{' '}
+            {item.order_time}
+          </Text>
+          <View style={styles.orderCardStatusBox}>
+            {item.order_rating > 0 && (
+              <Text style={styles.orderCardRating}>{item.order_rating} ⭐</Text>
+            )}
+            <Text
+              style={[
+                styles.orderCardStatus,
+                item.order_status === 3
+                  ? styles.delivered
+                  : item.order_status === 8
+                  ? styles.cancelled
+                  : item.order_status === 5
+                  ? styles.rejected
+                  : styles.otherStatus,
+              ]}>
+              {statusMap[item.order_status] || 'Unknown'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.addressCard}>
+        <Text style={styles.addressTitle}>Delivery Address</Text>
+        <Text style={styles.addressText}>{item.delivery_address}</Text>
+      </View>
+
+      <View style={styles.totalContainer}>
+        <Text style={styles.totalBill}>Total Bill</Text>
+        <Text style={styles.totalPrice}>₹{item.grand_total}</Text>
+      </View>
+    </View>
+  );
+
+  // ===================== JSX =====================
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
@@ -150,9 +137,7 @@ export default function ReportsScreen() {
             size={18}
             color={colors.reportsTopTitle}
           />
-          <Text style={styles.dateText}>
-            {startDate ? formatDate(startDate) : 'Start Date'}
-          </Text>
+          <Text style={styles.dateText}>{formatDisplayDate(startDate)}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -163,27 +148,29 @@ export default function ReportsScreen() {
             size={18}
             color={colors.reportsTopTitle}
           />
-          <Text style={styles.dateText}>
-            {endDate ? formatDate(endDate) : 'End Date'}
-          </Text>
+          <Text style={styles.dateText}>{formatDisplayDate(endDate)}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.downloadBtn}>
-          <Text style={styles.downloadText}>Download</Text>
+        <TouchableOpacity style={styles.downloadBtn} onPress={fetchOrders}>
+          <Text style={styles.downloadText}>Apply</Text>
           <Icon
-            name="download-outline"
+            name="checkmark-done-outline"
             size={18}
             color={colors.reportsDownloadText}
           />
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={orders}
-        keyExtractor={(item, index) => `${item.id}-${index}`}
-        renderItem={renderOrder}
-        contentContainerStyle={styles.listContent}
-      />
+      {loading ? (
+        <ActivityIndicator size="large" color={colors.primary} />
+      ) : (
+        <FlatList
+          data={[...dashboardOrders].reverse()}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
+          renderItem={renderOrder}
+          contentContainerStyle={styles.listContent}
+        />
+      )}
 
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
@@ -254,14 +241,27 @@ const styles = StyleSheet.create({
   orderCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     margin: 10,
   },
   orderCardId: {
+    flex: 1,
     fontSize: 14,
     fontWeight: '500',
-    color: colors.reportsCardId,
+    color: colors.primary,
+    marginRight: 10,
   },
+  rightHeaderBox: {
+    alignItems: 'flex-end',
+  },
+
+  orderCardTime: {
+    fontSize: 14,
+    color: colors.textMedium,
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+
   orderCardItems: {
     fontSize: 14,
     color: colors.reportsCardItems,
@@ -291,7 +291,8 @@ const styles = StyleSheet.create({
   },
   delivered: {backgroundColor: colors.reportsDelivered},
   cancelled: {backgroundColor: colors.reportsCancelled},
-  otherStatus: {backgroundColor: colors.reportsOtherStatus},
+  otherStatus: {backgroundColor: colors.primarySemi},
+  rejected: {backgroundColor: colors.reportsCancelled},
 
   orderCardBody: {
     flexDirection: 'row',
@@ -310,11 +311,7 @@ const styles = StyleSheet.create({
     marginVertical: 2,
     lineHeight: 20,
   },
-  orderCardTime: {
-    fontSize: 12,
-    color: colors.reportsCardTime,
-    marginBottom: 5,
-  },
+
   orderCardPriceTag: {
     backgroundColor: colors.reportsPriceTagBg,
     paddingHorizontal: 8,
@@ -329,4 +326,27 @@ const styles = StyleSheet.create({
   },
 
   listContent: {paddingBottom: 10},
+
+  // Address block
+  addressCard: {
+    borderWidth: 0.8,
+    borderColor: colors.reportsCardBorder,
+    backgroundColor: colors.reportsCardBodyBg,
+    borderRadius: 6,
+    padding: 10,
+    marginTop: 5,
+  },
+  addressTitle: {fontSize: 13, fontWeight: '600', color: colors.textDark},
+  addressText: {fontSize: 13, color: colors.textMedium, marginTop: 7},
+
+  // Total Bill
+  totalContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginHorizontal: 10,
+    marginVertical: 12,
+  },
+  totalBill: {fontSize: 14, color: colors.textDark, fontWeight: '500'},
+  totalPrice: {fontSize: 14, fontWeight: 'bold', color: colors.totalPrice},
 });

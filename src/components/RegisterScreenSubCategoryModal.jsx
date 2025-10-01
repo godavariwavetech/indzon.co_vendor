@@ -1,26 +1,40 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-const SubCategoryModal = ({ visible, subCategories, selected, onToggle, onClose }) => {
+const SubCategoryModal = ({ visible, subCategories = [], selected = [], loading, onToggle, onClose }) => {
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
         <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>Select SubCategories</Text>
-          {subCategories.map(item => (
-            <TouchableOpacity
-              key={item}
-              style={styles.optionRow}
-              onPress={() => onToggle(item)}>
-              <Icon
-                name={selected.includes(item) ? 'checkbox' : 'square-outline'}
-                size={22}
-                color="#007AFF"
-              />
-              <Text style={styles.optionText}>{item}</Text>
-            </TouchableOpacity>
-          ))}
+          <Text style={styles.modalTitle}>Select Subcategories</Text>
+
+          {loading ? (
+            <View style={styles.loaderContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+            </View>
+          ) : subCategories.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No subcategories available</Text>
+            </View>
+          ) : (
+            <ScrollView>
+              {subCategories.map(item => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.optionRow}
+                  onPress={() => onToggle(item)}>
+                  <Icon
+                    name={selected.some(sel => sel.id === item.id) ? 'checkbox' : 'square-outline'}
+                    size={22}
+                    color="#007AFF"
+                  />
+                  <Text style={styles.optionText}>{item.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+
           <TouchableOpacity style={styles.modalButton} onPress={onClose}>
             <Text style={styles.modalButtonText}>Done</Text>
           </TouchableOpacity>
@@ -51,6 +65,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     color: '#333',
     textAlign: 'center',
+  },
+  loaderContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 30,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 30,
+  },
+  emptyText: {
+    color: '#888',
+    fontSize: 14,
   },
   optionRow: {
     flexDirection: 'row',

@@ -6,83 +6,104 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   ActivityIndicator,
   StatusBar,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {CommonActions, useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {colors} from '../../config/theme';
 import {appLogo} from '../../assets/index';
 import {useDispatch} from 'react-redux';
 import {vendorLogin} from '../../redux/reducers/auth';
+import CustomAlertModal from '../../components/CustomAlertModal'; // ✅ Import
 
 export default function LoginScreen() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const [phoneNumber, setPhoneNumber] = useState('9010933109');
+
+  const [phoneNumber, setPhoneNumber] = useState('8978979879');
   const [password, setPassword] = useState('123456');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // ✅ Modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState('error');
+
+  const showModal = (title, message, type = 'error') => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalType(type);
+    setModalVisible(true);
+  };
 
   const validatePhoneNumber = number => /^[0-9]{10}$/.test(number);
 
   const handleSignIn = async () => {
     if (!validatePhoneNumber(phoneNumber)) {
-      Alert.alert(
-        'Invalid Phone Number',
-        'Please enter a valid 10-digit number',
-      );
+      showModal('Invalid Phone Number', 'Please enter a valid 10-digit number');
       return;
     }
     if (!password.trim()) {
-      Alert.alert('Invalid Password', 'Please enter your password');
+      showModal('Invalid Password', 'Please enter your password');
       return;
     }
 
     try {
       setLoading(true);
       const response = await dispatch(vendorLogin({phoneNumber, password}));
-      console.log('Login API response:', response);
+      // console.log('Login API response:', response);
 
       if (response?.payload?.status === 200) {
-        const successMessage = response?.payload?.msg || 'Login Successful';
-        Alert.alert('Success', successMessage);
-        navigation.navigate('BottomTabNavigation');
+        // const successMessage = response?.payload?.msg || 'Login Successful';
+        // showModal('Success', successMessage, 'success');
+        setTimeout(() => {
+          setModalVisible(false);
+
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{name: 'BottomTabNavigation'}],
+            }),
+          );
+          // navigation.navigate('BottomTabNavigation');
+        }, 1200);
       } else {
         const errorMessage =
           response?.payload?.msg ||
           response?.error?.message ||
           'Login failed. Please try again.';
-        Alert.alert('Login Failed', errorMessage);
+        showModal('Login Failed', errorMessage);
       }
     } catch (error) {
       console.error('Login API Error:', error);
       if (error.response) {
         const status = error.response.status;
         if (status === 401) {
-          Alert.alert(
+          showModal(
             'Unauthorized',
             error.response.data?.msg || 'Invalid credentials.',
           );
         } else if (status >= 500) {
-          Alert.alert('Server Error', 'Please try again later.');
+          showModal('Server Error', 'Please try again later.');
         } else {
-          Alert.alert(
+          showModal(
             'Error',
             error.response.data?.msg || 'Something went wrong.',
           );
         }
       } else if (error.request) {
-        Alert.alert(
+        showModal(
           'Network Error',
           'Unable to reach server. Please check your internet.',
         );
       } else {
-        Alert.alert('Error', error.message || 'Unexpected error occurred.');
+        showModal('Error', error.message || 'Unexpected error occurred.');
       }
     } finally {
       setLoading(false);
@@ -181,24 +202,23 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* ✅ Reusable Custom Modal */}
+      <CustomAlertModal
+        visible={modalVisible}
+        title={modalTitle}
+        message={modalMessage}
+        type={modalType}
+        onClose={() => setModalVisible(false)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 15,
-    backgroundColor: '#fff',
-    flex: 1,
-  },
-  logoContainer: {
-    marginTop: 60,
-    alignItems: 'center',
-  },
-  logo: {
-    width: 150,
-    height: 150,
-  },
+  container: {paddingHorizontal: 18, backgroundColor: '#fff', flex: 1},
+  logoContainer: {marginTop: 60, alignItems: 'center'},
+  logo: {width: 150, height: 150},
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -214,15 +234,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  inputContainer: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 15,
-    color: colors.textLight,
-    marginBottom: 8,
-  },
+  inputContainer: {width: '100%', marginBottom: 20},
+  label: {fontSize: 15, color: colors.textLight, marginBottom: 8},
   input: {
     borderWidth: 1,
     borderColor: colors.textLight,
@@ -240,46 +253,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     paddingHorizontal: 12,
   },
-  passwordInput: {
-    flex: 1,
-    fontSize: 16,
-    paddingVertical: 10,
-  },
-  eyeIcon: {
-    paddingHorizontal: 8,
-  },
-  forgotPasswordContainer: {
-    marginTop: 8,
-    alignItems: 'flex-end',
-  },
-  forgotPasswordText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  passwordInput: {flex: 1, fontSize: 16, paddingVertical: 10},
+  eyeIcon: {paddingHorizontal: 8},
+  forgotPasswordContainer: {marginTop: 8, alignItems: 'flex-end'},
+  forgotPasswordText: {color: colors.primary, fontSize: 14, fontWeight: '600'},
   signInButton: {
     backgroundColor: colors.primary,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  signInText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  Register: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 15,
-  },
-  signText: {
-    fontSize: 16,
-    fontWeight: '400',
-  },
-  sigupText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.primary,
-  },
+  signInText: {color: colors.white, fontSize: 16, fontWeight: '600'},
+  Register: {flexDirection: 'row', justifyContent: 'center', marginTop: 15},
+  signText: {fontSize: 16, fontWeight: '400'},
+  sigupText: {fontSize: 16, fontWeight: '700', color: colors.primary},
 });
