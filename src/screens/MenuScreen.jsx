@@ -1,5 +1,6 @@
 // src/screens/MenuScreen.jsx
 import React, {useState, useEffect, useCallback} from 'react';
+import NoInternetScreen from '../components/NoInternetScreen';
 
 import {
   View,
@@ -26,6 +27,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {colors} from '../config/theme';
 import {RestaurantLogo} from '../assets/index';
 import ConfirmationModal from '../components/ConfirmationModal';
+import NetInfo from '@react-native-community/netinfo';
 
 const CustomToggle = ({value, onChange}) => {
   // keep Animated.Value stable across renders
@@ -63,6 +65,7 @@ const CustomToggle = ({value, onChange}) => {
 export default function MenuScreen() {
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isConnected, setIsConnected] = useState(true);
 
   const {userId, shopDetails, products, loading} = useSelector(
     state => state.Auth,
@@ -76,6 +79,21 @@ export default function MenuScreen() {
   // 🔹 toggle confirmation modal state
   const [toggleConfirmVisible, setToggleConfirmVisible] = useState(false);
   const [pendingToggle, setPendingToggle] = useState(null);
+
+  // Refetch products when internet comes back
+  useEffect(() => {
+    if (isConnected && userId) {
+      dispatch(fetchShopDetails(userId));
+      dispatch(fetchProductsList(userId));
+    }
+  }, [isConnected, userId, dispatch]);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (userId) {
@@ -96,23 +114,22 @@ export default function MenuScreen() {
   }, [products]);
 
   // 🔹 Group products by sub_category_id
- // Filter products by name
-const filteredProducts = products.filter(item =>
-  item.item_name.toLowerCase().includes(searchQuery.toLowerCase())
-);
+  // Filter products by name
+  const filteredProducts = products.filter(item =>
+    item.item_name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
-// Group filtered products by sub_category_id
-const groupedProducts = filteredProducts.reduce((acc, item) => {
-  if (!acc[item.sub_category_id]) {
-    acc[item.sub_category_id] = {
-      title: item.sub_category_name,
-      data: [],
-    };
-  }
-  acc[item.sub_category_id].data.push(item);
-  return acc;
-}, {});
-
+  // Group filtered products by sub_category_id
+  const groupedProducts = filteredProducts.reduce((acc, item) => {
+    if (!acc[item.sub_category_id]) {
+      acc[item.sub_category_id] = {
+        title: item.sub_category_name,
+        data: [],
+      };
+    }
+    acc[item.sub_category_id].data.push(item);
+    return acc;
+  }, {});
 
   // 🔹 show toggle confirmation instead of direct update
   const handleToggle = (id, newValue) => {
@@ -262,33 +279,50 @@ const groupedProducts = filteredProducts.reduce((acc, item) => {
           color={colors.searchOutline}
           style={styles.icon}
         />
-       <TextInput
-  style={styles.input}
-  placeholder="Search item..."
-  placeholderTextColor={colors.searchOutline}
-  value={searchQuery}
-  onChangeText={setSearchQuery}
-/>
+        <TextInput
+          style={styles.input}
+          placeholder="Search item..."
+          placeholderTextColor={colors.searchOutline}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
       </View>
 
       {/* 🔹 Menu Lists from API */}
-     <ScrollView>
-      {Object.keys(groupedProducts).length === 0 ? (
-  <Text style={{textAlign: 'center', marginTop: 20, color: '#888'}}>
-    No items found
-  </Text>
-) : (
-  Object.values(groupedProducts).map(section => (
-    <View key={section.title}>
-      <Text style={styles.sectionTitle}>{section.title}</Text>
-      <FlatList
-        data={section.data}
-        renderItem={renderCard}
-        keyExtractor={item => item.id.toString()}
-        scrollEnabled={false}
-      />
-    </View>
-  ))
+  <ScrollView>
+  {!isConnected ? (
+    // Case 1: No internet
+    <NoInternetScreen
+      onRetry={() => {
+        if (userId) {
+          dispatch(fetchShopDetails(userId));
+          dispatch(fetchProductsList(userId));
+        }
+      }}
+    />
+  ) : loading ? (
+    // Optional: Loading indicator
+    <Text style={{textAlign: 'center', marginTop: 20, color: '#888'}}>
+      Loading menu items...
+    </Text>
+  ) : Object.keys(groupedProducts).length === 0 ? (
+    // Case 2: Internet available but no items
+    <Text style={{textAlign: 'center', marginTop: 20, color: '#888'}}>
+      No menu items available
+    </Text>
+  ) : (
+    // Case 3: Items available
+    Object.values(groupedProducts).map(section => (
+      <View key={section.title}>
+        <Text style={styles.sectionTitle}>{section.title}</Text>
+        <FlatList
+          data={section.data}
+          renderItem={renderCard}
+          keyExtractor={item => item.id.toString()}
+          scrollEnabled={false}
+        />
+      </View>
+    ))
   )}
 </ScrollView>
 
@@ -552,7 +586,7 @@ const styles = StyleSheet.create({
     borderColor: 'lightgrey',
   },
   icon: {marginRight: 5},
-  input: {flex: 1, fontSize: 16, color: colors.grey},
+  input: {flex: 1, fontSize: 16, color: colors.textDark},
   sectionTitle: {
     fontSize: 16,
     fontWeight: '500',

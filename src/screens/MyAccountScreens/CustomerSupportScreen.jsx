@@ -33,7 +33,7 @@ const showModal = (title, message, type = 'error') => {
   const handlePress = async (type) => {
     try {
       if (type === "whatsapp") {
-        const phoneNumber = "919876543210"; 
+        const phoneNumber = "919888888888"; 
         const url = `whatsapp://send?phone=${phoneNumber}&text=Hello, I need help!`;
         const supported = await Linking.canOpenURL(url);
         if (supported) {
@@ -47,7 +47,7 @@ const showModal = (title, message, type = 'error') => {
         const url = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
         await Linking.openURL(url);
       } else if (type === "phone") {
-        const phone = "+918765432100"; // ✅ Replace with support number
+        const phone = "9999999999"; // ✅ Replace with support number
         const url = `tel:${phone}`;
         await Linking.openURL(url);
       }
@@ -67,7 +67,7 @@ const showModal = (title, message, type = 'error') => {
 
       <Text style={styles.description}>
         We’re here to help! Choose one of the options below to get in touch with
-        our support team. Our team is available 9 AM – 7 PM, Monday to Saturday.
+        our support team.
       </Text>
 
       <TouchableOpacity style={styles.card} onPress={() => handlePress("whatsapp")}>

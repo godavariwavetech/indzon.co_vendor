@@ -547,6 +547,8 @@ export const AuthSlice = createSlice({
   reducers: {
     actionLogout: state => {
       state.token = null;
+      state.userId = null;
+
     },
     actionLogin: state => {
       state.token = 'sampletoken';

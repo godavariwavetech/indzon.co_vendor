@@ -1,6 +1,9 @@
 import React, {useState, useEffect} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchShopPayments, fetchPaymentHistory} from '../redux/reducers/auth';
+import NetInfo from '@react-native-community/netinfo';
+import NoInternetScreen from '../components/NoInternetScreen';
+import {ActivityIndicator} from 'react-native';
 
 import {
   View,
@@ -19,6 +22,16 @@ export default function EarningsScreen() {
   const {userId, shopPayments, paymentHistory} = useSelector(
     state => state.Auth,
   );
+  const [isConnected, setIsConnected] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Listen to internet changes
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const formatDate = date => {
     if (!date) return '--';
@@ -73,6 +86,23 @@ export default function EarningsScreen() {
     }
   };
 
+  const handleRefresh = async () => {
+    if (!userId) return;
+    setRefreshing(true);
+
+    // Re-fetch data
+    await dispatch(fetchShopPayments(userId));
+    await dispatch(
+      fetchPaymentHistory({
+        f_date: formatDate(startDate),
+        t_date: formatDate(endDate),
+        userId,
+      }),
+    );
+
+    setRefreshing(false);
+  };
+
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
@@ -92,24 +122,24 @@ export default function EarningsScreen() {
         <View style={styles.divider} />
 
         {/* Amount + Info icon row */}
-      <View style={{flexDirection: 'row', alignItems: 'center'}}>
-  <Text style={styles.amountBig}>
-    ₹
-    {(
-      (shopPayments?.item_amount ?? 0) -
-      (shopPayments?.admin_service_fee ?? 0) -
-      (shopPayments?.vendor_coupon_amount ?? 0)
-    ).toFixed(2)}
-  </Text>
-</View>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <Text style={styles.amountBig}>
+            ₹
+            {(
+              (shopPayments?.item_amount ?? 0) -
+              (shopPayments?.admin_service_fee ?? 0) -
+              (shopPayments?.vendor_coupon_amount ?? 0)
+            ).toFixed(2)}
+          </Text>
+        </View>
 
-     <TouchableOpacity
-  style={styles.withdrawBtn}
-  onPress={() => setShowInfoModal(true)} // 🔹 Open Info Modal
->
-  <Icon name="cash-outline" size={20} color={colors.textDark} />
-  <Text style={styles.withdrawText}>Payout Cycle</Text>
-</TouchableOpacity>
+        <TouchableOpacity
+          style={styles.withdrawBtn}
+          onPress={() => setShowInfoModal(true)} // 🔹 Open Info Modal
+        >
+          <Icon name="cash-outline" size={20} color={colors.textDark} />
+          <Text style={styles.withdrawText}>Payout Cycle</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Date Range */}
@@ -130,53 +160,96 @@ export default function EarningsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.applyBtn} onPress={applyDateFilter}>
-          <Text style={styles.applyText}>Apply</Text>
-          <Icon
-            name="checkmark-done-outline"
-            size={18}
-            color={colors.reportsDownloadText}
-          />
-        </TouchableOpacity>
+            <Text style={styles.applyText}>Apply</Text>
+            <Icon
+              name="checkmark-done-outline"
+              size={18}
+              color={colors.reportsDownloadText}
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.divider2} />
 
       {/* Transaction list */}
-      <FlatList
-        data={paymentHistory}
-        keyExtractor={item => item.id.toString()}
-        contentContainerStyle={styles.listContent}
-        renderItem={({item}) => (
-          <TouchableOpacity
-            onPress={() => {
-              setSelectedTransaction(item);
-              setShowTransactionModal(true);
-            }}>
-            <View style={styles.transactionCard}>
-              <View style={styles.transactionLeft}>
-                <Text style={styles.amount}>₹{item.total_payment_amount}</Text>
-                <Text style={styles.description}>
-                  Transaction ID: {item.payment_transaction_id || '--'}
-                </Text>
-              </View>
-
-              <View style={styles.transactionRight}>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    {backgroundColor: colors.earningsTransferred},
-                  ]}>
-                  <Text style={styles.statusText}>
-                    {item.status || 'Completed'}
+      {!isConnected ? (
+        // Case 1: No internet
+        <NoInternetScreen
+          onRetry={() => {
+            if (userId) {
+              dispatch(fetchShopPayments(userId));
+              dispatch(
+                fetchPaymentHistory({
+                  f_date: formatDate(startDate),
+                  t_date: formatDate(endDate),
+                  userId,
+                }),
+              );
+            }
+          }}
+        />
+      ) : refreshing && paymentHistory.length === 0 ? (
+        // Case 2: Full-screen loader during refresh
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+          <ActivityIndicator size="large" color={colors.reportsDownloadText} />
+          <Text style={{marginTop: 8, color: '#888'}}>Refreshing...</Text>
+        </View>
+      ) : paymentHistory.length === 0 ? (
+        // Case 3: No transactions
+        <Text style={{textAlign: 'center', marginTop: 20, color: '#888'}}>
+          No transactions available
+        </Text>
+      ) : (
+        // Case 4: Transactions available
+        <FlatList
+          data={paymentHistory}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={styles.listContent}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListHeaderComponent={
+            refreshing ? (
+              <ActivityIndicator
+                size="small"
+                color={colors.reportsDownloadText}
+                style={{marginVertical: 10}}
+              />
+            ) : null
+          }
+          renderItem={({item}) => (
+            <TouchableOpacity
+              onPress={() => {
+                setSelectedTransaction(item);
+                setShowTransactionModal(true);
+              }}>
+              <View style={styles.transactionCard}>
+                <View style={styles.transactionLeft}>
+                  <Text style={styles.amount}>
+                    ₹{item.total_payment_amount}
+                  </Text>
+                  <Text style={styles.description}>
+                    Transaction ID: {item.payment_transaction_id || '--'}
                   </Text>
                 </View>
-                <Text style={styles.date}>{item.settlement_date_time}</Text>
+
+                <View style={styles.transactionRight}>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      {backgroundColor: colors.earningsTransferred},
+                    ]}>
+                    <Text style={styles.statusText}>
+                      {item.status || 'Completed'}
+                    </Text>
+                  </View>
+                  <Text style={styles.date}>{item.settlement_date_time}</Text>
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
-        )}
-      />
+            </TouchableOpacity>
+          )}
+        />
+      )}
 
       {/* Date Picker */}
       <DateTimePickerModal
@@ -255,11 +328,16 @@ export default function EarningsScreen() {
                   paddingTop: 18,
                 },
               ]}>
-             <View style={styles.row}>
-  <Text style={[styles.label, {fontWeight: 'bold'}]}>Verify OTP:</Text>
-  <Text style={styles.otpCode}>{shopPayments?.vendor_payment_otp ?? '--'}</Text>
-</View>
-
+              <View style={styles.row}>
+                <Text style={[styles.label, {fontWeight: 'bold'}]}>
+                  Verify OTP:
+                </Text>
+                <View style={{flex: 1, alignItems: 'flex-end'}}>
+                  <Text style={styles.otpCode}>
+                    {shopPayments?.vendor_payment_otp ?? '--'}
+                  </Text>
+                </View>
+              </View>
             </View>
 
             <TouchableOpacity
@@ -355,8 +433,6 @@ export default function EarningsScreen() {
   );
 }
 
-
-
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.background},
 
@@ -396,7 +472,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
-
   transactionHistoryText: {fontSize: 14, fontWeight: '500'},
   datePicker: {
     flexDirection: 'row',
@@ -407,7 +482,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
   },
-  dateText: {fontSize: 12, },
+  dateText: {fontSize: 12},
 
   transactionCard: {
     flexDirection: 'row',
@@ -418,10 +493,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 10,
     borderWidth: 0.85,
-    borderColor:"#9a9898ff",
+    borderColor: '#9a9898ff',
     // borderColor: colors.earningsCardBorder,
 
-    elevation:0
+    elevation: 0,
   },
   transactionLeft: {flex: 1},
   transactionRight: {alignItems: 'flex-end'},
@@ -467,62 +542,67 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
 
-  modalTitle: {fontSize: 18, fontWeight: 'bold', marginBottom: 12, color:colors.primary},
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: colors.primary,
+  },
   modalItem: {fontSize: 14, marginBottom: 8, color: '#333'},
   modalCloseBtn: {
     marginTop: 15,
     alignSelf: 'center',
-    backgroundColor: colors.earningsWithdrawBtnBg,
+    backgroundColor: colors.primary,
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 6,
   },
-  modalCloseText: {fontSize: 14, fontWeight: '500', color: colors.textDark},
+  modalCloseText: {fontSize: 14, fontWeight: '500', color: colors.textWhite},
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 10,
-    alignItems:"center"
+    alignItems: 'center',
   },
   label: {
     fontSize: 16,
     color: '#333',
-    marginRight:5
+    marginRight: 5,
   },
   value: {
     fontSize: 16,
     fontWeight: '600',
     color: '#000',
   },
-headerSection: {
-  marginVertical: 10,
-  paddingHorizontal: 16,
-},
+  headerSection: {
+    marginVertical: 10,
+    paddingHorizontal: 16,
+  },
 
-historyTitle: {
-  fontSize: 18,
-  fontWeight: 'bold',
-  marginBottom: 8,
-  color: '#333',
-  alignSelf: 'center',
-},
+  historyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#333',
+    alignSelf: 'center',
+  },
 
-dateRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-},
+  dateRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
 
-dateBtn: {
-  flex: 1,
-  padding: 10,
-  marginRight: 8,
-  borderWidth: 1,
-  borderColor: '#ccc',
-  borderRadius: 8,
-  backgroundColor: '#f9f9f9',
-  alignItems: 'center',
-},
+  dateBtn: {
+    flex: 1,
+    padding: 10,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    backgroundColor: '#f9f9f9',
+    alignItems: 'center',
+  },
 
   applyBtn: {
     flexDirection: 'row',
@@ -537,15 +617,14 @@ dateBtn: {
     marginRight: 5,
     fontSize: 13,
   },
-otpCode: {
-  fontSize: 18,
-  fontWeight: 'bold',
-  color: colors.textWhite, // red highlight (or use colors.primary)
-  backgroundColor: colors.primary, // light background highlight
-  paddingHorizontal: 10,
-  paddingVertical: 4,
-  borderRadius: 6,
-  letterSpacing: 2, // spacing between digits
-},
-
+  otpCode: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.textWhite, // red highlight (or use colors.primary)
+    backgroundColor: colors.primary, // light background highlight
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    letterSpacing: 2, // spacing between digits
+  },
 });
