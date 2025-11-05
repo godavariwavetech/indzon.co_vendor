@@ -1,11 +1,11 @@
-import notifee, { AndroidImportance, AndroidStyle } from '@notifee/react-native';
+import notifee, {AndroidImportance, AndroidStyle} from '@notifee/react-native';
 import messaging from '@react-native-firebase/messaging';
 
-export const setupNotificationHandlers = (navigation) => {
+export const setupNotificationHandlers = navigation => {
   // Foreground notifications
-  console.log("<><><><><><><><><><><>")
+  console.log('<><><><><><><><><><><>');
   messaging().onMessage(async remoteMessage => {
-    console.log(">>>>>>>>>>>>>>>HELLOMessage")
+    console.log('>>>>>>>>>>>>>>>HELLOMessage');
     displayNotification(remoteMessage.notification);
   });
 
@@ -20,24 +20,26 @@ export const setupNotificationHandlers = (navigation) => {
   });
 
   // Check if app was opened from notification
-  messaging().getInitialNotification().then(remoteMessage => {
-    if (remoteMessage) {
-      handleNotificationNavigation(remoteMessage.data, navigation);
-    }
-  });
+  messaging()
+    .getInitialNotification()
+    .then(remoteMessage => {
+      if (remoteMessage) {
+        handleNotificationNavigation(remoteMessage.data, navigation);
+      }
+    });
 };
 
-const displayNotification = async (notification) => {
+const displayNotification = async notification => {
   try {
     await notifee.displayNotification({
       title: notification.title,
       body: notification.body,
       android: {
         channelId: 'default4',
-        important:true,
-        importance:AndroidImportance.HIGH,
-        color: '#065E2C', 
-        colorized: true,  
+        important: true,
+        importance: AndroidImportance.HIGH,
+        color: '#065E2C',
+        colorized: true,
         style: {
           type: AndroidStyle.BIGTEXT,
           text: notification.body,
@@ -64,7 +66,7 @@ const displayNotification = async (notification) => {
 
 const handleNotificationNavigation = (data, navigation) => {
   if (data.type === 'order_update') {
-    navigation.navigate('OrderDetails', { orderId: data.orderId });
+    navigation.navigate('OrderDetails', {orderId: data.orderId});
   }
   // Add more navigation handlers as needed
 };
@@ -76,12 +78,12 @@ const handleNotificationNavigation = (data, navigation) => {
 //     console.error('Error getting FCM token:', error);
 //     return null;
 //   }
-// }; 
+// };
 
 export const getFCMToken = async () => {
   const token = await messaging().getToken();
-  console.log(token)
-  messaging().onMessage(async (remoteMessage) => {
+  console.log(token);
+  messaging().onMessage(async remoteMessage => {
     await notifee.createChannel({
       id: 'default1',
       name: 'Default Channel',
@@ -89,16 +91,16 @@ export const getFCMToken = async () => {
       sound: 'default', // You can add a custom sound here
       vibration: true,
     });
-    console.log(">>>>>>>>>>>>>MESSAGECALLING",remoteMessage)
+    console.log('>>>>>>>>>>>>>MESSAGECALLING', remoteMessage);
     await notifee.displayNotification({
       title: remoteMessage.notification.title,
       body: remoteMessage.notification.body,
       android: {
-        channelId: "default1",
+        channelId: 'default1',
         importance: AndroidImportance.HIGH,
       },
     });
   });
 
- return token
+  return token;
 };

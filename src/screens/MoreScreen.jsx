@@ -14,7 +14,7 @@ import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import {colors} from '../config/theme';
 import {RestaurantLogo} from '../assets';
-import {fetchShopDetails} from '../redux/reducers/auth';
+import {fetchShopDetails,actionLogout} from '../redux/reducers/auth';
 
 export default function MoreScreen() {
   const navigation = useNavigation();
@@ -44,6 +44,8 @@ export default function MoreScreen() {
 
   const handleConfirmLogout = () => {
     setLogoutVisible(false);
+      dispatch(actionLogout());
+
     navigation.reset({
       index: 0,
       routes: [{name: 'SignInScreen'}], // 👈 Replace with your signin screen

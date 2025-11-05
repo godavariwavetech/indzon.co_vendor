@@ -365,19 +365,13 @@ const styles = StyleSheet.create({
   paymentBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E7ECFF',
+    backgroundColor: colors.primary,
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,
   },
-  // dot: {
-  //   width: 7,
-  //   height: 7,
-  //   borderRadius: 4,
-  //   backgroundColor: '#1E40AF',
-  //   marginRight: 5,
-  // },
-  paymentText: {fontSize: 12, fontWeight: '500', color: '#1E40AF'},
+
+  paymentText: {fontSize: 12, fontWeight: '500', color: colors.textWhite},
   totalPrice: {fontSize: 16, fontWeight: 'bold', color: '#000'},
 
   buttonContainer: {

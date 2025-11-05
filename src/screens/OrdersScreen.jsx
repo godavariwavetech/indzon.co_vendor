@@ -1,10 +1,12 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {
   fetchCurrentOrders,
   fetchShopDetails,
   updateShopStatus,
 } from '../redux/reducers/auth';
+import NetInfo from '@react-native-community/netinfo';
+import NoInternetScreen from '../components/NoInternetScreen';
 
 import {
   View,
@@ -19,7 +21,6 @@ import {
   Modal,
   ActivityIndicator
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
 import {colors} from '../config/theme';
 import {Ordersscreenimage, RestaurantLogo} from '../assets/index';
 import {useFocusEffect} from '@react-navigation/native';
@@ -28,49 +29,61 @@ export default function OrdersScreen({navigation}) {
   const dispatch = useDispatch();
   const {pendingOrders, OrdersInProcess, loading, userId, shopDetails} =
     useSelector(state => state.Auth);
+
   const [isOn, setIsOn] = useState(true);
   const [selectedTab, setSelectedTab] = useState('Pending');
   const [showToggleModal, setShowToggleModal] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
 
-  const translateX = React.useRef(new Animated.Value(0)).current;
+const translateX = useRef(new Animated.Value(0)).current;
+// Refetch orders when internet comes back
+useEffect(() => {
+  if (isConnected && userId) {
+    dispatch(fetchCurrentOrders(userId));
+    if (!shopDetails) {
+      dispatch(fetchShopDetails(userId));
+    }
+  }
+}, [isConnected, userId, dispatch, shopDetails]);
 
+  // ✅ Listen for internet changes
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // ✅ Fetch orders and shop details
+
+const fetchOrdersAndDetails = useCallback(() => {
+  if (!userId) return;
+  dispatch(fetchCurrentOrders(userId));
+  if (!shopDetails) dispatch(fetchShopDetails(userId));
+}, [userId, dispatch, shopDetails]);
+
+useFocusEffect(fetchOrdersAndDetails);
+  // Toggle shop status
   useEffect(() => {
     if (shopDetails?.shop_active_status !== undefined) {
-      const newState = shopDetails.shop_active_status === 1; // 0=online
-      setIsOn(newState);
+      setIsOn(shopDetails.shop_active_status === 1);
     }
   }, [shopDetails]);
 
-  useEffect(() => {
-    Animated.timing(translateX, {
-      toValue: isOn ? 30 : 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  }, [isOn, translateX]);
+useEffect(() => {
+  Animated.timing(translateX, {
+    toValue: isOn ? 30 : 0,
+    duration: 200,
+    useNativeDriver: true,
+  }).start();
+}, [isOn, translateX]);
 
   const handleToggleConfirm = () => {
-    const newStatus = isOn ? 0 : 1; // if currently on → set 0 (offline), else 1 (online)
-
-    dispatch(
-      updateShopStatus({shop_id: userId, shop_active_status: newStatus}),
-    );
-
+    const newStatus = isOn ? 0 : 1;
+    dispatch(updateShopStatus({shop_id: userId, shop_active_status: newStatus}));
     setIsOn(!isOn);
     setShowToggleModal(false);
   };
-
-  useFocusEffect(
-    useCallback(() => {
-      if (userId) {
-        dispatch(fetchCurrentOrders(userId));
-        if (!shopDetails) {
-          // ✅ fetch only if not already in Redux
-          dispatch(fetchShopDetails(userId));
-        }
-      }
-    }, [userId, dispatch, shopDetails]),
-  );
 
   const orders = selectedTab === 'Pending' ? pendingOrders : OrdersInProcess;
 
@@ -79,11 +92,10 @@ export default function OrdersScreen({navigation}) {
     {label: 'Orders In Process', count: OrdersInProcess.length},
   ];
 
-  // ✅ Inline OrderCard Component
+  // ✅ Inline OrderCard
   const OrderCard = ({order, statusColor, statusLabel, onPressAddress}) => (
     <TouchableOpacity activeOpacity={0.5} onPress={onPressAddress}>
       <View style={styles.card}>
-        {/* Header */}
         <View style={styles.cardHeader}>
           <Text style={styles.orderId}>ID-{order.order_id}</Text>
           <View style={styles.dateTimeContainer}>
@@ -91,21 +103,14 @@ export default function OrdersScreen({navigation}) {
             <Text style={styles.orderTime}>{order.order_time}</Text>
           </View>
         </View>
-
-        {/* Status Badge */}
         <View style={[styles.statusBadge, {backgroundColor: statusColor}]}>
           <Text style={styles.statusBadgeText}>{statusLabel}</Text>
         </View>
-
         <View style={styles.divider} />
-
-        {/* Address */}
         <View style={styles.addressCard}>
           <Text style={styles.addressTitle}>Delivery Address</Text>
           <Text style={styles.addressText}>{order.delivery_address}</Text>
         </View>
-
-        {/* Total Bill */}
         <View style={styles.totalContainer}>
           <View style={styles.Totalbillcontainer}>
             <Text style={styles.totalBill}>Total Bill</Text>
@@ -120,170 +125,87 @@ export default function OrdersScreen({navigation}) {
   );
 
   const renderOrderCard = order => {
-    const commonProps = {
-      order,
-      onPressAddress: () => navigation.navigate('OrderDetailsScreen', {order}),
-    };
-
+    const commonProps = {order, onPressAddress: () => navigation.navigate('OrderDetailsScreen', {order})};
     switch (order.order_status) {
-      case 0:
-        return (
-          <OrderCard
-            key={order.id}
-            {...commonProps}
-            statusColor={colors.primary}
-            statusLabel="Pending"
-          />
-        );
-
-      case 1:
-        return (
-          <OrderCard
-            key={order.id}
-            {...commonProps}
-            statusColor={colors.primary}
-            statusLabel="Accepted"
-          />
-        );
-
-      case 8:
-        return (
-          <OrderCard
-            key={order.id}
-            {...commonProps}
-            statusColor={colors.primary}
-            statusLabel="Ongoing"
-          />
-        );
-
-      default:
-        return (
-          <OrderCard
-            key={order.id}
-            {...commonProps}
-            statusColor={colors.primarySemi}
-            statusLabel={`Status ${order.order_status}`}
-          />
-        );
+      case 0: return <OrderCard key={order.id} {...commonProps} statusColor={colors.primary} statusLabel="Pending" />;
+      case 1: return <OrderCard key={order.id} {...commonProps} statusColor={colors.primary} statusLabel="Accepted" />;
+      case 8: return <OrderCard key={order.id} {...commonProps} statusColor={colors.primary} statusLabel="Ongoing" />;
+      default: return <OrderCard key={order.id} {...commonProps} statusColor={colors.primarySemi} statusLabel={`Status ${order.order_status}`} />;
     }
   };
 
-  // console.log(orders, '>>>>>>>>>>>>>ORders');
-
-const renderContent = () => {
-  if (orders.length === 0) {
-    return (
-      <View>
-        <View style={styles.onlineSection}>
-          <Image source={Ordersscreenimage} style={styles.emptyOrdersImage} />
-          <Text
-            style={[
-              styles.onlineText,
-              {color: isOn ? colors.onlineGreen : colors.danger},
-            ]}>
-            You are {isOn ? 'online' : 'offline'}.
-          </Text>
-          <Text style={styles.waitingText}>
-            {isOn
-              ? 'waiting for new orders'
-              : 'switch on to start receiving orders'}
-          </Text>
-        </View>
-      </View>
-    );
+  const renderContent = () => {
+if (orders.length === 0) {
+  if (!isConnected) {
+    // ✅ Show NoInternetScreen if offline
+    return <NoInternetScreen onRetry={fetchOrdersAndDetails} />;
   }
-  return orders.map(order => renderOrderCard(order));
-};
 
+  // Otherwise show empty orders message
+  return (
+    <View style={styles.onlineSection}>
+      <Image source={Ordersscreenimage} style={styles.emptyOrdersImage} />
+      <Text style={[styles.onlineText, {color: isOn ? colors.onlineGreen : colors.danger}]}>
+        You are {isOn ? 'online' : 'offline'}.
+      </Text>
+      <Text style={styles.waitingText}>
+        {isOn ? 'waiting for new orders' : 'switch on to start receiving orders'}
+      </Text>
+    </View>
+  );
+}
+
+    return orders.map(order => renderOrderCard(order));
+  };
+
+  // ✅ Show NoInternetScreen if offline
+ 
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar
-        translucent
-        backgroundColor={'transparent'}
-        barStyle={'dark-content'}
-      />
-
-      {/* Header with Online Toggle */}
+      <StatusBar translucent backgroundColor={'transparent'} barStyle={'dark-content'} />
       <View style={styles.header}>
-        <Image
-          source={
-            shopDetails?.image ? {uri: shopDetails.image} : RestaurantLogo
-          }
-          style={styles.avatar}
-        />
-        <Text style={styles.restaurantName}>
-          {shopDetails?.name || 'Restaurant Name'}
-        </Text>
-        <TouchableOpacity
-          style={[
-            styles.toggleContainer,
-            isOn ? styles.toggleOn : styles.toggleOff,
-          ]}
-          activeOpacity={0.8}
-          onPress={() => setShowToggleModal(true)}>
+        <Image source={shopDetails?.image ? {uri: shopDetails.image} : RestaurantLogo} style={styles.avatar} />
+        <Text style={styles.restaurantName}>{shopDetails?.name || 'Restaurant Name'}</Text>
+        <TouchableOpacity style={[styles.toggleContainer, isOn ? styles.toggleOn : styles.toggleOff]} onPress={() => setShowToggleModal(true)}>
           <Animated.View style={[styles.circle, {transform: [{translateX}]}]} />
         </TouchableOpacity>
       </View>
-
-      {/* Tabs */}
       <View style={styles.tabContainer}>
         {tabs.map(tab => (
-          <TouchableOpacity
-            key={tab.label}
-            style={[
-              styles.tabButton,
-              selectedTab === tab.label && styles.tabButtonActive,
-            ]}
-            onPress={() => setSelectedTab(tab.label)}>
-            <Text
-              style={[
-                styles.tabText,
-                selectedTab === tab.label && styles.tabTextActive,
-              ]}>
+          <TouchableOpacity key={tab.label} style={[styles.tabButton, selectedTab === tab.label && styles.tabButtonActive]} onPress={() => setSelectedTab(tab.label)}>
+            <Text style={[styles.tabText, selectedTab === tab.label && styles.tabTextActive]}>
               {tab.label} ({tab.count})
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* Orders List */}
-{loading ? (
-  <View style={styles.loaderContainer}>
-    <ActivityIndicator size="large" color={colors.primary} />
-    <Text style={styles.loaderText}>Loading orders...</Text>
-  </View>
-) : (
-  <ScrollView contentContainerStyle={styles.scrollViewContent}>
-    {renderContent()}
-  </ScrollView>
-)}
 
-      {/* Toggle Confirmation Modal */}
-      <Modal
-        visible={showToggleModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowToggleModal(false)}>
+
+      
+      
+      {loading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loaderText}>Loading orders...</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollViewContent}>
+          {renderContent()}
+        </ScrollView>
+      )}
+
+      <Modal visible={showToggleModal} transparent animationType="fade" onRequestClose={() => setShowToggleModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>
-              {isOn ? 'Go Offline?' : 'Go Online?'}
-            </Text>
-            <Text style={styles.modalMessage}>
-              {isOn
-                ? 'You will stop receiving new orders.'
-                : 'You will start receiving orders.'}
-            </Text>
+            <Text style={styles.modalTitle}>{isOn ? 'Go Offline?' : 'Go Online?'}</Text>
+            <Text style={styles.modalMessage}>{isOn ? 'You will stop receiving new orders.' : 'You will start receiving orders.'}</Text>
             <View style={styles.modalButtonRow}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowToggleModal(false)}>
+              <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setShowToggleModal(false)}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton2]}
-                onPress={handleToggleConfirm}>
+              <TouchableOpacity style={[styles.modalButton, styles.confirmButton2]} onPress={handleToggleConfirm}>
                 <Text style={styles.confirmButton2Text}>Yes</Text>
               </TouchableOpacity>
             </View>
@@ -293,6 +215,8 @@ const renderContent = () => {
     </SafeAreaView>
   );
 }
+
+// ✅ Keep all existing styles, no changes needed for NoInternetScreen integration
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.background, paddingTop: 40},
