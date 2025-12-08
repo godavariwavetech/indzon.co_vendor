@@ -13,6 +13,7 @@ import {
   ScrollView,
   Animated,
   Modal,
+  SectionList,  
 } from 'react-native';
 
 import {useSelector, useDispatch} from 'react-redux';
@@ -286,45 +287,50 @@ export default function MenuScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <MaterialCommunityIcons
+              name="close"
+              size={20}
+              color={colors.searchOutline}
+            />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* 🔹 Menu Lists from API */}
-  <ScrollView>
-  {!isConnected ? (
-    // Case 1: No internet
-    <NoInternetScreen
-      onRetry={() => {
-        if (userId) {
-          dispatch(fetchShopDetails(userId));
-          dispatch(fetchProductsList(userId));
-        }
-      }}
-    />
-  ) : loading ? (
-    // Optional: Loading indicator
-    <Text style={{textAlign: 'center', marginTop: 20, color: '#888'}}>
-      Loading menu items...
-    </Text>
-  ) : Object.keys(groupedProducts).length === 0 ? (
-    // Case 2: Internet available but no items
-    <Text style={{textAlign: 'center', marginTop: 20, color: '#888'}}>
-      No menu items available
-    </Text>
-  ) : (
-    // Case 3: Items available
-    Object.values(groupedProducts).map(section => (
-      <View key={section.title}>
-        <Text style={styles.sectionTitle}>{section.title}</Text>
-        <FlatList
-          data={section.data}
-          renderItem={renderCard}
-          keyExtractor={item => item.id.toString()}
-          scrollEnabled={false}
-        />
-      </View>
-    ))
-  )}
-</ScrollView>
+{/* 🔹 SECTION LIST (Replaces ScrollView + FlatLists) */}
+{!isConnected ? (
+  <NoInternetScreen
+    onRetry={() => {
+      if (userId) {
+        dispatch(fetchShopDetails(userId));
+        dispatch(fetchProductsList(userId));
+      }
+    }}
+  />
+) : loading ? (
+  <Text style={{textAlign: 'center', marginTop: 20, color: '#888'}}>
+    Loading menu items...
+  </Text>
+) : (
+  <SectionList
+    sections={Object.values(groupedProducts)}
+    keyExtractor={(item) => item.id.toString()}
+    renderItem={renderCard}
+    renderSectionHeader={({section}) => (
+      <Text style={styles.sectionTitle}>{section.title}</Text>
+    )}
+    
+    /* PERFORMANCE BOOST */
+    initialNumToRender={15}
+    maxToRenderPerBatch={20}
+    windowSize={10}
+    removeClippedSubviews={true}
+    showsVerticalScrollIndicator={false}
+    contentContainerStyle={{paddingBottom: 50}}
+  />
+)}
+
 
 
       {/* 🔹 Update Modal */}

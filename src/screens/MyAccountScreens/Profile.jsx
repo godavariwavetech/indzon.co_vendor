@@ -61,7 +61,7 @@ const RestaurantProfileScreen = () => {
     try {
       setLoading(true);
       const resultAction = await dispatch(
-        updateVendorPassword({newPassword: password}),
+        updateVendorPassword({userId, newPassword: password}),
       );
 
       if (updateVendorPassword.fulfilled.match(resultAction)) {

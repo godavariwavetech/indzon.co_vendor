@@ -71,7 +71,7 @@ const showModal = (title, message, type = 'error') => {
         const data = response?.payload?.data;
 
         if (data && data.length > 0) {
-          showModal('Success', 'Phone number verified.');
+          showModal('Success', 'Phone number verified.', 'success');
           setIsVerified(true); // ✅ Only after success
         } else {
           showModal(
