@@ -1,8 +1,9 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {View, Text, StyleSheet, Pressable} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createStackNavigator} from '@react-navigation/stack';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {setupNotificationHandlers} from '../services/NotificationsService';
 
 import MoreScreen from '../screens/MoreScreen';
 import OrdersScreen from '../screens/OrdersScreen';
@@ -12,8 +13,21 @@ import EarningsScreen from '../screens/EarningsScreen';
 
 const Tab = createBottomTabNavigator();
 
-const BottomTabNavigation = () => {
+const BottomTabNavigation = ({navigation}) => {
   //const [modalVisible, setModalVisible] = useState(false);
+
+  useEffect(() => {
+    let unsubscribe;
+    setupNotificationHandlers(navigation).then(unsub => {
+      unsubscribe = unsub;
+    });
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [navigation]);
 
   return (
     <View style={{flex: 1}}>

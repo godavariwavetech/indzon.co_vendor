@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import {
   View,
   Text,
@@ -11,23 +11,31 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
 import { colors } from "../../config/theme"; 
 import CustomAlertModal from '../../components/CustomAlertModal';
+import { useDispatch, useSelector } from "react-redux";
+import { fetchApplicationCommon } from "../../redux/reducers/auth";
 
 
 const CustomerSupportScreen = () => {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
+  const { applicationCommon } = useSelector((state) => state.Auth);
 
   // ✅ Modal state
-const [modalVisible, setModalVisible] = useState(false);
-const [modalTitle, setModalTitle] = useState('');
-const [modalMessage, setModalMessage] = useState('');
-const [modalType, setModalType] = useState('error');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState('error');
 
-const showModal = (title, message, type = 'error') => {
-  setModalTitle(title);
-  setModalMessage(message);
-  setModalType(type);
-  setModalVisible(true);
-};
+  useEffect(() => {
+    dispatch(fetchApplicationCommon());
+  }, [dispatch]);
+
+  const showModal = (title, message, type = 'error') => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalType(type);
+    setModalVisible(true);
+  };
 
 
   const handlePress = async (type) => {
@@ -41,13 +49,22 @@ const showModal = (title, message, type = 'error') => {
         } else {
           showModal("WhatsApp not installed");
         }
-      } else if (type === "email") {
-        const email = "support@example.com";
+      } else
+        if (type === "email") {
+        const email = applicationCommon?.mail_id;
+        if (!email) {
+          showModal("Error", "Support email not available");
+          return;
+        }
         const subject = "Customer Support";
         const url = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
         await Linking.openURL(url);
       } else if (type === "phone") {
-        const phone = "9999999999"; // ✅ Replace with support number
+        const phone = applicationCommon?.contact_number;
+        if (!phone) {
+          showModal("Error", "Support number not available");
+          return;
+        }
         const url = `tel:${phone}`;
         await Linking.openURL(url);
       }
@@ -62,27 +79,35 @@ const showModal = (title, message, type = 'error') => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.header}>Customer Support</Text>
+        <Text style={styles.header}>Support</Text>
       </View>
 
       <Text style={styles.description}>
         We’re here to help! Choose one of the options below to get in touch with
         our support team.
       </Text>
-
+{/* 
       <TouchableOpacity style={styles.card} onPress={() => handlePress("whatsapp")}>
         <Icon name="logo-whatsapp" size={28} color="#25D366" />
         <Text style={styles.cardText}>Chat on WhatsApp</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       <TouchableOpacity style={styles.card} onPress={() => handlePress("email")}>
         <Icon name="mail-outline" size={28} color={colors.brandPrimary} />
-        <Text style={styles.cardText}>Send us an Email</Text>
+        <View style={{flex: 1}}>
+             <Text style={styles.cardText}>Send us an Email</Text>
+             {applicationCommon?.mail_id ? <Text style={styles.subText}>{applicationCommon.mail_id}</Text> : null}
+        </View>
+        <Icon name="chevron-forward" size={24} color={colors.textSecondary} />
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.card} onPress={() => handlePress("phone")}>
         <Icon name="call-outline" size={28} color="#007AFF" />
-        <Text style={styles.cardText}>Call Support</Text>
+         <View style={{flex: 1}}>
+            <Text style={styles.cardText}>Call Support</Text>
+            {applicationCommon?.contact_number ? <Text style={styles.subText}>{applicationCommon.contact_number}</Text> : null}
+        </View>
+        <Icon name="chevron-forward" size={24} color={colors.textSecondary} />
       </TouchableOpacity>
       <CustomAlertModal
   visible={modalVisible}
@@ -145,5 +170,11 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: colors.textPrimary,
     marginLeft: 12,
+  },
+  subText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginLeft: 12,
+    marginTop: 2,
   },
 });

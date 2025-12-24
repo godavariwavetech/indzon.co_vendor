@@ -26,4 +26,7 @@ export const endpoints = {
   UPDATESHOPPRODUCTS: 'vendor_app/updateshopproducts',
   UPDATEPRODUCTACTIVE: 'vendor_app/updateproductactive',
   GETDASHBOARDORDERS: 'vendor_app/getdashboardorders',
+  UPDATE_FCM_TOKEN: 'vendor_app/postmain_player_id',
+  DELETE_ACCOUNT: 'vendor_app/dleteaccount',
+  APPLICATION_COMMON: 'vendor_app/application_common_api',
 };

@@ -19,7 +19,8 @@ import {
   StatusBar,
   SafeAreaView,
   Modal,
-  ActivityIndicator
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import {colors} from '../config/theme';
 import {Ordersscreenimage, RestaurantLogo} from '../assets/index';
@@ -34,17 +35,32 @@ export default function OrdersScreen({navigation}) {
   const [selectedTab, setSelectedTab] = useState('Pending');
   const [showToggleModal, setShowToggleModal] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-const translateX = useRef(new Animated.Value(0)).current;
-// Refetch orders when internet comes back
-useEffect(() => {
-  if (isConnected && userId) {
-    dispatch(fetchCurrentOrders(userId));
-    if (!shopDetails) {
-      dispatch(fetchShopDetails(userId));
+  const translateX = useRef(new Animated.Value(0)).current;
+
+  const onRefresh = useCallback(async () => {
+    if (!userId) return;
+    setRefreshing(true);
+    try {
+      await dispatch(fetchCurrentOrders(userId));
+      if (!shopDetails) await dispatch(fetchShopDetails(userId));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setRefreshing(false);
     }
-  }
-}, [isConnected, userId, dispatch, shopDetails]);
+  }, [userId, dispatch, shopDetails]);
+
+  // Refetch orders when internet comes back
+  useEffect(() => {
+    if (isConnected && userId) {
+      dispatch(fetchCurrentOrders(userId));
+      if (!shopDetails) {
+        dispatch(fetchShopDetails(userId));
+      }
+    }
+  }, [isConnected, userId, dispatch, shopDetails]);
 
   // ✅ Listen for internet changes
   useEffect(() => {
@@ -56,13 +72,13 @@ useEffect(() => {
 
   // ✅ Fetch orders and shop details
 
-const fetchOrdersAndDetails = useCallback(() => {
-  if (!userId) return;
-  dispatch(fetchCurrentOrders(userId));
-  if (!shopDetails) dispatch(fetchShopDetails(userId));
-}, [userId, dispatch, shopDetails]);
+  const fetchOrdersAndDetails = useCallback(() => {
+    if (!userId) return;
+    dispatch(fetchCurrentOrders(userId));
+    if (!shopDetails) dispatch(fetchShopDetails(userId));
+  }, [userId, dispatch, shopDetails]);
 
-useFocusEffect(fetchOrdersAndDetails);
+  useFocusEffect(fetchOrdersAndDetails);
   // Toggle shop status
   useEffect(() => {
     if (shopDetails?.shop_active_status !== undefined) {
@@ -70,13 +86,13 @@ useFocusEffect(fetchOrdersAndDetails);
     }
   }, [shopDetails]);
 
-useEffect(() => {
-  Animated.timing(translateX, {
-    toValue: isOn ? 30 : 0,
-    duration: 200,
-    useNativeDriver: true,
-  }).start();
-}, [isOn, translateX]);
+  useEffect(() => {
+    Animated.timing(translateX, {
+      toValue: isOn ? 30 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [isOn, translateX]);
 
   const handleToggleConfirm = () => {
     const newStatus = isOn ? 0 : 1;
@@ -118,7 +134,7 @@ useEffect(() => {
               <Text style={styles.codText}>{order.payment_type}</Text>
             </View>
           </View>
-          <Text style={styles.totalPrice}>₹{order.grand_total}</Text>
+          <Text style={styles.totalPrice}>₹{order.total_amount}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -135,31 +151,31 @@ useEffect(() => {
   };
 
   const renderContent = () => {
-if (orders.length === 0) {
-  if (!isConnected) {
-    // ✅ Show NoInternetScreen if offline
-    return <NoInternetScreen onRetry={fetchOrdersAndDetails} />;
-  }
+    if (orders.length === 0) {
+      if (!isConnected) {
+        // ✅ Show NoInternetScreen if offline
+        return <NoInternetScreen onRetry={fetchOrdersAndDetails} />;
+      }
 
-  // Otherwise show empty orders message
-  return (
-    <View style={styles.onlineSection}>
-      <Image source={Ordersscreenimage} style={styles.emptyOrdersImage} />
-      <Text style={[styles.onlineText, {color: isOn ? colors.onlineGreen : colors.danger}]}>
-        You are {isOn ? 'online' : 'offline'}.
-      </Text>
-      <Text style={styles.waitingText}>
-        {isOn ? 'waiting for new orders' : 'switch on to start receiving orders'}
-      </Text>
-    </View>
-  );
-}
+      // Otherwise show empty orders message
+      return (
+        <View style={styles.onlineSection}>
+          <Image source={Ordersscreenimage} style={styles.emptyOrdersImage} />
+          <Text style={[styles.onlineText, {color: isOn ? colors.onlineGreen : colors.danger}]}>
+            You are {isOn ? 'online' : 'offline'}.
+          </Text>
+          <Text style={styles.waitingText}>
+            {isOn ? 'waiting for new orders' : 'switch on to start receiving orders'}
+          </Text>
+        </View>
+      );
+    }
 
     return orders.map(order => renderOrderCard(order));
   };
 
   // ✅ Show NoInternetScreen if offline
- 
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -183,15 +199,19 @@ if (orders.length === 0) {
 
 
 
-      
-      
-      {loading ? (
+
+      {loading && !refreshing ? (
         <View style={styles.loaderContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loaderText}>Loading orders...</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        <ScrollView
+          contentContainerStyle={[styles.scrollViewContent, {flexGrow: 1}]}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+          }
+        >
           {renderContent()}
         </ScrollView>
       )}

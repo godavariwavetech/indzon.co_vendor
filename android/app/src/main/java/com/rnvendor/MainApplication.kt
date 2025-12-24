@@ -1,4 +1,4 @@
-package com.rnvendor
+package com.quickieevendor
 
 import android.app.Application
 import com.facebook.react.PackageList

@@ -14,7 +14,7 @@ import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import {colors} from '../config/theme';
 import {RestaurantLogo} from '../assets';
-import {fetchShopDetails,actionLogout} from '../redux/reducers/auth';
+import {fetchShopDetails, actionLogout, deleteAccount} from '../redux/reducers/auth';
 
 export default function MoreScreen() {
   const navigation = useNavigation();
@@ -23,8 +23,10 @@ export default function MoreScreen() {
   const userId = useSelector(state => state.Auth.userId);
 
   const [logoutVisible, setLogoutVisible] = useState(false);
+  const [deleteVisible, setDeleteVisible] = useState(false); // ✅ Delete modal state
   const [shop, setShop] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -44,12 +46,36 @@ export default function MoreScreen() {
 
   const handleConfirmLogout = () => {
     setLogoutVisible(false);
-      dispatch(actionLogout());
+    dispatch(actionLogout());
 
     navigation.reset({
       index: 0,
-      routes: [{name: 'SignInScreen'}], // 👈 Replace with your signin screen
+      routes: [{name: 'SignInScreen'}],
     });
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!userId) return;
+    setDeleteLoading(true);
+    try {
+      const resultAction = await dispatch(deleteAccount(userId));
+      if (deleteAccount.fulfilled.match(resultAction)) {
+        alert(resultAction.payload?.msg || 'Account deleted successfully.');
+        setDeleteVisible(false);
+        dispatch(actionLogout());
+        navigation.reset({
+          index: 0,
+          routes: [{name: 'SignInScreen'}],
+        });
+      } else {
+        alert(resultAction.payload || 'Failed to delete account.');
+      }
+    } catch (error) {
+      console.error('Delete account error:', error);
+      alert('An error occurred. Please try again.');
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   return (
@@ -65,12 +91,13 @@ export default function MoreScreen() {
 
       {/* 🔹 Shop Info (Trendy Look) */}
       <View style={styles.shopCard}>
-    <Image
-  source={shop?.image && !loading ? {uri: shop.image} : RestaurantLogo}
-  style={styles.shopImage}
-/>
-<Text style={styles.shopName}>{!loading && shop?.name ? shop.name : '--'}</Text>
-
+        <Image
+          source={shop?.image && !loading ? {uri: shop.image} : RestaurantLogo}
+          style={styles.shopImage}
+        />
+        <Text style={styles.shopName}>
+          {!loading && shop?.name ? shop.name : '--'}
+        </Text>
       </View>
 
       <ScrollView style={styles.container}>
@@ -83,13 +110,18 @@ export default function MoreScreen() {
           />
           <MenuItem
             icon="message-text-outline"
-            title="Customer care support"
+            title="Support"
             onPress={() => navigation.navigate('CustomerSupportScreen')}
           />
           <MenuItem
             icon="logout"
             title="Logout"
             onPress={() => setLogoutVisible(true)}
+          />
+           <MenuItem
+            icon="delete"
+            title="Delete Account"
+            onPress={() => setDeleteVisible(true)}
           />
         </View>
       </ScrollView>
@@ -117,6 +149,44 @@ export default function MoreScreen() {
                 style={[styles.button, styles.confirmButton]}
                 onPress={handleConfirmLogout}>
                 <Text style={styles.confirmText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 🔹 Delete Account Modal */}
+      <Modal
+        transparent
+        visible={deleteVisible}
+        animationType="fade"
+        onRequestClose={() => !deleteLoading && setDeleteVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={[styles.modalTitle, {color: 'red'}]}>
+              Delete Account
+            </Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete your account? This action cannot
+              be undone.
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton]}
+                onPress={() => setDeleteVisible(false)}
+                disabled={deleteLoading}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, {backgroundColor: 'red'}]}
+                onPress={handleDeleteAccount}
+                disabled={deleteLoading}>
+                {deleteLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.confirmText}>Delete</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

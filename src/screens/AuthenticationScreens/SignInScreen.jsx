@@ -17,7 +17,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import {colors} from '../../config/theme';
 import {appLogo} from '../../assets/index';
 import {useDispatch} from 'react-redux';
-import {vendorLogin} from '../../redux/reducers/auth';
+import {vendorLogin, updateFCMToken} from '../../redux/reducers/auth';
+import {retrieveFCMToken} from '../../services/NotificationsService';
 import CustomAlertModal from '../../components/CustomAlertModal'; // ✅ Import
 
 export default function LoginScreen() {
@@ -62,6 +63,24 @@ export default function LoginScreen() {
       if (response?.payload?.status === 200) {
         // const successMessage = response?.payload?.msg || 'Login Successful';
         // showModal('Success', successMessage, 'success');
+
+        // Update FCM Token
+        try {
+          const token = await retrieveFCMToken();
+          console.log('FCM Token signin screen:', token);
+          console.log('User ID signin screen:', response.payload?.data?.id);
+          if (token && response.payload?.data?.id) {
+            dispatch(
+              updateFCMToken({
+                userId: response.payload.data.id,
+                fcmToken: token,
+              }),
+            );
+          }
+        } catch (err) {
+          console.error('Failed to update FCM token', err);
+        }
+
         setTimeout(() => {
           setModalVisible(false);
 

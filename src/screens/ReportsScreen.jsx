@@ -58,10 +58,8 @@ export default function ReportsScreen() {
 
   // ===================== State =====================
   const today = new Date();
-  const ninetyDaysAgo = new Date();
-  ninetyDaysAgo.setDate(today.getDate() - 90);
 
-  const [startDate, setStartDate] = useState(ninetyDaysAgo);
+  const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [selecting, setSelecting] = useState('start');
@@ -138,7 +136,7 @@ useEffect(() => {
 
         <View style={styles.totalContainer}>
           <Text style={styles.totalBill}>Total Bill</Text>
-          <Text style={styles.totalPrice}>₹{item.grand_total}</Text>
+          <Text style={styles.totalPrice}>₹{item.total_amount}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -301,6 +299,7 @@ useEffect(() => {
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
         mode="date"
+        date={selecting === 'start' ? startDate : endDate}
         onConfirm={handleConfirm}
         onCancel={hideDatePicker}
       />

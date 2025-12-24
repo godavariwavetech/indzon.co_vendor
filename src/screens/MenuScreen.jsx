@@ -13,7 +13,8 @@ import {
   ScrollView,
   Animated,
   Modal,
-  SectionList,  
+  SectionList,
+  RefreshControl,
 } from 'react-native';
 
 import {useSelector, useDispatch} from 'react-redux';
@@ -67,6 +68,7 @@ export default function MenuScreen() {
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState('');
   const [isConnected, setIsConnected] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const {userId, shopDetails, products, loading} = useSelector(
     state => state.Auth,
@@ -80,6 +82,19 @@ export default function MenuScreen() {
   // 🔹 toggle confirmation modal state
   const [toggleConfirmVisible, setToggleConfirmVisible] = useState(false);
   const [pendingToggle, setPendingToggle] = useState(null);
+
+  const onRefresh = useCallback(async () => {
+    if (!userId) return;
+    setRefreshing(true);
+    try {
+      await dispatch(fetchShopDetails(userId));
+      await dispatch(fetchProductsList(userId));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [userId, dispatch]);
 
   // Refetch products when internet comes back
   useEffect(() => {
@@ -250,7 +265,7 @@ export default function MenuScreen() {
     <View style={styles.container}>
       {/* 🔹 Restaurant Header */}
       <View style={styles.headerCard}>
-        {loading && !shopDetails ? (
+        {loading && !refreshing && !shopDetails ? (
           <Text style={{padding: 10}}>Loading...</Text>
         ) : (
           <>
@@ -308,7 +323,7 @@ export default function MenuScreen() {
       }
     }}
   />
-) : loading ? (
+) : loading && !refreshing ? (
   <Text style={{textAlign: 'center', marginTop: 20, color: '#888'}}>
     Loading menu items...
   </Text>
@@ -320,6 +335,13 @@ export default function MenuScreen() {
     renderSectionHeader={({section}) => (
       <Text style={styles.sectionTitle}>{section.title}</Text>
     )}
+    refreshControl={
+      <RefreshControl
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        colors={[colors.primary]}
+      />
+    }
     
     /* PERFORMANCE BOOST */
     initialNumToRender={15}

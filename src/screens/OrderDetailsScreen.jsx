@@ -86,6 +86,29 @@ export default function OrderDetailsScreen({route}) {
     }
   };
 
+
+
+  /* 
+    Calculate aggregate values for payment details.
+    Note: Some fields like item_count, coupon_amount, total_item_gst_amount, grand_total
+    are global values repeated in every item object in the API response.
+    However, item_total_amount gives the line item total, so we sum it for the Total MRP.
+  */
+  const totalMrp = items.reduce(
+    (acc, item) => acc + (Number(item.item_total_amount) || 0),
+    0,
+  );
+  const totalItemsCount = items.length > 0 ? items[0].item_count : 0;
+  const totalCoupon = items.length > 0 ? Number(items[0].coupon_amount) || 0 : 0;
+  const totalGst = items.length > 0 ? Number(items[0].total_item_gst_amount) || 0 : 0;
+  const couponType = items.length > 0 ? items[0].coupon_type : null;
+
+  // New calculation logic: if coupon_type == 2, subtract coupon, else add
+  const finalGrandTotal =
+    couponType == '2'
+      ? totalMrp + totalGst - totalCoupon
+      : totalMrp + totalGst + totalCoupon;
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -102,7 +125,7 @@ export default function OrderDetailsScreen({route}) {
         <View style={styles.orderCard}>
           <Text style={styles.orderId}>Order ID - {order.order_id}</Text>
           <Text style={styles.orderTime}>
-            {order.order_date} {order.order_time}
+            {items[0]?.order_date || order.order_date} {items[0]?.order_time || order.order_time}
           </Text>
           <View style={styles.divider} />
 
@@ -158,12 +181,14 @@ export default function OrderDetailsScreen({route}) {
               <View key={index} style={styles.itemContainer}>
                 <Text style={styles.itemQuantity}>x{item.quantity}</Text>
                 <Image source={{uri: item.image}} style={styles.logo} />
-                <MaterialCommunityIcons
-                  name="square-circle"
-                  size={16}
-                  color={item.isVeg ? 'green' : 'red'}
-                  style={{marginRight: 6}}
-                />
+                {item.filter_one && (
+                  <MaterialCommunityIcons
+                    name="square-circle"
+                    size={16}
+                    color={item.isVeg ? 'green' : 'red'}
+                    style={{marginRight: 6}}
+                  />
+                )}
                 <Text style={styles.itemName}>{item.name}</Text>
                 <Text style={styles.itemPrice}>₹{item.price}</Text>
               </View>
@@ -180,7 +205,7 @@ export default function OrderDetailsScreen({route}) {
                 <Text style={styles.paymentText}>{order.payment_type}</Text>
               </View>
             </View>
-            <Text style={styles.totalPrice}>₹{order.grand_total}</Text>
+            <Text style={styles.totalPrice}>₹{order.total_amount}</Text>
           </View>
 
           {/* Action buttons */}
@@ -204,6 +229,13 @@ export default function OrderDetailsScreen({route}) {
         {/* ✅ Cooking Request (from API) */}
         {(orderStatus === 0 || orderStatus === 1) && order.order_instructions && (
           <View style={styles.requestCard}>
+            <View style={styles.requestIconBox}>
+              <MaterialCommunityIcons
+                name="chef-hat"
+                size={22}
+                color="#D84315"
+              />
+            </View>
             <View style={{flex: 1}}>
               <Text style={styles.requestTitle}>Cooking Request</Text>
               <Text style={styles.requestMessage}>
@@ -213,7 +245,6 @@ export default function OrderDetailsScreen({route}) {
           </View>
         )}
 
-        {/* ✅ Rider Details (Ongoing) */}
         {orderStatus === 8 && riderInfo && (
           <View style={styles.deliveryCard}>
             <View style={{flex: 1}}>
@@ -231,7 +262,48 @@ export default function OrderDetailsScreen({route}) {
             </TouchableOpacity>
           </View>
         )}
+
+        <View style={styles.paymentCard}>
+          <Text style={styles.paymentTitle}>Payment Details</Text>
+
+          <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>Total Items</Text>
+            <Text style={styles.paymentValue}>
+              {loadingItems ? '...' : totalItemsCount}
+            </Text>
+          </View>
+
+          <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>Total Item MRP Amount</Text>
+            <Text style={styles.paymentValue}>
+              ₹{loadingItems ? '...' : totalMrp.toFixed(2)}
+            </Text>
+          </View>
+
+          <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>Total Coupon Amount</Text>
+            <Text style={styles.paymentValue}>
+              ₹{loadingItems ? '...' : totalCoupon}
+            </Text>
+          </View>
+
+          <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>Total GST Amount</Text>
+            <Text style={styles.paymentValue}>
+              ₹{loadingItems ? '...' : totalGst}
+            </Text>
+          </View>
+
+          <View style={[styles.paymentRow, styles.grandTotalRow]}>
+            <Text style={styles.grandTotalLabel}>Grand Total</Text>
+            <Text style={styles.grandTotalValue}>
+              ₹{loadingItems ? '...' : finalGrandTotal}
+            </Text>
+          </View>
+        </View>
+
       </ScrollView>
+      
 
       {/* Reject Confirmation Modal */}
       <Modal
@@ -433,18 +505,42 @@ const styles = StyleSheet.create({
 
 
   requestCard: {
-  flexDirection: 'row',
-  alignItems: 'flex-start',
-  backgroundColor: '#1A43BF33',
-  marginHorizontal: 16,
-  padding: 13,
-  borderRadius:5,
-  marginTop: 10,
-  borderColor:'#1A43BF',
-  borderWidth:0.5
-},
-requestTitle: {color: '#000000', fontWeight: '500', marginBottom: 4, },
-requestMessage: {color: '#393838', fontSize: 13},
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFF3E0', // Light Orange
+    marginHorizontal: 16,
+    padding: 16,
+    borderRadius: 10,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#FFB74D',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  requestIconBox: {
+    marginRight: 12,
+    marginTop: 2,
+    padding: 6,
+    backgroundColor: '#FFE0B2',
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  requestTitle: {
+    color: '#D84315', // Deep Orange
+    fontWeight: '700',
+    marginBottom: 4,
+    fontSize: 15,
+  },
+  requestMessage: {
+    color: '#3E2723',
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '400',
+  },
 
 deliveryCard: {
   flexDirection: 'row',
@@ -474,5 +570,52 @@ deliveryHeading: {
   marginBottom: 4,
 },
 
-
+  paymentCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    padding: 16,
+    paddingVertical: 20,
+    borderRadius: 8,
+    elevation: 3,
+    marginTop: 15,
+    marginBottom: 30,
+    borderColor: '#00000020',
+    borderWidth: 0.5,
+  },
+  paymentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0F9D58',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  paymentLabel: {
+    fontSize: 14,
+    color: '#000',
+    fontWeight: '500',
+  },
+  paymentValue: {
+    fontSize: 14,
+    color: '#000',
+    fontWeight: '500',
+  },
+  grandTotalRow: {
+    marginTop: 8,
+    marginBottom: 0,
+  },
+  grandTotalLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000',
+  },
+  grandTotalValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+  },
 });

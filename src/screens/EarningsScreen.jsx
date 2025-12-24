@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import {fetchShopPayments, fetchPaymentHistory} from '../redux/reducers/auth';
+import {fetchShopPayments, fetchPaymentHistory, fetchApplicationCommon} from '../redux/reducers/auth';
 import NetInfo from '@react-native-community/netinfo';
 import NoInternetScreen from '../components/NoInternetScreen';
 import {ActivityIndicator} from 'react-native';
@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   FlatList,
   Modal,
+  Linking,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -19,7 +20,7 @@ import {colors} from '../config/theme';
 
 export default function EarningsScreen() {
   const dispatch = useDispatch();
-  const {userId, shopPayments, paymentHistory} = useSelector(
+  const {userId, shopPayments, paymentHistory, loading, applicationCommon} = useSelector(
     state => state.Auth,
   );
   const [isConnected, setIsConnected] = useState(true);
@@ -43,7 +44,7 @@ export default function EarningsScreen() {
 
   const today = new Date();
   const defaultStart = new Date();
-  defaultStart.setDate(today.getDate() - 90);
+  // defaultStart.setDate(today.getDate() - 90);
 
   const [startDate, setStartDate] = useState(defaultStart);
   const [endDate, setEndDate] = useState(today);
@@ -53,6 +54,7 @@ export default function EarningsScreen() {
     if (userId) {
       dispatch(fetchShopPayments(userId));
     }
+    dispatch(fetchApplicationCommon());
   }, [userId, dispatch]);
 
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
@@ -74,17 +76,18 @@ export default function EarningsScreen() {
     hideDatePicker();
   };
 
-  const applyDateFilter = () => {
+  // Auto-fetch transaction history whenever dates change
+  useEffect(() => {
     if (userId && startDate && endDate) {
       const payload = {
         f_date: formatDate(startDate),
         t_date: formatDate(endDate),
         userId,
       };
-      console.log('Fetching payment history with payload:', payload);
+      // console.log('Fetching payment history with payload:', payload);
       dispatch(fetchPaymentHistory(payload));
     }
-  };
+  }, [startDate, endDate, userId, dispatch]);
 
   const handleRefresh = async () => {
     if (!userId) return;
@@ -104,8 +107,23 @@ export default function EarningsScreen() {
   };
 
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+
+  const handleContactAdmin = () => {
+    const phoneNumber = applicationCommon?.contact_number; // Replace with actual admin number from config or API if available
+    if (phoneNumber) {
+      Linking.openURL(`tel:${phoneNumber}`);
+    } else {
+        alert("Admin contact number not available.");
+    }
+  };
+
+  // Reverse payment history to show latest first
+  const sortedPaymentHistory = React.useMemo(() => {
+    return [...paymentHistory].reverse();
+  }, [paymentHistory]);
 
   return (
     <View style={styles.container}>
@@ -126,20 +144,32 @@ export default function EarningsScreen() {
           <Text style={styles.amountBig}>
             ₹
             {(
-              (shopPayments?.item_amount ?? 0) -
-              (shopPayments?.admin_service_fee ?? 0) -
+              (shopPayments?.item_amount ?? 0)+
+              (shopPayments?.item_amount_gst ?? 0)-
+              (shopPayments?.admin_service_fee ?? 0) +
+              (shopPayments?.admin_coupon_amount ?? 0) -
               (shopPayments?.vendor_coupon_amount ?? 0)
             ).toFixed(2)}
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.withdrawBtn}
-          onPress={() => setShowInfoModal(true)} // 🔹 Open Info Modal
-        >
-          <Icon name="cash-outline" size={20} color={colors.textDark} />
-          <Text style={styles.withdrawText}>Payout Cycle</Text>
-        </TouchableOpacity>
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity
+            style={[styles.withdrawBtn, styles.actionButton]}
+            onPress={() => setShowInfoModal(true)} // 🔹 Open Info Modal
+          >
+            <Icon name="cash-outline" size={20} color={colors.textDark} />
+            <Text style={styles.withdrawText}>Payout Cycle</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.withdrawBtn, styles.actionButton]}
+            onPress={() => setShowWithdrawModal(true)} // 🔹 Open Withdraw Modal
+          >
+            <Icon name="card-outline" size={20} color={colors.textDark} />
+            <Text style={styles.withdrawText}>Withdraw</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Date Range */}
@@ -159,14 +189,7 @@ export default function EarningsScreen() {
             <Text style={styles.dateText}>End: {formatDate(endDate)}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.applyBtn} onPress={applyDateFilter}>
-            <Text style={styles.applyText}>Apply</Text>
-            <Icon
-              name="checkmark-done-outline"
-              size={18}
-              color={colors.reportsDownloadText}
-            />
-          </TouchableOpacity>
+
         </View>
       </View>
 
@@ -189,21 +212,21 @@ export default function EarningsScreen() {
             }
           }}
         />
-      ) : refreshing && paymentHistory.length === 0 ? (
+      ) : (refreshing || loading) && paymentHistory.length === 0 ? (
         // Case 2: Full-screen loader during refresh
         <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
           <ActivityIndicator size="large" color={colors.reportsDownloadText} />
-          <Text style={{marginTop: 8, color: '#888'}}>Refreshing...</Text>
+          <Text style={{marginTop: 8, color: '#888'}}>Loading...</Text>
         </View>
       ) : paymentHistory.length === 0 ? (
         // Case 3: No transactions
         <Text style={{textAlign: 'center', marginTop: 20, color: '#888'}}>
-          No transactions available
+          No transactions found for the selected date range
         </Text>
       ) : (
         // Case 4: Transactions available
         <FlatList
-          data={paymentHistory}
+          data={sortedPaymentHistory}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
           refreshing={refreshing}
@@ -255,6 +278,7 @@ export default function EarningsScreen() {
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
         mode="date"
+        date={selecting === 'start' ? startDate : endDate}
         onConfirm={handleConfirm}
         onCancel={hideDatePicker}
       />
@@ -290,31 +314,31 @@ export default function EarningsScreen() {
             <View style={styles.row}>
               <Text style={styles.label}>Orders Amount (A)</Text>
               <Text style={styles.value}>
-                ₹{shopPayments?.item_amount ?? 0}
+                ₹{Number(shopPayments?.item_amount ?? 0).toFixed(2)}
               </Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Item Amount GST (B)</Text>
               <Text style={styles.value}>
-                ₹{shopPayments?.item_amount_gst ?? 0}
+                ₹{Number(shopPayments?.item_amount_gst ?? 0).toFixed(2)}
               </Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Admin Service Fee (C)</Text>
               <Text style={styles.value}>
-                ₹{shopPayments?.admin_service_fee ?? 0}
+                ₹{Number(shopPayments?.admin_service_fee ?? 0).toFixed(2)}
               </Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Admin Coupon (D)</Text>
               <Text style={styles.value}>
-                ₹{shopPayments?.admin_coupon_amount ?? 0}
+                ₹{Number(shopPayments?.admin_coupon_amount ?? 0).toFixed(2)}
               </Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Vendor Coupon (E)</Text>
               <Text style={styles.value}>
-                ₹{shopPayments?.vendor_coupon_amount ?? 0}
+                ₹{Number(shopPayments?.vendor_coupon_amount ?? 0).toFixed(2)}
               </Text>
             </View>
 
@@ -370,9 +394,26 @@ export default function EarningsScreen() {
                 },
               ]}
             />
-
             <View style={styles.row}>
-              <Text style={styles.label}>Payment Date</Text>
+              <Text style={styles.label}>Phone</Text>
+              <Text style={styles.value}>
+                {selectedTransaction?.shop_phone_number || '--'}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>payment_method</Text>
+              <Text style={styles.value}>
+                {selectedTransaction?.payment_method || '--'}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Payment Dates:</Text>
+              <Text style={styles.value}>
+                {selectedTransaction?.payment_dates || '--'}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Settlement Date</Text>
               <Text style={styles.value}>
                 {selectedTransaction?.settlement_date_time || '--'}
               </Text>
@@ -384,30 +425,36 @@ export default function EarningsScreen() {
               </Text>
             </View>
             <View style={styles.row}>
-              <Text style={styles.label}>Total Amount (A)</Text>
+              <Text style={styles.label}>Total Amount(A)</Text>
+              <Text style={styles.value}>
+                ₹{selectedTransaction?.item_amount || 0}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Total Paid (B)</Text>
               <Text style={styles.value}>
                 ₹{selectedTransaction?.total_payment_amount || 0}
               </Text>
             </View>
-            <View style={styles.row}>
+            {/* <View style={styles.row}>
               <Text style={styles.label}>GST Charges (B)</Text>
               <Text style={styles.value}>
-                ₹{selectedTransaction?.gst_charges_C || 0}
+                ₹{selectedTransaction?.item_amount_gst || 0}
               </Text>
-            </View>
+            </View> */}
             <View style={styles.row}>
               <Text style={styles.label}>Admin Service Fee (C)</Text>
               <Text style={styles.value}>
-                ₹{selectedTransaction?.admin_share_B || 0}
+                ₹{selectedTransaction?.admin_service_fee || 0}
               </Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Admin Coupon (D)</Text>
-              <Text style={styles.value}>₹0</Text>
+              <Text style={styles.value}>₹{selectedTransaction?.admin_coupon_amount || 0}</Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Vendor Coupon (E)</Text>
-              <Text style={styles.value}>₹0</Text>
+              <Text style={styles.value}>₹{selectedTransaction?.vendor_coupon_amount || 0}</Text>
             </View>
 
             <View
@@ -425,6 +472,36 @@ export default function EarningsScreen() {
               style={styles.modalCloseBtn}
               onPress={() => setShowTransactionModal(false)}>
               <Text style={styles.modalCloseText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Withdraw Modal */}
+      <Modal
+        visible={showWithdrawModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowWithdrawModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalBox, {paddingVertical: 20}]}>
+            <TouchableOpacity
+              style={styles.modalCloseIcon}
+              onPress={() => setShowWithdrawModal(false)}>
+              <Icon name="close" size={24} color={colors.textDark} />
+            </TouchableOpacity>
+
+            <Text style={[styles.modalTitle, {textAlign: 'center'}]}>Withdraw Request</Text>
+            
+            <Text style={{textAlign: 'center', marginBottom: 20, color: '#333'}}>
+              To initiate a withdrawal, please contact the admin.
+            </Text>
+
+             <TouchableOpacity
+              style={[styles.withdrawBtn, {marginTop: 0, paddingHorizontal: 40, alignSelf:'center'}]}
+              onPress={handleContactAdmin}>
+              <Icon name="call-outline" size={20} color={colors.textDark} />
+              <Text style={styles.withdrawText}>Contact Admin</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -626,5 +703,26 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     letterSpacing: 2, // spacing between digits
+  },
+  modalCloseIcon: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 5,
+    zIndex: 1,
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 10,
+    marginTop: 15,
+  },
+  actionButton: {
+    marginTop: 0,
+    paddingHorizontal: 10, 
+    flex: 1, 
+    marginHorizontal: 5, 
+    justifyContent: 'center'
   },
 });

@@ -14,11 +14,90 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
 import {colors} from '../../config/theme';
 import {RestaurantLogo} from '../../assets/index';
+
+const ProfileSkeleton = () => {
+  const opacity = React.useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 0.7,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.3,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [opacity]);
+
+  const SkeletonBox = ({width, height, borderRadius, style}) => (
+    <Animated.View
+      style={[
+        {opacity, backgroundColor: '#E0E0E0', width, height, borderRadius},
+        style,
+      ]}
+    />
+  );
+
+  return (
+    <View style={[styles.container, {paddingTop: 50}]}>
+      <View style={[styles.logoContainer, {marginTop: 30}]}>
+        <SkeletonBox
+          width={100}
+          height={100}
+          borderRadius={50}
+          style={{marginBottom: 10}}
+        />
+        <SkeletonBox width={150} height={24} borderRadius={4} />
+      </View>
+
+      <View style={styles.card}>
+        {[1, 2, 3, 4].map((_, i) => (
+          <View
+            key={i}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginBottom: 18,
+            }}>
+            <SkeletonBox width={22} height={22} borderRadius={11} />
+            <SkeletonBox
+              width={200}
+              height={16}
+              borderRadius={4}
+              style={{marginLeft: 10}}
+            />
+          </View>
+        ))}
+        {/* Input Skeleton */}
+        <SkeletonBox
+          width="100%"
+          height={50}
+          borderRadius={10}
+          style={{marginTop: 10}}
+        />
+        {/* Button Skeleton */}
+        <SkeletonBox
+          width="100%"
+          height={45}
+          borderRadius={10}
+          style={{marginTop: 15}}
+        />
+      </View>
+    </View>
+  );
+};
 
 const RestaurantProfileScreen = () => {
   const navigation = useNavigation();
@@ -78,6 +157,19 @@ const RestaurantProfileScreen = () => {
     }
   };
 
+  if (loading && !shop) {
+    return (
+      <View style={{flex: 1}}>
+        <TouchableOpacity
+          style={[styles.backButton, {zIndex: 10}]}
+          onPress={() => navigation.goBack()}>
+          <Icon name="arrow-back" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <ProfileSkeleton />
+      </View>
+    );
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <TouchableOpacity
@@ -86,10 +178,6 @@ const RestaurantProfileScreen = () => {
         <Icon name="arrow-back" size={24} color={colors.textPrimary} />
       </TouchableOpacity>
 
-      {/* Loader */}
-      {loading && (
-        <ActivityIndicator size="large" color={colors.brandPrimary} />
-      )}
       {/* Error message */}
       {error && <Text style={{color: 'red', marginBottom: 10}}>{error}</Text>}
 
@@ -146,8 +234,13 @@ const RestaurantProfileScreen = () => {
 
         <TouchableOpacity
           style={styles.submitButton}
-          onPress={handlePasswordUpdate}>
-          <Text style={styles.submitText}>Update Password</Text>
+          onPress={handlePasswordUpdate}
+          disabled={loading}>
+          {loading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.submitText}>Update Password</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>

@@ -5,6 +5,7 @@ export const Ellipse = require('./Ellipse.png');
 export const emoji = require('./emoji.png');
 export const OTP = require('./OTP.png');
 
+
 export const Ordersscreenimage = require('./Ordersscreenimage.png');
 export const ItemLogo = require('./ItemLogo.png');
 export const RestaurantLogo = require('./AppLogo.png');

@@ -15,6 +15,7 @@ const initialState = {
   paymentHistory: [],
   products: [],
   dashboardOrders: [],
+  applicationCommon: null,
 };
 
 export const vendorLogin = createAsyncThunk(
@@ -350,6 +351,7 @@ export const fetchOrderDetails = createAsyncThunk(
       const response = await api.post(endpoints.NEWGETORDERDETAILS, {
         orderid: orderId,
       });
+      console.log("orderid",orderId)
 
       const data = response.data;
       //  console.log('ORDER DETAILS API response:', data);
@@ -360,9 +362,20 @@ export const fetchOrderDetails = createAsyncThunk(
           name: item.item_name,
           image: item.item_image,
           price: item.item_price,
-          quantity: item.item_count,
+          quantity: item.sub_item_count,
 
           isVeg: item.filter_one?.toLowerCase() === 'veg', // ✅ true if veg
+          filter_one: item.filter_one,
+
+          // ✅ Payment Details (from API)
+          item_count: item.item_count,
+          item_total_amount: item.item_total_amount,
+          coupon_amount: item.coupon_amount,
+          coupon_type: item.coupon_type,
+          total_item_gst_amount: item.total_item_gst_amount,
+          grand_total: item.grand_total,
+          order_date: item.order_date,
+          order_time: item.order_time,
         }));
         return fulfillWithValue(items);
       } else {
@@ -541,6 +554,79 @@ export const fetchDashboardOrders = createAsyncThunk(
   },
 );
 
+export const updateFCMToken = createAsyncThunk(
+  'updateFCMToken',
+  async ({userId, fcmToken}, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(endpoints.UPDATE_FCM_TOKEN, {
+        user_id: userId,
+        player_id: fcmToken,
+      });
+      const data = response.data;
+      console.log('Update FCM Token response:', response);
+      console.log('Update FCM Token response.data:', data);
+      console.log('Update FCM Token  fcm token:', fcmToken);
+      console.log('Update FCM Token  user id:', userId);
+
+      if (data?.status === 200) {
+        return fulfillWithValue(data);
+      } else {
+        return rejectWithValue(data?.msg || 'Failed to update FCM token');
+      }
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to update FCM token',
+      );
+    }
+  },
+);
+
+export const deleteAccount = createAsyncThunk(
+  'deleteAccount',
+  async (userId, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(endpoints.DELETE_ACCOUNT, {
+        id: userId,
+      });
+
+      const data = response.data;
+      console.log('Delete Account API response:', data);
+
+      if (data?.status === 200) {
+        return fulfillWithValue(data);
+      } else {
+        return rejectWithValue(data?.msg || 'Failed to delete account');
+      }
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to delete account',
+      );
+    }
+  },
+);
+
+export const fetchApplicationCommon = createAsyncThunk(
+  'fetchApplicationCommon',
+  async (_, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.get(endpoints.APPLICATION_COMMON);
+      const data = response.data;
+     // console.log('Application Common API response:', data);
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        return fulfillWithValue(data.data[0]);
+      } else {
+        return rejectWithValue('No common data found');
+      }
+    } catch (error) {
+       console.error('Fetch Application Common error:', error);
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch common data',
+      );
+    }
+  },
+);
+
 export const AuthSlice = createSlice({
   name: 'authlice',
   initialState,
@@ -672,6 +758,18 @@ export const AuthSlice = createSlice({
       state.loading = false;
       state.dashboardOrders = [];
       state.message = action.payload || 'Failed to load orders';
+    });
+
+    builder.addCase(fetchApplicationCommon.pending, state => {
+      // state.loading = true; // Optional: separate loading state if needed
+    });
+    builder.addCase(fetchApplicationCommon.fulfilled, (state, action) => {
+      // state.loading = false;
+      state.applicationCommon = action.payload;
+    });
+    builder.addCase(fetchApplicationCommon.rejected, (state, action) => {
+      // state.loading = false;
+      state.message = action.payload || 'Failed to load common data';
     });
   },
 });
