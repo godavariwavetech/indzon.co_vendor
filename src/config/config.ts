@@ -1,4 +1,4 @@
-export const baseURL = 'https://quickiee.in:2045/';
+export const baseURL = 'https://quickiee.in:2044/';
 
 export const endpoints = {
   // REQUEST_LOGIN_OPT:'OwnerLogin',

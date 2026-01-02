@@ -1,4 +1,4 @@
-package com.quickieevendor
+package com.QuickieeVendor.app
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

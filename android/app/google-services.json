@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:111811256164:android:118162e80a3549397fa471",
+        "android_client_info": {
+          "package_name": "com.QuickieeVendor.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWIn8twFG3-iGVKtGNrzFuqR4FbNXGBjA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:111811256164:android:4450ced0b055216c7fa471",
         "android_client_info": {
           "package_name": "com.quickieevendor"
