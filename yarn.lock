@@ -6502,6 +6502,11 @@ react-native-drawer-layout@^4.1.12:
   dependencies:
     use-latest-callback "^0.2.4"
 
+react-native-file-viewer@^2.1.5:
+  version "2.1.5"
+  resolved "https://registry.npmjs.org/react-native-file-viewer/-/react-native-file-viewer-2.1.5.tgz"
+  integrity sha512-MGC6sx9jsqHdefhVQ6o0akdsPGpkXgiIbpygb2Sg4g4bh7v6K1cardLV1NwGB9A6u1yICOSDT/MOC//9Ez6EUg==
+
 react-native-fs@^2.20.0:
   version "2.20.0"
   resolved "https://registry.npmjs.org/react-native-fs/-/react-native-fs-2.20.0.tgz"
@@ -6658,7 +6663,7 @@ react-native-version-check@^3.4.7:
     lodash "^4.17.21"
     semver "^6.1.1"
 
-react-native@*, "react-native@^0.0.0-0 || >=0.65 <1.0", "react-native@>= 0.61.5", "react-native@>= 0.64.3", react-native@>=0.41.2, react-native@>=0.44.1, react-native@>=0.48.0, react-native@>=0.57, react-native@>=0.57.0, react-native@>=0.59, react-native@>=0.63.3, react-native@>=0.65.0, react-native@>=0.70.3, react-native@0.79.0:
+react-native@*, "react-native@^0.0.0-0 || >=0.65 <1.0", "react-native@>= 0.61.5", "react-native@>= 0.64.3", react-native@>=0.41.2, react-native@>=0.44.1, react-native@>=0.47, react-native@>=0.48.0, react-native@>=0.57, react-native@>=0.57.0, react-native@>=0.59, react-native@>=0.63.3, react-native@>=0.65.0, react-native@>=0.70.3, react-native@0.79.0:
   version "0.79.0"
   resolved "https://registry.npmjs.org/react-native/-/react-native-0.79.0.tgz"
   integrity sha512-fLG/zl/YF30TWTmp2bbo3flHSFGe4WTyVkb7/wJnMEC39jjXVSCxfDtvSUVavhCc03fA/RTkWWvlmg7NEJk7Vg==

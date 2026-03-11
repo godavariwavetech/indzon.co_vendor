@@ -76,6 +76,7 @@ export const setupNotificationHandlers = async navigation => {
 
 const displayNotification = async remoteMessage => {
   const {notification, data} = remoteMessage;
+  console.log('Notification Data:', data);
   // Fallback to data if notification payload is missing (e.g. data-only message)
   const title = notification?.title || data?.title || 'New Notification';
   const body = notification?.body || data?.body;
