@@ -1,4 +1,4 @@
-package com.QuickieeVendor.app
+package com.amaraavendor
 
 import android.app.Application
 import com.facebook.react.PackageList

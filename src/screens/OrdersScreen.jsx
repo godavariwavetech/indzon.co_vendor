@@ -44,7 +44,11 @@ export default function OrdersScreen({navigation}) {
     setRefreshing(true);
     try {
       await dispatch(fetchCurrentOrders(userId));
-      if (!shopDetails) await dispatch(fetchShopDetails(userId));
+      if (!shopDetails) {
+        const val = await dispatch(fetchShopDetails(userId));
+        console.log(val,">>>>>>>>>>>VALUEEEE");
+      
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -52,9 +56,15 @@ export default function OrdersScreen({navigation}) {
     }
   }, [userId, dispatch, shopDetails]);
 
+  const fetchOrders = async () =>{
+    const resp = await dispatch(fetchCurrentOrders(userId));
+    console.log(resp,">>>>>>>>>>>>>RESPONSSSS");
+  }
+
   // Refetch orders when internet comes back
   useEffect(() => {
     if (isConnected && userId) {
+      fetchOrders()
       dispatch(fetchCurrentOrders(userId));
       if (!shopDetails) {
         dispatch(fetchShopDetails(userId));

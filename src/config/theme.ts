@@ -1,6 +1,6 @@
 export const colors = {
   // 🔹 Brand / Global colors
-  primary: "#1A43BF",
+  primary: "#85360B",
   primaryLight: "#1A43BF33",
   primarySemi: "#1A43BFB2",
   success: "#0AA007",

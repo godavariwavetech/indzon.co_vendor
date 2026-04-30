@@ -25,8 +25,8 @@ export default function LoginScreen() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
-  const [phoneNumber, setPhoneNumber] = useState();
-  const [password, setPassword] = useState();
+  const [phoneNumber, setPhoneNumber] = useState("9143143051");
+  const [password, setPassword] = useState("123456");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 

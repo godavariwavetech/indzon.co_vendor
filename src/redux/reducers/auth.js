@@ -206,7 +206,7 @@ export const fetchShopDetails = createAsyncThunk(
   async (userId, {rejectWithValue, fulfillWithValue}) => {
     try {
       const response = await api.post(endpoints.GETPROFILEDETAILS, {
-        user_id: userId,
+        shop_id: userId,
       });
 
       const data = response.data;
@@ -299,11 +299,13 @@ export const fetchCurrentOrders = createAsyncThunk(
   'fetchCurrentOrders',
   async (userId, {rejectWithValue, fulfillWithValue}) => {
     try {
+      console.log(userId,">>>>>>>>>>>>>>>>userId");
       const response = await api.post(endpoints.GETCURRENTORDERS, {
-        user_id: userId,
+        shop_id: userId,
       });
 
       const data = response.data;
+      console.log(data,">>>>>>>>>>>>>>>DATAATTT");
       //  console.log('GETCURRENTORDERS response:', data);
 
       if (data?.status === 200 && Array.isArray(data?.data)) {
@@ -646,9 +648,9 @@ export const AuthSlice = createSlice({
     });
     builder.addCase(vendorLogin.fulfilled, (state, action) => {
       state.message = null;
-      console.log(action.payload, '>>>>>>>responseses');
+      console.log(action.payload, '>>>>>>>responseses',action.payload?.data[0]?.id);
       // FIX: use "id" instead of "user_id"
-      state.userId = action.payload?.data?.id || null;
+      state.userId = action.payload?.data[0]?.id || null;
       //  state.token = action.payload?.token || null;
     });
     builder.addCase(vendorLogin.rejected, state => {

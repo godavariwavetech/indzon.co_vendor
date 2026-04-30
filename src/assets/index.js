@@ -8,4 +8,4 @@ export const OTP = require('./OTP.png');
 
 export const Ordersscreenimage = require('./Ordersscreenimage.png');
 export const ItemLogo = require('./ItemLogo.png');
-export const RestaurantLogo = require('./AppLogo.png');
+export const RestaurantLogo = require('./fallback.jpg');

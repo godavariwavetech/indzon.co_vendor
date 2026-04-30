@@ -80,7 +80,7 @@ const BottomTabNavigation = ({navigation}) => {
               {route.name}
             </Text>
           ),
-          tabBarActiveTintColor: '#1A43BF', // pink color
+          tabBarActiveTintColor: '#DF4F00', // pink color
           tabBarInactiveTintColor: '#6E6E6E', // gray color
           tabBarStyle: {
             height: 70,

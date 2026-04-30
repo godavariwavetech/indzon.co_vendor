@@ -1,4 +1,4 @@
-export const baseURL = 'https://quickiee.in:2045/';
+export const baseURL = 'https://apiamara.godavariwave.com/';
 
 export const endpoints = {
   // REQUEST_LOGIN_OPT:'OwnerLogin',
@@ -12,9 +12,9 @@ export const endpoints = {
   GETSUBCATEGORIES: 'dashboard_api/getmatchedcategory',
   GETFILTERS: 'dashboard_api/getmatchedfilter',
   REGISTERVENDOR: 'vendor_app/signupregister',
-  GETPROFILEDETAILS: 'vendor_app/getshoplist',
+  GETPROFILEDETAILS: 'vendor_app/getshopidsdata',
   UPDATEVENDORSPASSWORD: 'vendor_app/updatevendorspassword',
-  GETCURRENTORDERS: 'vendor_app/getcurrentorders',
+  GETCURRENTORDERS: 'vendor_app/getcurrentordersbyid',
   NEWGETORDERDETAILS: 'vendor_app/newgetorderdetails',
   UPDATEPROFILEDETAILS: 'vendor_app/updateshopdetails',
   CHANGEPASSWORD: 'vendor_app/changepassword',

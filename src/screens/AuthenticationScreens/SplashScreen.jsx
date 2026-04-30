@@ -3,6 +3,7 @@ import {View, StyleSheet, Image, Animated} from 'react-native';
 import {colors} from '../../config/theme';
 import {appLogo} from '../../assets/index';
 import {useSelector} from 'react-redux';
+import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
 
 const SplashScreen = ({navigation}) => {
   const {userId} = useSelector(state => state.Auth);
@@ -36,7 +37,7 @@ const SplashScreen = ({navigation}) => {
   return (
     <View style={styles.Container}>
       <Animated.View style={{opacity: fadeAnim}}>
-        <Image source={appLogo} />
+        <Image source={appLogo} style={styles.imageContainer} resizeMode='contain' />
       </Animated.View>
     </View>
   );
@@ -49,6 +50,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  imageContainer:{
+    width:responsiveWidth(80),
+    height:responsiveHeight(25)
+  }
 });
 
 export default SplashScreen;
