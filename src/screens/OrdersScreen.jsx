@@ -43,18 +43,17 @@ export default function OrdersScreen({navigation}) {
     if (!userId) return;
     setRefreshing(true);
     try {
-      await dispatch(fetchCurrentOrders(userId));
-      if (!shopDetails) {
-        const val = await dispatch(fetchShopDetails(userId));
-        console.log(val,">>>>>>>>>>>VALUEEEE");
-      
-      }
+      // Fetch both orders and shop details on manual refresh
+      await Promise.all([
+        dispatch(fetchCurrentOrders(userId)),
+        dispatch(fetchShopDetails(userId)),
+      ]);
     } catch (error) {
-      console.error(error);
+      console.error('Refresh failed:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [userId, dispatch, shopDetails]);
+  }, [userId, dispatch]);
 
   const fetchOrders = async () =>{
     const resp = await dispatch(fetchCurrentOrders(userId));
@@ -66,11 +65,11 @@ export default function OrdersScreen({navigation}) {
     if (isConnected && userId) {
       fetchOrders()
       dispatch(fetchCurrentOrders(userId));
-      if (!shopDetails) {
+      // if (!shopDetails) {
         dispatch(fetchShopDetails(userId));
-      }
+      // }
     }
-  }, [isConnected, userId, dispatch, shopDetails]);
+  }, [isConnected, userId, dispatch]);
 
   // ✅ Listen for internet changes
   useEffect(() => {
@@ -92,7 +91,8 @@ export default function OrdersScreen({navigation}) {
   // Toggle shop status
   useEffect(() => {
     if (shopDetails?.shop_active_status !== undefined) {
-      setIsOn(shopDetails.shop_active_status === 1);
+      // User says: if it is 1 then the status is off else on
+      setIsOn(shopDetails.shop_active_status === 0);
     }
   }, [shopDetails]);
 
@@ -104,11 +104,22 @@ export default function OrdersScreen({navigation}) {
     }).start();
   }, [isOn, translateX]);
 
-  const handleToggleConfirm = () => {
-    const newStatus = isOn ? 0 : 1;
-    dispatch(updateShopStatus({shop_id: userId, shop_active_status: newStatus}));
-    setIsOn(!isOn);
-    setShowToggleModal(false);
+  const handleToggleConfirm = async () => {
+    const newStatus = isOn ? 1 : 0; // If currently ON (0), set to OFF (1). If currently OFF (1), set to ON (0).
+    try {
+      const result = await dispatch(
+        updateShopStatus({shop_id: userId, shop_active_status: newStatus}),
+      ).unwrap();
+
+      console.log('Toggle result:', result);
+
+      // Verification: Check from API whether it is correctly updated
+      await dispatch(fetchShopDetails(userId));
+    } catch (error) {
+      console.error('Failed to update shop status:', error);
+    } finally {
+      setShowToggleModal(false);
+    }
   };
 
   const orders = selectedTab === 'Pending' ? pendingOrders : OrdersInProcess;
@@ -144,7 +155,7 @@ export default function OrdersScreen({navigation}) {
               <Text style={styles.codText}>{order.payment_type}</Text>
             </View>
           </View>
-          <Text style={styles.totalPrice}>₹{order.total_amount}</Text>
+          <Text style={styles.totalPrice}>₹{order.grand_total}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -185,6 +196,8 @@ export default function OrdersScreen({navigation}) {
   };
 
   // ✅ Show NoInternetScreen if offline
+
+  console.log(shopDetails,">>>>>>>>>>>>>>>>shopDetails");
 
 
   return (

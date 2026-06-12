@@ -1,40 +1,21 @@
 {
   "project_info": {
-    "project_number": "111811256164",
-    "project_id": "vendorquickiee",
-    "storage_bucket": "vendorquickiee.firebasestorage.app"
+    "project_number": "685920375708",
+    "project_id": "amaraarn-3ae21",
+    "storage_bucket": "amaraarn-3ae21.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:111811256164:android:118162e80a3549397fa471",
+        "mobilesdk_app_id": "1:685920375708:android:c866f8fc13d5922754ee59",
         "android_client_info": {
-          "package_name": "com.amaraavendor"
+          "package_name": "com.amaraamerchant"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDWIn8twFG3-iGVKtGNrzFuqR4FbNXGBjA"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:111811256164:android:4450ced0b055216c7fa471",
-        "android_client_info": {
-          "package_name": "com.quickieevendor"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDWIn8twFG3-iGVKtGNrzFuqR4FbNXGBjA"
+          "current_key": "AIzaSyBHKyBoaGoh-I52hVrpenGgdatZKF_vZmI"
         }
       ],
       "services": {

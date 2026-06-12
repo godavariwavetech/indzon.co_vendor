@@ -125,6 +125,9 @@ export default function EarningsScreen() {
     return [...paymentHistory].reverse();
   }, [paymentHistory]);
 
+
+  console.log(paymentHistory,">>>>>>>>>>>>>>>>>>.paymentHistory",shopPayments);
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -162,13 +165,13 @@ export default function EarningsScreen() {
             <Text style={styles.withdrawText}>Payout Cycle</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.withdrawBtn, styles.actionButton]}
             onPress={() => setShowWithdrawModal(true)} // 🔹 Open Withdraw Modal
           >
             <Icon name="card-outline" size={20} color={colors.textDark} />
             <Text style={styles.withdrawText}>Withdraw</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
 
@@ -225,7 +228,7 @@ export default function EarningsScreen() {
         </Text>
       ) : (
         // Case 4: Transactions available
-        <FlatList
+   <FlatList
           data={sortedPaymentHistory}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
@@ -251,9 +254,24 @@ export default function EarningsScreen() {
                   <Text style={styles.amount}>
                     ₹{item.total_payment_amount}
                   </Text>
+                  
+                  {/* Added: Mode of Payment */}
                   <Text style={styles.description}>
-                    Transaction ID: {item.payment_transaction_id || '--'}
+                    Mode: {item.payment_method || '--'}
                   </Text>
+
+                  {/* Added: Payment Period */}
+                  <Text style={styles.description}>
+                    Period: {item.payment_dates || '--'}
+                  </Text>
+                  
+                  {/* Conditional rendering: Show Transaction ID only if NOT Cash */}
+                  {item.payment_method !== 'Cash' && (
+                    <Text style={styles.description}>
+                      Txn ID: {item.payment_transaction_id || '--'}
+                    </Text>
+                  )}
+                  
                 </View>
 
                 <View style={styles.transactionRight}>

@@ -206,10 +206,14 @@ export const fetchShopDetails = createAsyncThunk(
   async (userId, {rejectWithValue, fulfillWithValue}) => {
     try {
       const response = await api.post(endpoints.GETPROFILEDETAILS, {
-        shop_id: userId,
+        user_id: userId
       });
 
+
+
       const data = response.data;
+
+      console.log(data,">>>>>>>>>>>>>>>>>DATATATATATATATA>>>>>>>>>>>>>>>");
 
       if (data?.status === 200 && Array.isArray(data?.data)) {
         const shop = data.data[0]; // Take first shop from array
@@ -243,7 +247,7 @@ export const updateShopStatus = createAsyncThunk(
     try {
       const payload = {
         shop_id: Number(shop_id),
-        shop_active_status: Number(shop_active_status),
+        active_status: Number(shop_active_status),
       };
 
       console.log('📤 Sending shop status update payload:', payload);
@@ -255,7 +259,10 @@ export const updateShopStatus = createAsyncThunk(
       const data = response.data;
 
       if (data?.status === 200) {
-        return fulfillWithValue(payload); // normalized payload returned
+        return fulfillWithValue({
+          shop_id: Number(shop_id),
+          shop_active_status: Number(shop_active_status),
+        }); // normalized payload returned
       } else {
         return rejectWithValue(data?.msg || 'Failed to update shop status');
       }
@@ -356,6 +363,8 @@ export const fetchOrderDetails = createAsyncThunk(
       console.log("orderid",orderId)
 
       const data = response.data;
+
+      console.log(data,">>>>>>>>>>>>>>>>>RESSSSSSSSSSPONSEEE");
       //  console.log('ORDER DETAILS API response:', data);
 
       if (data?.status === 200 && Array.isArray(data?.data)) {
@@ -422,6 +431,10 @@ export const fetchShopPayments = createAsyncThunk(
       const response = await api.post(endpoints.GETSHOPSFORPAYMENTS, {
         user_id: userId,
       });
+
+      console.log({
+        user_id: userId,
+      },">>>>>>>>>>>>>>>>>>>>PAyload");
 
       const data = response.data;
       console.log('getshopsforpayments API response:', data);
@@ -535,6 +548,12 @@ export const fetchDashboardOrders = createAsyncThunk(
   async ({f_date, t_date, userId}, {rejectWithValue, fulfillWithValue}) => {
     try {
       const response = await api.post(endpoints.GETDASHBOARDORDERS, {
+        f_date,
+        t_date,
+        shop_id: userId,
+      });
+
+      console.log(response,">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>response", {
         f_date,
         t_date,
         shop_id: userId,

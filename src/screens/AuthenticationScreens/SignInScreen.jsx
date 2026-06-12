@@ -25,8 +25,8 @@ export default function LoginScreen() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
-  const [phoneNumber, setPhoneNumber] = useState("9143143051");
-  const [password, setPassword] = useState("123456");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -211,13 +211,13 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             {/* Register SignUp */}
-            <View style={styles.Register}>
+            {/* <View style={styles.Register}>
               <Text style={styles.signText}>Don't have an account? </Text>
               <TouchableOpacity
                 onPress={() => navigation.navigate('RegisterScreen')}>
                 <Text style={styles.sigupText}>SignUp</Text>
               </TouchableOpacity>
-            </View>
+            </View>  */}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

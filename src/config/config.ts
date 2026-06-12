@@ -1,4 +1,4 @@
-export const baseURL = 'https://apiamara.godavariwave.com/';
+export const baseURL = 'https://amaraa.co.in:2026/';
 
 export const endpoints = {
   // REQUEST_LOGIN_OPT:'OwnerLogin',
@@ -18,7 +18,7 @@ export const endpoints = {
   NEWGETORDERDETAILS: 'vendor_app/newgetorderdetails',
   UPDATEPROFILEDETAILS: 'vendor_app/updateshopdetails',
   CHANGEPASSWORD: 'vendor_app/changepassword',
-  UPDATESHOPSTATUSS: 'vendor_app/updateshopstatuss',
+  UPDATESHOPSTATUSS: 'vendor_app/updateshopstatus',
   UPDATEORDERSTATUS: 'vendor_app/updateorderstatus',
   GETSHOPSFORPAYMENTS: 'vendor_app/getshopsforpayments',
   GETPAYMENTHISTORY: 'vendor_app/getpaymenthistory',

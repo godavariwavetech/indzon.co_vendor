@@ -1,4 +1,4 @@
-export const appLogo = require('./spalshscreen_logo.png');
+export const appLogo = require('./splash.png');
 export const QUICKIEE = require('./QUICKIEE.png');
 export const bannerimage1 = require('./bannerimage1.png');
 export const Ellipse = require('./Ellipse.png');

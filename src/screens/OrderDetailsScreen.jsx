@@ -49,7 +49,26 @@ export default function OrderDetailsScreen({route}) {
         setLoadingItems(true);
         const resultAction = await dispatch(fetchOrderDetails(order.id));
         if (fetchOrderDetails.fulfilled.match(resultAction)) {
-          setItems(resultAction.payload);
+          const fetchedItems = resultAction.payload;
+
+          // 🔹 Grouping items by name and price to handle duplicates from API
+          const grouped = fetchedItems.reduce((acc, item) => {
+            if (!item.name) return acc;
+            
+            const key = `${item.name.trim().toLowerCase()}-${Number(item.price)}`;
+            
+            if (!acc[key]) {
+              acc[key] = {...item};
+              acc[key].quantity = Number(item.quantity) || 0;
+              acc[key].item_total_amount = Number(item.item_total_amount) || 0;
+            } else {
+              acc[key].quantity += (Number(item.quantity) || 0);
+              acc[key].item_total_amount += (Number(item.item_total_amount) || 0);
+            }
+            return acc;
+          }, {});
+
+          setItems(Object.values(grouped));
         }
       } catch (err) {
         console.error('Error fetching order items', err);
@@ -86,28 +105,25 @@ export default function OrderDetailsScreen({route}) {
     }
   };
 
-
-
   /* 
-    Calculate aggregate values for payment details.
-    Note: Some fields like item_count, coupon_amount, total_item_gst_amount, grand_total
-    are global values repeated in every item object in the API response.
-    However, item_total_amount gives the line item total, so we sum it for the Total MRP.
+    ✅ CALCULATION LOGIC:
   */
+  const totalItemsCount = Number(order.item_count) || (items.length > 0 ? items[0].item_count : 0);
+  const finalGrandTotal = Number(order.grand_total) || 0;
+  const totalSavings = Number(order.total_saving_amount) || 0;
+  const deliveryCharges = Number(order.delivery_charges) || 0;
+  
+  // Checking both order object and items array for coupon safely
+  const totalCoupon = Number(order.coupon_amount) || (items.length > 0 ? Number(items[0].coupon_amount) || 0 : 0);
+  
+  // GST is typically inside the item array based on your previous code
+  const totalGst = items.length > 0 ? Number(items[0].total_item_gst_amount) || 0 : 0;
+  
+  // Base MRP based on fetched items
   const totalMrp = items.reduce(
-    (acc, item) => acc + (Number(item.item_total_amount) || 0),
+    (acc, item) => acc + (Number(item.price) * Number(item.quantity) || 0),
     0,
   );
-  const totalItemsCount = items.length > 0 ? items[0].item_count : 0;
-  const totalCoupon = items.length > 0 ? Number(items[0].coupon_amount) || 0 : 0;
-  const totalGst = items.length > 0 ? Number(items[0].total_item_gst_amount) || 0 : 0;
-  const couponType = items.length > 0 ? items[0].coupon_type : null;
-
-  // New calculation logic: if coupon_type == 2, subtract coupon, else add
-  const finalGrandTotal =
-    couponType == '2'
-      ? totalMrp + totalGst - totalCoupon
-      : totalMrp + totalGst + totalCoupon;
 
   return (
     <View style={styles.container}>
@@ -125,7 +141,7 @@ export default function OrderDetailsScreen({route}) {
         <View style={styles.orderCard}>
           <Text style={styles.orderId}>Order ID - {order.order_id}</Text>
           <Text style={styles.orderTime}>
-            {items[0]?.order_date || order.order_date} {items[0]?.order_time || order.order_time}
+            {order.order_date} {order.order_time}
           </Text>
           <View style={styles.divider} />
 
@@ -197,15 +213,17 @@ export default function OrderDetailsScreen({route}) {
 
           <View style={styles.divider} />
 
-          {/* Footer Row */}
+          {/* ✅ UPDATED: Footer Row now shows Item Total instead of Grand Total */}
           <View style={styles.footerRow}>
             <View style={styles.billLeft}>
-              <Text style={styles.totalBillLabel}>Total Bill</Text>
+              <Text style={styles.totalBillLabel}>Item Total</Text>
               <View style={styles.paymentBadge}>
                 <Text style={styles.paymentText}>{order.payment_type}</Text>
               </View>
             </View>
-            <Text style={styles.totalPrice}>₹{order.total_amount}</Text>
+            <Text style={styles.totalPrice}>
+              ₹{loadingItems ? '...' : totalMrp.toFixed(2)}
+            </Text>
           </View>
 
           {/* Action buttons */}
@@ -226,7 +244,7 @@ export default function OrderDetailsScreen({route}) {
           )}
         </View>
 
-        {/* ✅ Cooking Request (from API) */}
+        {/* Cooking Request */}
         {(orderStatus === 0 || orderStatus === 1) && order.order_instructions && (
           <View style={styles.requestCard}>
             <View style={styles.requestIconBox}>
@@ -245,6 +263,7 @@ export default function OrderDetailsScreen({route}) {
           </View>
         )}
 
+        {/* Rider Info */}
         {orderStatus === 8 && riderInfo && (
           <View style={styles.deliveryCard}>
             <View style={{flex: 1}}>
@@ -263,47 +282,63 @@ export default function OrderDetailsScreen({route}) {
           </View>
         )}
 
+        {/* Payment Details Card */}
         <View style={styles.paymentCard}>
           <Text style={styles.paymentTitle}>Payment Details</Text>
 
           <View style={styles.paymentRow}>
             <Text style={styles.paymentLabel}>Total Items</Text>
             <Text style={styles.paymentValue}>
-              {loadingItems ? '...' : totalItemsCount}
+              {totalItemsCount}
             </Text>
           </View>
 
           <View style={styles.paymentRow}>
-            <Text style={styles.paymentLabel}>Total Item MRP Amount</Text>
+            <Text style={styles.paymentLabel}>Item Total MRP</Text>
             <Text style={styles.paymentValue}>
               ₹{loadingItems ? '...' : totalMrp.toFixed(2)}
             </Text>
           </View>
 
           <View style={styles.paymentRow}>
-            <Text style={styles.paymentLabel}>Total Coupon Amount</Text>
+            <Text style={styles.paymentLabel}>Total GST</Text>
             <Text style={styles.paymentValue}>
-              ₹{loadingItems ? '...' : totalCoupon}
+              ₹{loadingItems ? '...' : totalGst.toFixed(2)}
             </Text>
           </View>
 
           <View style={styles.paymentRow}>
-            <Text style={styles.paymentLabel}>Total GST Amount</Text>
+            <Text style={styles.paymentLabel}>Delivery Charges</Text>
             <Text style={styles.paymentValue}>
-              ₹{loadingItems ? '...' : totalGst}
+              ₹{deliveryCharges.toFixed(2)}
             </Text>
           </View>
+
+          <View style={styles.paymentRow}>
+            <Text style={styles.paymentLabel}>Coupon Applied</Text>
+            <Text style={[styles.paymentValue, {color: totalCoupon > 0 ? '#0F9D58' : '#000'}]}>
+              {totalCoupon > 0 ? `- ₹${totalCoupon.toFixed(2)}` : '₹0.00'}
+            </Text>
+          </View>
+
+          {totalSavings > 0 && (
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>Total Savings</Text>
+              <Text style={[styles.paymentValue, {color: '#0F9D58', fontWeight: 'bold'}]}>
+                ₹{totalSavings.toFixed(2)}
+              </Text>
+            </View>
+          )}
 
           <View style={[styles.paymentRow, styles.grandTotalRow]}>
             <Text style={styles.grandTotalLabel}>Grand Total</Text>
             <Text style={styles.grandTotalValue}>
-              ₹{loadingItems ? '...' : finalGrandTotal}
+              ₹{finalGrandTotal.toFixed(2)}
             </Text>
           </View>
         </View>
 
       </ScrollView>
-      
 
       {/* Reject Confirmation Modal */}
       <Modal
@@ -503,11 +538,10 @@ const styles = StyleSheet.create({
   confirmButton2: {backgroundColor: colors.primarySemi},
   confirmButton2Text: {color: '#fff', fontWeight: 'bold'},
 
-
   requestCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFF3E0', // Light Orange
+    backgroundColor: '#FFF3E0', 
     marginHorizontal: 16,
     padding: 16,
     borderRadius: 10,
@@ -530,7 +564,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   requestTitle: {
-    color: '#D84315', // Deep Orange
+    color: '#D84315', 
     fontWeight: '700',
     marginBottom: 4,
     fontSize: 15,
@@ -542,33 +576,33 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
 
-deliveryCard: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#fff',
-  marginHorizontal: 16,
-  padding: 12,
-  borderRadius: 8,
-  marginTop: 10,
-  elevation: 2,
-  borderColor:"#00000040",
-  borderWidth:0.6,
-  paddingVertical:18
-},
-deliveryText: {fontWeight: '600', fontSize: 14, color: '#000'},
-callButton: {
-  width: 35,
-  height: 35,
-  borderRadius: 18,
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-deliveryHeading: {
-  fontSize: 15,
-  fontWeight: 'bold',
-  color: colors.primary,
-  marginBottom: 4,
-},
+  deliveryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+    elevation: 2,
+    borderColor:"#00000040",
+    borderWidth:0.6,
+    paddingVertical:18
+  },
+  deliveryText: {fontWeight: '600', fontSize: 14, color: '#000'},
+  callButton: {
+    width: 35,
+    height: 35,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deliveryHeading: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 4,
+  },
 
   paymentCard: {
     backgroundColor: '#fff',
@@ -607,6 +641,9 @@ deliveryHeading: {
   grandTotalRow: {
     marginTop: 8,
     marginBottom: 0,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 12,
   },
   grandTotalLabel: {
     fontSize: 15,
