@@ -1,4 +1,4 @@
-package com.amaraamerchant
+package com.indzon.vendor
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

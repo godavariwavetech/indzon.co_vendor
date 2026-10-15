@@ -1,3 +1,5 @@
+import {useSelector} from 'react-redux';
+import {DEMO_MODE} from '../demo/config';
 import React from "react";
 import {
   View,
@@ -10,7 +12,24 @@ import Icon from "react-native-vector-icons/Ionicons";
 import  {colors}  from '../config/theme'; 
 
 
-export default function BillSummary({ navigation }) {
+export default function BillSummary({navigation, route}) {
+  const auth = useSelector(state => state.Auth);
+  const order = [...auth.pendingOrders, ...auth.OrdersInProcess, ...auth.dashboardOrders].find(o => o.id === route.params?.order?.id) || route.params?.order || auth.dashboardOrders[0];
+  if (!DEMO_MODE) return <ProductionBillSummary navigation={navigation} />;
+  return <View style={styles.container}>
+    <View style={styles.header}><TouchableOpacity onPress={() => navigation.goBack()}><Icon name="arrow-back" size={22} color={colors.textDark} /></TouchableOpacity>
+      <View style={styles.headerTextContainer}><Text style={styles.orderId}>ORDER #{order.order_id}</Text><Text style={styles.subText}>{order.customer.name} - {order.payment_status}</Text></View>
+      <TouchableOpacity onPress={() => navigation.navigate('CustomerSupportScreen')}><Text style={styles.helpText}>HELP</Text></TouchableOpacity>
+    </View>
+    <ScrollView contentContainerStyle={styles.scrollContainer}><View style={styles.card}><Text style={styles.billSummary}>Bill Summary</Text><View style={styles.divider} />
+      {order.items.map(item => <View key={item.product_id} style={styles.itemRow}><Text style={styles.itemText}>{item.quantity} x {item.name}</Text><Text style={styles.itemPrice}>₹{(item.quantity * item.price).toFixed(2)}</Text></View>)}
+      {[['GST (5%)', order.total_item_gst_amount], ['Delivery', order.delivery_charges], ['Coupon', -order.coupon_amount]].map(([label, value]) => <View key={label} style={styles.itemRow}><Text style={styles.taxText}>{label}</Text><Text style={styles.itemPrice}>₹{Number(value).toFixed(2)}</Text></View>)}
+      <View style={styles.totalBox}><Text style={styles.totalText}>Grand Total</Text><Text style={styles.totalPrice}>₹{order.grand_total.toFixed(2)}</Text></View>
+    </View></ScrollView>
+  </View>;
+}
+
+function ProductionBillSummary({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>

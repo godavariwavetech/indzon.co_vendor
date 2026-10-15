@@ -1,4 +1,6 @@
-import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
+import {createSlice} from '@reduxjs/toolkit';
+import {createAsyncThunk, snapshot} from '../../demo/store';
+import {DEMO_MODE} from '../../demo/config';
 import api from '../../utils/api';
 import {endpoints} from '../../config/config';
 
@@ -16,6 +18,7 @@ const initialState = {
   products: [],
   dashboardOrders: [],
   applicationCommon: null,
+  ...(DEMO_MODE ? snapshot() : {}),
 };
 
 export const vendorLogin = createAsyncThunk(
@@ -797,4 +800,7 @@ export const AuthSlice = createSlice({
 
 export const {actionLogout, actionLogin} = AuthSlice.actions;
 
-export default AuthSlice.reducer;
+export default function authReducer(state, action) {
+  if (DEMO_MODE && action.type === 'demo/sync') return {...state, ...action.payload, loading: false};
+  return AuthSlice.reducer(state, action);
+}

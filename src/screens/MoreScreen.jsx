@@ -1,3 +1,4 @@
+import {DEMO_MODE} from '../demo/config';
 import React, {useState, useEffect} from 'react';
 import {
   View,
@@ -24,7 +25,8 @@ export default function MoreScreen() {
 
   const [logoutVisible, setLogoutVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false); // ✅ Delete modal state
-  const [shop, setShop] = useState(null);
+  const initialShop = useSelector(state => state.Auth.shopDetails);
+  const [shop, setShop] = useState(initialShop);
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -92,8 +94,9 @@ export default function MoreScreen() {
       {/* 🔹 Shop Info (Trendy Look) */}
       <View style={styles.shopCard}>
         <Image
-          source={shop?.image && !loading ? {uri: shop.image} : RestaurantLogo}
+          source={shop?.image && !loading ? (typeof shop.image === "string" ? {uri: shop.image} : shop.image) : RestaurantLogo}
           style={styles.shopImage}
+          resizeMode="contain"
         />
         <Text style={styles.shopName}>
           {!loading && shop?.name ? shop.name : '--'}
@@ -103,6 +106,9 @@ export default function MoreScreen() {
       <ScrollView style={styles.container}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>My Account</Text>
+          {DEMO_MODE && <MenuItem icon="bell-outline" title="Notifications" onPress={() => navigation.navigate('NotificationsScreen')} />}
+          <MenuItem icon="file-document-outline" title="Terms & Conditions" onPress={() => navigation.navigate('TermsScreen')} />
+          <MenuItem icon="shield-outline" title="Privacy Policy" onPress={() => navigation.navigate('PrivacyPolicyScreen')} />
           <MenuItem
             icon="account"
             title="Profile"
@@ -245,7 +251,7 @@ const styles = StyleSheet.create({
   shopImage: {
     width: 90,
     height: 90,
-    borderRadius: 45,
+    borderRadius: 8,
     marginBottom: 10,
    // borderWidth: 2,
    // borderColor: colors.morePrimary,

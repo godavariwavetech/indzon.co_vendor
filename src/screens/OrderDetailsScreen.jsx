@@ -1,5 +1,6 @@
+import {DEMO_MODE} from '../demo/config';
 import React, {useState, useEffect} from 'react';
-import {useDispatch} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import {fetchOrderDetails, updateOrderStatus} from './../redux/reducers/auth';
 
 import {
@@ -12,20 +13,26 @@ import {
   Modal,
   Linking,
 } from 'react-native';
+import CustomAlertModal from '../components/CustomAlertModal';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
 import {colors} from '../config/theme';
 
 export default function OrderDetailsScreen({route}) {
-  const {order} = route.params;
+  const current = useSelector(state => state.Auth);
+  const original = route.params?.order;
+  const order = (DEMO_MODE && [...current.pendingOrders, ...current.OrdersInProcess, ...current.dashboardOrders].find(o => o.id === original?.id)) || original;
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const showFeedback = (title, message, type = 'error') =>
+    setFeedback({title, message, type});
   const [orderStatus, setOrderStatus] = useState(order.order_status); // numeric status
-  const [items, setItems] = useState([]);
-  const [loadingItems, setLoadingItems] = useState(true);
+  const [items, setItems] = useState(DEMO_MODE ? order.items : []);
+  const [loadingItems, setLoadingItems] = useState(!DEMO_MODE);
 
   // ✅ Parse rider info if available
   let riderInfo = null;
@@ -86,7 +93,12 @@ export default function OrderDetailsScreen({route}) {
       );
       if (updateOrderStatus.fulfilled.match(resultAction)) {
         setOrderStatus(5);
+        showFeedback('Order rejected', 'The order has been rejected.', 'success');
+      } else {
+        showFeedback('Unable to reject order', String(resultAction.payload || resultAction.error?.message || 'Please try again.'));
       }
+    } catch (error) {
+      showFeedback('Unable to reject order', error.message || 'Please try again.');
     } finally {
       setShowRejectModal(false);
     }
@@ -95,13 +107,16 @@ export default function OrderDetailsScreen({route}) {
   const handleConfirm = async () => {
     try {
       const resultAction = await dispatch(
-        updateOrderStatus({orderId: order.id, orderStatus: '1'}),
+        updateOrderStatus({orderId: order.id, orderStatus: String(orderStatus === 0 ? 1 : orderStatus === 1 ? 8 : 3)}),
       );
       if (updateOrderStatus.fulfilled.match(resultAction)) {
-        setOrderStatus(1);
+        setOrderStatus(Number(resultAction.payload.orderStatus));
+        showFeedback('Order updated', 'The order, stock and earnings have been updated.', 'success');
+      } else {
+        showFeedback('Unable to update order', String(resultAction.payload || resultAction.error?.message || 'Please try again.'));
       }
     } catch (error) {
-      console.error('Error confirming order:', error);
+      showFeedback('Unable to update order', error.message || 'Please try again.');
     }
   };
 
@@ -196,7 +211,7 @@ export default function OrderDetailsScreen({route}) {
             items.map((item, index) => (
               <View key={index} style={styles.itemContainer}>
                 <Text style={styles.itemQuantity}>x{item.quantity}</Text>
-                <Image source={{uri: item.image}} style={styles.logo} />
+                <Image source={(typeof item.image === "string" ? {uri: item.image} : item.image)} style={styles.logo} />
                 {item.filter_one && (
                   <MaterialCommunityIcons
                     name="square-circle"
@@ -226,6 +241,12 @@ export default function OrderDetailsScreen({route}) {
             </Text>
           </View>
 
+          {DEMO_MODE && <View style={styles.addressCard}>
+            <Text style={styles.addressTitle}>{order.customer.name}</Text><Text style={styles.addressText}>{order.delivery_address}</Text>
+            <Text style={styles.addressText}>{order.customer.mobile} - Payment: {order.payment_status}</Text>
+          </View>}
+          {DEMO_MODE && [1, 8].includes(orderStatus) && <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}><Text style={styles.confirmButtonText}>{orderStatus === 1 ? 'Start Preparation' : 'Complete Order'}</Text></TouchableOpacity>}
+          {DEMO_MODE && [3, 4, 5].includes(orderStatus) && <Text style={styles.paymentTitle}>{orderStatus === 3 ? 'Completed - Paid' : 'Cancelled / Rejected'}</Text>}
           {/* Action buttons */}
           {order.order_status === 0 && orderStatus === 0 && (
             <View style={styles.buttonContainer}>
@@ -251,7 +272,7 @@ export default function OrderDetailsScreen({route}) {
               <MaterialCommunityIcons
                 name="chef-hat"
                 size={22}
-                color="#D84315"
+                color={colors.primary}
               />
             </View>
             <View style={{flex: 1}}>
@@ -275,7 +296,7 @@ export default function OrderDetailsScreen({route}) {
             <TouchableOpacity
               style={styles.callButton}
               onPress={() =>
-                Linking.openURL(`tel:${riderInfo.delivery_boy_mobile_number}`)
+                DEMO_MODE ? showFeedback('Rider contact', riderInfo.delivery_boy_mobile_number || 'Calling is currently unavailable.', 'info') : Linking.openURL(`tel:${riderInfo.delivery_boy_mobile_number}`).catch(() => showFeedback('Unable to call', 'Please try again.'))
               }>
               <Icon name="call" size={25} color={colors.primary} />
             </TouchableOpacity>
@@ -285,6 +306,7 @@ export default function OrderDetailsScreen({route}) {
         {/* Payment Details Card */}
         <View style={styles.paymentCard}>
           <Text style={styles.paymentTitle}>Payment Details</Text>
+          {DEMO_MODE && <TouchableOpacity onPress={() => navigation.navigate('BillSummary', {order})}><Text style={{color: colors.primary}}>View Bill Summary</Text></TouchableOpacity>}
 
           <View style={styles.paymentRow}>
             <Text style={styles.paymentLabel}>Total Items</Text>
@@ -367,6 +389,13 @@ export default function OrderDetailsScreen({route}) {
           </View>
         </View>
       </Modal>
+      <CustomAlertModal
+        visible={Boolean(feedback) && !showRejectModal}
+        title={feedback?.title}
+        message={feedback?.message}
+        type={feedback?.type}
+        onClose={() => setFeedback(null)}
+      />
     </View>
   );
 }
@@ -450,7 +479,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     padding: 4,
     borderRadius: 5,
-    backgroundColor: '#1A43BF1F',
+    backgroundColor: colors.primaryLight,
   },
   itemName: {flex: 1, fontSize: 14},
   itemPrice: {fontWeight: 'bold'},
@@ -541,13 +570,13 @@ const styles = StyleSheet.create({
   requestCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFF3E0', 
+    backgroundColor: colors.brandSurface,
     marginHorizontal: 16,
     padding: 16,
     borderRadius: 10,
     marginTop: 16,
     borderWidth: 1,
-    borderColor: '#FFB74D',
+    borderColor: colors.primaryLight,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
@@ -558,19 +587,19 @@ const styles = StyleSheet.create({
     marginRight: 12,
     marginTop: 2,
     padding: 6,
-    backgroundColor: '#FFE0B2',
+    backgroundColor: colors.primaryLight,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   requestTitle: {
-    color: '#D84315', 
+    color: colors.primary,
     fontWeight: '700',
     marginBottom: 4,
     fontSize: 15,
   },
   requestMessage: {
-    color: '#3E2723',
+    color: colors.textDark,
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '400',

@@ -1,3 +1,5 @@
+import {DEMO_MODE} from '../../demo/config';
+import {vendorLogin} from '../../redux/reducers/auth';
 import React, {useState, useEffect} from 'react';
 import RNFS from 'react-native-fs';
 import {
@@ -186,6 +188,12 @@ export default function RegisterScreen() {
   };
 
   const handleSubmit = async () => {
+    if (DEMO_MODE) {
+      await dispatch(vendorLogin({})).unwrap();
+      showModal('Registration complete', 'Your vendor profile is ready.', 'success');
+      navigation.reset({index: 0, routes: [{name: 'BottomTabNavigation'}]});
+      return;
+    }
     if (!validateAll()) return;
 
     const selectedCategoryObj = categoryOptions.find(c => c.name === category);

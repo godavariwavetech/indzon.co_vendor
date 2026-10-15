@@ -1,3 +1,4 @@
+import {DEMO_MODE} from '../../demo/config';
 import React, {useState} from 'react';
 import {
   View,
@@ -54,7 +55,7 @@ const showModal = (title, message, type = 'error') => {
 
   /** STEP 1: Verify Number */
   const handleVerify = async () => {
-    if (!validatePhoneNumber(phoneNumber)) {
+    if (!DEMO_MODE && !validatePhoneNumber(phoneNumber)) {
       showModal(
         'Invalid Phone Number',
         'Please enter a valid 10-digit number',

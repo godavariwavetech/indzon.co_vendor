@@ -1,3 +1,4 @@
+import {DEMO_MODE} from '../demo/config';
 import React, {useState, useEffect} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchShopPayments, fetchPaymentHistory, fetchApplicationCommon} from '../redux/reducers/auth';
@@ -28,8 +29,9 @@ export default function EarningsScreen() {
 
   // Listen to internet changes
   useEffect(() => {
+    if (DEMO_MODE) return;
     const unsubscribe = NetInfo.addEventListener(state => {
-      setIsConnected(state.isConnected);
+      setIsConnected(DEMO_MODE || state.isConnected);
     });
     return () => unsubscribe();
   }, []);
@@ -112,6 +114,7 @@ export default function EarningsScreen() {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
 
   const handleContactAdmin = () => {
+    if (DEMO_MODE) { alert('Support is available using the contact details provided.'); return; }
     const phoneNumber = applicationCommon?.contact_number; // Replace with actual admin number from config or API if available
     if (phoneNumber) {
       Linking.openURL(`tel:${phoneNumber}`);

@@ -1,3 +1,4 @@
+import {DEMO_MODE} from '../demo/config';
 import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {
@@ -55,10 +56,10 @@ export default function OrdersScreen({navigation}) {
     }
   }, [userId, dispatch]);
 
-  const fetchOrders = async () =>{
+  const fetchOrders = useCallback(async () =>{
     const resp = await dispatch(fetchCurrentOrders(userId));
     console.log(resp,">>>>>>>>>>>>>RESPONSSSS");
-  }
+  }, [dispatch, userId]);
 
   // Refetch orders when internet comes back
   useEffect(() => {
@@ -69,23 +70,25 @@ export default function OrdersScreen({navigation}) {
         dispatch(fetchShopDetails(userId));
       // }
     }
-  }, [isConnected, userId, dispatch]);
+  }, [isConnected, userId, dispatch, fetchOrders]);
 
   // ✅ Listen for internet changes
   useEffect(() => {
+    if (DEMO_MODE) return;
     const unsubscribe = NetInfo.addEventListener(state => {
-      setIsConnected(state.isConnected);
+      setIsConnected(DEMO_MODE || state.isConnected);
     });
     return () => unsubscribe();
   }, []);
 
   // ✅ Fetch orders and shop details
 
+  const hasShopDetails = Boolean(shopDetails);
   const fetchOrdersAndDetails = useCallback(() => {
     if (!userId) return;
     dispatch(fetchCurrentOrders(userId));
-    if (!shopDetails) dispatch(fetchShopDetails(userId));
-  }, [userId, dispatch, shopDetails]);
+    if (!hasShopDetails) dispatch(fetchShopDetails(userId));
+  }, [userId, dispatch, hasShopDetails]);
 
   useFocusEffect(fetchOrdersAndDetails);
   // Toggle shop status
@@ -204,7 +207,7 @@ export default function OrdersScreen({navigation}) {
     <SafeAreaView style={styles.container}>
       <StatusBar translucent backgroundColor={'transparent'} barStyle={'dark-content'} />
       <View style={styles.header}>
-        <Image source={shopDetails?.image ? {uri: shopDetails.image} : RestaurantLogo} style={styles.avatar} />
+        <Image source={shopDetails?.image ? (typeof shopDetails.image === "string" ? {uri: shopDetails.image} : shopDetails.image) : RestaurantLogo} style={styles.avatar} resizeMode="contain" />
         <Text style={styles.restaurantName}>{shopDetails?.name || 'Restaurant Name'}</Text>
         <TouchableOpacity style={[styles.toggleContainer, isOn ? styles.toggleOn : styles.toggleOff]} onPress={() => setShowToggleModal(true)}>
           <Animated.View style={[styles.circle, {transform: [{translateX}]}]} />
@@ -270,7 +273,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     marginBottom: 5,
   },
-  avatar: {width: 40, height: 40, borderRadius: 20, marginRight: 10},
+  avatar: {width: 40, height: 40, borderRadius: 8, marginRight: 10},
   restaurantName: {
     flex: 1,
     fontSize: 13,

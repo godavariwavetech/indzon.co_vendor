@@ -1,3 +1,4 @@
+import {DEMO_MODE} from '../demo/config';
 import notifee, {AndroidImportance, AndroidStyle} from '@notifee/react-native';
 import messaging from '@react-native-firebase/messaging';
 import {PermissionsAndroid, Platform} from 'react-native';
@@ -18,6 +19,7 @@ const createChannel = async () => {
 
 
 export const requestUserPermission = async () => {
+  if (DEMO_MODE) return;
   if (Platform.OS === 'android' && Platform.Version >= 33) {
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
@@ -40,6 +42,8 @@ export const requestUserPermission = async () => {
 };
 
 export const setupNotificationHandlers = async navigation => {
+  if (DEMO_MODE) return () => {};
+  await messaging().setAutoInitEnabled(true);
   await requestUserPermission();
   await createChannel();
 
@@ -124,6 +128,7 @@ const handleNotificationNavigation = (data, navigation) => {
 };
 
 export const retrieveFCMToken = async () => {
+  if (DEMO_MODE) return null;
   try {
     return await messaging().getToken();
   } catch (error) {

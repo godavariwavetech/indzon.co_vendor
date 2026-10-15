@@ -1,8 +1,10 @@
+import {DEMO_MODE} from '../demo/config';
 import axios from "axios";
 import { baseURL } from "../config/config";
 import { store } from "../redux/store"; 
 
 const api = axios.create({
+  ...(DEMO_MODE ? {adapter: async () => { throw new Error("Network requests are unavailable"); }} : {}),
   baseURL,
   timeout: 5000,
 });

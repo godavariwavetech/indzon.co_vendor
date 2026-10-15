@@ -1,3 +1,5 @@
+import {deleteDemoProduct} from '../demo/store';
+import {DEMO_MODE} from '../demo/config';
 // src/screens/MenuScreen.jsx
 import React, {useState, useEffect, useCallback} from 'react';
 import NoInternetScreen from '../components/NoInternetScreen';
@@ -15,6 +17,10 @@ import {
   Modal,
   SectionList,
   RefreshControl,
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 
 import {useSelector, useDispatch} from 'react-redux';
@@ -64,7 +70,7 @@ const CustomToggle = ({value, onChange}) => {
   );
 };
 
-export default function MenuScreen() {
+export default function MenuScreen({navigation}) {
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState('');
   const [isConnected, setIsConnected] = useState(true);
@@ -105,8 +111,9 @@ export default function MenuScreen() {
   }, [isConnected, userId, dispatch]);
 
   useEffect(() => {
+    if (DEMO_MODE) return;
     const unsubscribe = NetInfo.addEventListener(state => {
-      setIsConnected(state.isConnected);
+      setIsConnected(DEMO_MODE || state.isConnected);
     });
     return () => unsubscribe();
   }, []);
@@ -163,7 +170,8 @@ export default function MenuScreen() {
     const active_status = newValue ? '0' : '1';
     dispatch(updateProductStatus({id, shop_id: userId, active_status}))
       .unwrap()
-      .catch(err => console.error('Status update failed:', err));
+      .then(() => setConfirmationVisible(true))
+      .catch(err => Alert.alert('Cannot change availability', String(err)));
   };
 
   const cancelToggle = () => {
@@ -180,8 +188,8 @@ export default function MenuScreen() {
     setModalVisible(false); // close immediately
     dispatch(updateProduct({...updatedValues, shop_id: userId}))
       .unwrap()
-      .then(() => console.log('Product updated successfully'))
-      .catch(err => console.error('Update failed:', err));
+      .then(() => setConfirmationVisible(true))
+      .catch(err => Alert.alert('Cannot update product', String(err)));
   };
 
   useEffect(() => {
@@ -198,7 +206,7 @@ export default function MenuScreen() {
       <View style={styles.card}>
         {item.item_image ? (
           <Image
-            source={{uri: item.item_image}}
+            source={(typeof item.item_image === "string" ? {uri: item.item_image} : item.item_image)}
             style={styles.foodImage}
             resizeMode="cover"
           />
@@ -228,6 +236,8 @@ export default function MenuScreen() {
             />
             <Text style={styles.foodName}>{item.item_name}</Text>
           </View>
+          <Text style={styles.headerSubtitle}>{item.description}</Text>
+          {DEMO_MODE && <Text style={styles.headerSubtitle}>Stock: {item.stock} units</Text>}
           <View style={styles.priceRow}>
             <Text style={styles.price}>₹{item.selling_price}</Text>
             {item.actual_price &&
@@ -239,6 +249,7 @@ export default function MenuScreen() {
         </View>
 
         <View style={styles.rightSection}>
+          {DEMO_MODE && <TouchableOpacity onPress={() => Alert.alert("Delete product?", item.item_name, [{text: "Cancel"}, {text: "Delete", onPress: () => dispatch(deleteDemoProduct(item.id))}])}><Text style={{color: colors.danger}}>Delete</Text></TouchableOpacity>}
           <CustomToggle
             value={toggles[item.id] || false}
             onChange={value => handleToggle(item.id, value)}
@@ -258,11 +269,12 @@ export default function MenuScreen() {
       </View>
     ),
 
-    [toggles],
+    [toggles, dispatch],
   );
 
   return (
     <View style={styles.container}>
+      {DEMO_MODE && <TouchableOpacity style={styles.updateBtn} onPress={() => navigation.navigate("AddFoodScreen")}><Text style={styles.updateBtnText}>Add Product</Text></TouchableOpacity>}
       {/* 🔹 Restaurant Header */}
       <View style={styles.headerCard}>
         {loading && !refreshing && !shopDetails ? (
@@ -271,9 +283,10 @@ export default function MenuScreen() {
           <>
             <Image
               source={
-                shopDetails?.image ? {uri: shopDetails.image} : RestaurantLogo
+                shopDetails?.image ? (typeof shopDetails.image === "string" ? {uri: shopDetails.image} : shopDetails.image) : RestaurantLogo
               }
               style={styles.headerImage}
+              resizeMode="contain"
             />
             <View style={styles.headerTextContainer}>
               <Text style={styles.headerTitle}>
@@ -370,6 +383,7 @@ export default function MenuScreen() {
       {confirmationVisible && (
         <ConfirmationModal
           visible={confirmationVisible}
+          message="Product updated successfully"
           onClose={() => setConfirmationVisible(false)}
         />
       )}
@@ -416,6 +430,9 @@ export default function MenuScreen() {
 }
 
 const UpdateModal = ({visible, onClose, item, onUpdate, userId}) => {
+  const [name, setName] = useState(item?.item_name || '');
+  const [description, setDescription] = useState(item?.description || '');
+  const [stock, setStock] = useState(String(item?.stock ?? 0));
   const [actualPrice, setActualPrice] = useState('');
   const [sellingPrice, setSellingPrice] = useState('');
   const [discountPercent, setDiscountPercent] = useState('');
@@ -447,7 +464,8 @@ const UpdateModal = ({visible, onClose, item, onUpdate, userId}) => {
     onUpdate({
       id: item.id,
       shop_id: userId,
-      item_name: item.item_name,
+      item_name: name,
+      ...(DEMO_MODE ? {description, stock: Number(stock)} : {}),
       actual_price: actualPrice,
       selling_price: sellingPrice,
       discount_percentage: discountPercent,
@@ -457,27 +475,39 @@ const UpdateModal = ({visible, onClose, item, onUpdate, userId}) => {
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.updateCard}>
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-            <Ionicons name="close" size={24} color="#333" />
-          </TouchableOpacity>
-
-          <View style={styles.row}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={[styles.updateCard, styles.editCard]}>
+          <View style={styles.editHeader}>
             <MaterialCommunityIcons
               name="square-circle"
               size={18}
               color={item?.filter_one === 'Veg' ? colors.veg : colors.nonVeg}
               style={{marginRight: 6}}
             />
-            <Text style={styles.modalTitle}>
+            <Text style={[styles.modalTitle, styles.editTitle]}>
               {item?.item_name || 'Unnamed Item'}
             </Text>
+            <TouchableOpacity
+              style={styles.editCloseButton}
+              accessibilityLabel="Close product editor"
+              hitSlop={8}
+              onPress={onClose}>
+              <Ionicons name="close" size={24} color={colors.textDark} />
+            </TouchableOpacity>
           </View>
-
-          <View style={styles.divider} />
-
+          <ScrollView
+            style={styles.editScroll}
+            contentContainerStyle={styles.editFields}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag">
+          {DEMO_MODE && <>
+            <Text style={styles.label}>Product name</Text><TextInput style={styles.inputBox} value={name} onChangeText={setName} />
+            <Text style={styles.label}>Description</Text><TextInput style={[styles.inputBox, styles.descriptionInput]} multiline textAlignVertical="top" value={description} onChangeText={setDescription} />
+            <Text style={styles.label}>Stock quantity</Text><TextInput style={styles.inputBox} keyboardType="number-pad" value={stock} onChangeText={setStock} />
+          </>}
           {/* Actual Price */}
           <Text style={styles.label}>Actual Price</Text>
           <TextInput
@@ -512,14 +542,16 @@ const UpdateModal = ({visible, onClose, item, onUpdate, userId}) => {
             editable={false}
           />
 
-          {/* Update button */}
+          </ScrollView>
+          <View style={styles.editFooter}>
           <TouchableOpacity
             style={styles.updateBtn}
-            onPress={() => setConfirmVisible(true)}>
+            onPress={() => { Keyboard.dismiss(); setConfirmVisible(true); }}>
             <Text style={styles.updateBtnText}>Update</Text>
           </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
 
       {/* 🔹 Confirmation Popup */}
       <Modal
@@ -584,7 +616,7 @@ const styles = StyleSheet.create({
   headerImage: {
     height: 74,
     width: 74,
-    borderRadius: 41,
+    borderRadius: 8,
     marginRight: 12,
     borderWidth: 0.5,
     borderColor: colors.black2,
@@ -703,19 +735,42 @@ const styles = StyleSheet.create({
     backgroundColor: colors.black5,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   updateCard: {
-    width: 340,
+    width: '100%',
+    maxWidth: 420,
     borderRadius: 10,
     backgroundColor: colors.white,
     padding: 20,
     elevation: 4,
   },
+  editCard: {padding: 0, maxHeight: '100%', overflow: 'hidden'},
+  editHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  editTitle: {flex: 1, marginRight: 8, flexShrink: 1},
+  editCloseButton: {padding: 6, flexShrink: 0},
+  editScroll: {flexGrow: 0, flexShrink: 1},
+  editFields: {padding: 20},
+  editFooter: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    paddingTop: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  descriptionInput: {height: 88, paddingTop: 12},
   closeBtn: {position: 'absolute', top: 10, right: 10, padding: 6, zIndex: 1},
   modalTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#1A43BF',
+    color: colors.primary,
     marginRight: 30,
   },
   divider: {
@@ -724,7 +779,7 @@ const styles = StyleSheet.create({
     borderColor: colors.black4,
     marginVertical: 15,
   },
-  label: {fontSize: 14, fontWeight: '500', marginBottom: 8},
+  label: {fontSize: 14, fontWeight: '500', marginBottom: 8, color: colors.textDark},
   inputBox: {
     height: 45,
     borderWidth: 0.5,
@@ -733,10 +788,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginBottom: 12,
     fontSize: 14,
+    color: colors.textDark,
   },
   readOnly: {
-    backgroundColor: colors.black4,
-    color: colors.textWhite,
+    backgroundColor: colors.brandSurface,
+    color: colors.textLight,
   },
   updateBtn: {
     marginTop: 10,

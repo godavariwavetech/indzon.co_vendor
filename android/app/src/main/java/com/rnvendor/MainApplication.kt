@@ -1,4 +1,4 @@
-package com.amaraamerchant
+package com.indzon.vendor
 
 import android.app.Application
 import com.facebook.react.PackageList

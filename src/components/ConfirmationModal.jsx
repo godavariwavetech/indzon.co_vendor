@@ -4,9 +4,9 @@ import {View, Text, TouchableOpacity, Modal, StyleSheet} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {colors} from '../config/theme';
 
-const ConfirmationModal = ({visible, onClose}) => {
+const ConfirmationModal = ({visible, onClose, message = "Your request was completed successfully"}) => {
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.confirmCard}>
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
@@ -15,9 +15,7 @@ const ConfirmationModal = ({visible, onClose}) => {
           <View style={styles.checkContainer}>
             <Icon name="checkmark-circle" size={64} color="green" />
           </View>
-          <Text style={styles.confirmText}>
-            “Your applied for Withdraw Request“
-          </Text>
+          <Text style={styles.confirmText}>{message}</Text>
           <TouchableOpacity onPress={onClose}>
             <Text style={styles.thanksText}>Yahooo! Thanks</Text>
           </TouchableOpacity>

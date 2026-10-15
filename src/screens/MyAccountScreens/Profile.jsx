@@ -105,7 +105,8 @@ const RestaurantProfileScreen = () => {
 
   const userId = useSelector(state => state.Auth.userId);
 
-  const [shop, setShop] = useState(null);
+  const initialShop = useSelector(state => state.Auth.shopDetails);
+  const [shop, setShop] = useState(initialShop);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -184,8 +185,9 @@ const RestaurantProfileScreen = () => {
       {/* Shop Info (with fallback placeholders) */}
       <View style={styles.logoContainer}>
         <Image
-          source={shop?.image ? {uri: shop.image} : RestaurantLogo}
+          source={shop?.image ? (typeof shop.image === "string" ? {uri: shop.image} : shop.image) : RestaurantLogo}
           style={styles.logo}
+          resizeMode="contain"
         />
         <Text style={styles.name}>{shop?.name || '--'}</Text>
       </View>
@@ -270,7 +272,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: 8,
     marginBottom: 10,
   },
   name: {

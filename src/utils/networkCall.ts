@@ -1,3 +1,4 @@
+import {DEMO_MODE} from '../demo/config';
 import {baseURL} from '../config/config';
 import {store} from '../redux/store';
 
@@ -30,6 +31,7 @@ const networkCall = async (
   headers?: RequestInit['headers'],
   responseType: IResponseType = 'json',
 ) => {
+  if (DEMO_MODE) return {response: null, error: 'Network requests are unavailable'};
   const makeCall = async () => {
     try {
       const fullUrl = /(http(s?)):\/\//i.test(url) ? url : baseURL + '/' + url;

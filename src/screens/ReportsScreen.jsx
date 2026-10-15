@@ -1,3 +1,4 @@
+import {DEMO_MODE} from '../demo/config';
 import React, {useState, useEffect, useCallback,useMemo} from 'react';
 import XLSX from 'xlsx';
 import RNFS from 'react-native-fs';
@@ -153,7 +154,7 @@ useEffect(() => {
       return;
     }
 
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' && Number(Platform.Version) < 29) {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
         {
@@ -206,13 +207,13 @@ useEffect(() => {
         startDate,
       )}_to_${formatFileDate(endDate)}.xlsx`;
       const path =
-        Platform.OS === 'android'
+        Platform.OS === 'android' && Number(Platform.Version) < 29
           ? `${RNFS.DownloadDirectoryPath}/${fileName}`
           : `${RNFS.DocumentDirectoryPath}/${fileName}`;
 
       await RNFS.writeFile(path, Buffer.from(buf).toString('base64'), 'base64');
 
-      if (Platform.OS === 'android') {
+      if (Platform.OS === 'android' && Number(Platform.Version) < 29) {
         ToastAndroid.show(
           `File saved to Downloads/${fileName}`,
           ToastAndroid.LONG,
@@ -238,6 +239,10 @@ useEffect(() => {
         <Text style={styles.topTitle}>Order History</Text>
       </View>
 
+      {DEMO_MODE && <View style={styles.orderCardContainer}>
+        <Text style={styles.orderCardId}>{dashboardOrders.length} orders - {dashboardOrders.filter(o => o.order_status === 3).length} completed</Text>
+        <Text style={styles.totalBill}>Sales: ₹{dashboardOrders.filter(o => o.order_status === 3).reduce((sum, o) => sum + o.item_amount, 0).toFixed(2)}</Text>
+      </View>}
       <View style={styles.filterRow}>
         <TouchableOpacity
           style={styles.datePicker}
@@ -323,7 +328,8 @@ const styles = StyleSheet.create({
 
   filterRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
     marginBottom: 15,
     borderWidth: 0.75,
     paddingVertical: 8,
@@ -332,25 +338,35 @@ const styles = StyleSheet.create({
     borderColor: colors.reportsFilterBorder,
   },
   datePicker: {
+    flexGrow: 1,
+    flexBasis: 120,
+    minWidth: 120,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.reportsDateBorder,
     borderRadius: 10,
     paddingHorizontal: 8,
-    height: 40,
-    marginRight: 8,
+    minHeight: 40,
+    paddingVertical: 8,
   },
-  dateText: {marginLeft: 5, fontSize: 13, color: colors.reportsTopTitle},
+  dateText: {marginLeft: 5, flexShrink: 1, fontSize: 13, color: colors.reportsTopTitle},
   downloadBtn: {
+    flexGrow: 1,
+    flexBasis: 110,
+    minWidth: 110,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.reportsDownloadBg,
     paddingHorizontal: 12,
     borderRadius: 10,
-    height: 40,
+    minHeight: 40,
+    paddingVertical: 8,
   },
   downloadText: {
+    flexShrink: 1,
     color: colors.reportsDownloadText,
     marginRight: 5,
     fontSize: 13,

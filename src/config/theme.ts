@@ -1,61 +1,64 @@
+const brandPrimary = '#4671C6';
+
 export const colors = {
   // 🔹 Brand / Global colors
-  primary: "#85360B",
-  primaryLight: "#1A43BF33",
-  primarySemi: "#1A43BFB2",
-  success: "#0AA007",
-  danger: "#FF4D4D",
+  primary: brandPrimary,
+  brandSurface: '#EDF3FF',
+  primaryLight: "#4671C633",
+  primarySemi: "#4671C6B2",
+  success: '#34816F',
+  danger: '#C94854',
   accent: "#00CE9C",
   veg: "#0AA007",
   nonVeg: "#FF4D4D",
 
   // 🔹 Global text colors
-  textDark: "#000000",
+  textDark: '#243247',
   textMedium: "#000000B2",
-  textLight: "#6E6E6E",
-  textMuted: "#00000080",
+  textLight: '#59697E',
+  textMuted: '#64748B',
   textWhite: "#FFFFFF",
 
   // 🔹 Backgrounds & Borders
-  background: "#FFFFFF",
+  background: '#F5F7FC',
   cardBackground: "#FFFFFF",
-  border: "#0000001A",
+  border: '#E2E8F0',
   borderLight: "#00000040",
   borderMedium: "#00000080",
-  divider: "#E0E0E0",
+  divider: '#E2E8F0',
 
   // 🔹 Shared utility
-  onlineGreen: "#007740",
+  onlineGreen: '#34816F',
   totalPrice: "#333",
-  toggleOff: "#ccc",
+  toggleOff: '#CBD5E1',
 
   // ------- SignInScreen specific -------
-  signInLogoCircle: "#DCE4FA", // ✅ new
+  signInLogoCircle: "#EDF3FF", // ✅ new
   signInRememberText: "#1A1A1A99", // ✅ new
   rememberMeToggle:"#f4f3f4",
 
   // ------- OrdersScreen specific -------
   ordersCardBg: "#FFFFFF",
-  ordersBorder: "#0000001A",
-  ordersDivider: "#E0E0E0",
-  ordersText: "#000000",
-  ordersTextMuted: "#6E6E6E",
+  ordersBorder: '#E2E8F0',
+  ordersDivider: '#E2E8F0',
+  ordersText: '#243247',
+  ordersTextMuted: '#59697E',
   ordersVeg: "#00C48C",
   ordersNonVeg: "#FF4D4D",
 
   // ------- MenuScreen specific -------
   menuCardBg: "#FFFFFF",
-  menuBorder: "#0000001A",
-  menuDivider: "#E0E0E0",
-  menuText: "#000000",
-  menuTextMuted: "#6E6E6E",
+  menuBorder: '#E2E8F0',
+  menuDivider: '#E2E8F0',
+  menuText: '#243247',
+  menuTextMuted: '#59697E',
   menuVeg: "#00CE9C",
   menuNonVeg: "#FF4D4D",
-  editBtn: "#1E63D7",
+  editBtn: brandPrimary,
   searchOutline: "#A0A0A0",
   closeButton: "#333",
   white: "#FFFFFF",
-  lightBlue: "#1A43BF24",
+  lightBlue: "#4671C624",
   black: "#00000014",
   black2: "#0000001A",
   black3: "#000000A6",
@@ -65,8 +68,8 @@ export const colors = {
   black6: "#0000008C",
 
   // ------- ReportsScreen specific -------
-  reportsContainerBg: "#FFFFFF",
-  reportsTopTitle: "#000000",
+  reportsContainerBg: '#F5F7FC',
+  reportsTopTitle: '#243247',
   reportsBorder: "#0000001A",
   reportsFilterBorder: "#DDDDDD",
   reportsDateBorder: "#000000B2",
@@ -74,31 +77,31 @@ export const colors = {
   reportsDownloadText: "#FFFFFF",
 
   reportsCardBg: "#F2F2F2",
-  reportsCardBorder: "#0000001A",
-  reportsCardId: "#000000",
+  reportsCardBorder: '#E2E8F0',
+  reportsCardId: '#243247',
   reportsCardItems: "#00000080",
   reportsCardRatingBg: "#2E323F",
   reportsCardRatingText: "#FFFFFF",
-  reportsDelivered: "#0E6E0C",
-  reportsCancelled: "#FF5758",
+  reportsDelivered: '#34816F',
+  reportsCancelled: '#C94854',
   reportsOtherStatus: "#A1A1AA",
   reportsCardBodyBg: "#FFFFFF",
   reportsCardItem: "#000000B2",
   reportsCardTime: "#000000B2",
-  reportsPriceTagBg: "#EFB319",
+  reportsPriceTagBg: '#FFF7E6',
   reportsPrice: "#000000",
 
   // ------- EarningsScreen specific -------
   earningsHeaderBg: "#000000",
-  earningsWithdrawBtnBg: "#FBBF24",
-  earningsAmountPositive: "#0AA007",
-  earningsAmountNegative: "#FF5758",
-  earningsPending: "#FFB123",
-  earningsTransferred: "#1A43BF",
-  earningsRejected: "#FF5758",
+  earningsWithdrawBtnBg: '#F59E0B',
+  earningsAmountPositive: '#34816F',
+  earningsAmountNegative: '#C94854',
+  earningsPending: '#F59E0B',
+  earningsTransferred: brandPrimary,
+  earningsRejected: '#C94854',
   earningsDividerWhite: "#FFFFFF",
   earningsDividerBlack: "#000000",
-  earningsCardBorder: "#DDDDDD",
+  earningsCardBorder: '#E2E8F0',
   earningsShadow: "#000000",
   earningsTextMuted: "#00000099",
   earningsModalOverlay: "rgba(0,0,0,0.4)",
@@ -106,41 +109,41 @@ export const colors = {
   earningsSuccessDivider: "#DDDDDD",
 
   // ------- MoreScreen specific -------
-  moreBackground: "#FFFFFF",
-  moreTextDark: "#1B1B1B",
-  morePrimary: "#1849C6",
+  moreBackground: '#F5F7FC',
+  moreTextDark: '#243247',
+  morePrimary: brandPrimary,
   moreIcon: "#000000",
   moreChevron: "#888888",
   moreShadow: "#000000",
 
   // ------- BillSummary specific -------
-  billHeaderBg: "#E6E8F6",
+  billHeaderBg: "#EDF3FF",
   billSubText: "#00000099",
-  billCoupon: "#0000FF", // blue
-  billCommission: "#008000", // green
-  billTotalBg: "#EFB319B2",
+  billCoupon: brandPrimary, // blue
+  billCommission: '#34816F', // green
+  billTotalBg: '#FFF7E6',
 
 
    
-  primaryBlue: '#1A43BF',
-  textSecondary: '#00000099',
+  primaryBlue: brandPrimary,
+  textSecondary: '#59697E',
   borderGray: 'lightgray',
-  errorRed: '#FF4D4F',
+  errorRed: '#C94854',
 
 
 
-  brandPrimary: "#1A43BF",     // Main brand / accent color (buttons, icons, highlights)
-  backgroundLight: "#F9F9F9",  // Screen background
+  brandPrimary: brandPrimary,     // Main brand / accent color (buttons, icons, highlights)
+  backgroundLight: '#F5F7FC',  // Screen background
   cardBackground2: "#FFFFFF",   // Card / surface background
-  textPrimary: "#333333",      // Main heading text
-  textSecondary2: "#555555",    // Supporting / body text
+  textPrimary: '#243247',      // Main heading text
+  textSecondary2: '#59697E',    // Supporting / body text
   shadowColor: "#000000",      // For shadow effects
   buttonTextLight: "#FFFFFF",  // Text color for buttons
 
 
 black7:"#00000024",
-  bgColor: '#FFFFFF',
-  mainColor:'#1A43BF',
+  bgColor: '#F5F7FC',
+  mainColor:brandPrimary,
   black8:"#00000033"
 
 
@@ -173,7 +176,7 @@ export const fonts = {
 };
 
 export const lightTheme = {
-  primary: '#064081',        // Main brand color
+  primary: brandPrimary,        // Main brand color
   secondry: '#02B0E8',       // Accent color
   text: '#414042',           // Default text color
 
@@ -195,7 +198,7 @@ export const lightTheme = {
 };
 
 export const darkTheme = {
-  primary: '#064081',
+  primary: brandPrimary,
   secondry: '#02B0E8',
   text: '#FFFFFF',
 

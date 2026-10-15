@@ -1,3 +1,4 @@
+import {DEMO_MODE} from '../../demo/config';
 import React, {useState, useEffect} from "react";
 import {
   View,
@@ -43,9 +44,11 @@ const CustomerSupportScreen = () => {
       if (type === "whatsapp") {
         const phoneNumber = "919888888888"; 
         const url = `whatsapp://send?phone=${phoneNumber}&text=Hello, I need help!`;
+        if (DEMO_MODE) { alert('Support is available using the contact details provided.'); return; }
         const supported = await Linking.canOpenURL(url);
         if (supported) {
-          await Linking.openURL(url);
+          if (DEMO_MODE) { alert('Support is available using the contact details provided.'); return; }
+        await Linking.openURL(url);
         } else {
           showModal("WhatsApp not installed");
         }
@@ -58,6 +61,7 @@ const CustomerSupportScreen = () => {
         }
         const subject = "Customer Support";
         const url = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
+        if (DEMO_MODE) { alert('Support is available using the contact details provided.'); return; }
         await Linking.openURL(url);
       } else if (type === "phone") {
         const phone = applicationCommon?.contact_number;
@@ -66,6 +70,7 @@ const CustomerSupportScreen = () => {
           return;
         }
         const url = `tel:${phone}`;
+        if (DEMO_MODE) { alert('Support is available using the contact details provided.'); return; }
         await Linking.openURL(url);
       }
     } catch (error) {

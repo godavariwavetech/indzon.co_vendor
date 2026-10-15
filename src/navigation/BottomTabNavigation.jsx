@@ -1,3 +1,4 @@
+import {colors} from '../config/theme';
 import React, {useState, useEffect} from 'react';
 import {View, Text, StyleSheet, Pressable} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
@@ -80,7 +81,7 @@ const BottomTabNavigation = ({navigation}) => {
               {route.name}
             </Text>
           ),
-          tabBarActiveTintColor: '#DF4F00', // pink color
+          tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: '#6E6E6E', // gray color
           tabBarStyle: {
             height: 70,

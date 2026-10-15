@@ -7,17 +7,17 @@ export default function CustomAlertModal({
   visible, 
   title, 
   message, 
-  type = 'error', // 'error' | 'success'
+  type = 'error', // 'error' | 'success' | 'info'
   onClose 
 }) {
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalBox}>
           <Text
             style={[
               styles.modalTitle,
-              { color: type === 'success' ? 'green' : 'red' },
+              {color: type === 'success' ? colors.success : type === 'info' ? colors.primary : colors.danger},
             ]}>
             {title}
           </Text>

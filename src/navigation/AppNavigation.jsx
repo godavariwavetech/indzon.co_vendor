@@ -1,7 +1,8 @@
+import NotificationsScreen from '../screens/NotificationsScreen';
 import React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import MoreScreen from '../screens/AuthenticationScreens/SignInScreen';
+import MoreScreen from '../screens/MoreScreen';
 import AddFoodScreen from '../screens/MyAccountScreens/AddFoodScreen';
 import CustomerSupportScreen from '../screens/MyAccountScreens/CustomerSupportScreen';
 import PrivacyPolicyScreen from '../screens/MyAccountScreens/PrivacyPolicyScreen';
@@ -28,7 +29,8 @@ const Stack = createNativeStackNavigator();
 const AppNavigation = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{headerShown: false}}>
+      <Stack.Navigator initialRouteName="SplashScreen" screenOptions={{headerShown: false}}>
+        <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
         <Stack.Screen name="SplashScreen" component={SplashScreen} />
         <Stack.Screen name="SignInScreen" component={SignInScreen} />
         <Stack.Screen

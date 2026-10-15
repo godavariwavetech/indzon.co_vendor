@@ -1,3 +1,4 @@
+import {DEMO_MODE} from '../../demo/config';
 import React, {useState} from 'react';
 import {
   View,
@@ -20,6 +21,7 @@ import {useDispatch} from 'react-redux';
 import {vendorLogin, updateFCMToken} from '../../redux/reducers/auth';
 import {retrieveFCMToken} from '../../services/NotificationsService';
 import CustomAlertModal from '../../components/CustomAlertModal'; // ✅ Import
+import validateLogin from '../../utils/validateLogin';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -43,15 +45,10 @@ export default function LoginScreen() {
     setModalVisible(true);
   };
 
-  const validatePhoneNumber = number => /^[0-9]{10}$/.test(number);
-
   const handleSignIn = async () => {
-    if (!validatePhoneNumber(phoneNumber)) {
-      showModal('Invalid Phone Number', 'Please enter a valid 10-digit number');
-      return;
-    }
-    if (!password.trim()) {
-      showModal('Invalid Password', 'Please enter your password');
+    const validationError = validateLogin(phoneNumber, password);
+    if (validationError) {
+      showModal(validationError.title, validationError.message);
       return;
     }
 
@@ -151,8 +148,8 @@ export default function LoginScreen() {
               />
             </View>
 
-            <Text style={styles.title}>SIGN IN</Text>
-            <Text style={styles.subtitle}>Only for Restaurant owner</Text>
+            <Text style={styles.title}>{DEMO_MODE ? 'SIGN IN' : 'SIGN IN'}</Text>
+            <Text style={styles.subtitle}>{DEMO_MODE ? 'Welcome to Indzon.co' : 'Only for Restaurant owner'}</Text>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Enter Your Phone Number</Text>
