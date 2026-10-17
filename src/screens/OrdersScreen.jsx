@@ -1,4 +1,3 @@
-import {DEMO_MODE} from '../demo/config';
 import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {
@@ -29,6 +28,8 @@ import {useFocusEffect} from '@react-navigation/native';
 
 export default function OrdersScreen({navigation}) {
   const dispatch = useDispatch();
+  const requestErrors = useSelector(state => state.Auth.errors || {});
+  const requestError = requestErrors.fetchCurrentOrders || requestErrors.fetchShopDetails || requestErrors.updateShopStatus;
   const {pendingOrders, OrdersInProcess, loading, userId, shopDetails} =
     useSelector(state => state.Auth);
 
@@ -74,9 +75,8 @@ export default function OrdersScreen({navigation}) {
 
   // ✅ Listen for internet changes
   useEffect(() => {
-    if (DEMO_MODE) return;
     const unsubscribe = NetInfo.addEventListener(state => {
-      setIsConnected(DEMO_MODE || state.isConnected);
+      setIsConnected(state.isConnected);
     });
     return () => unsubscribe();
   }, []);
@@ -205,6 +205,7 @@ export default function OrdersScreen({navigation}) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {requestError && <Text accessibilityRole="alert" style={{color: colors.danger}}>{String(requestError)}</Text>}
       <StatusBar translucent backgroundColor={'transparent'} barStyle={'dark-content'} />
       <View style={styles.header}>
         <Image source={shopDetails?.image ? (typeof shopDetails.image === "string" ? {uri: shopDetails.image} : shopDetails.image) : RestaurantLogo} style={styles.avatar} resizeMode="contain" />
@@ -385,12 +386,16 @@ const styles = StyleSheet.create({
   },
   cardHeader: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    columnGap: 10,
+    rowGap: 6,
     marginBottom: 6,
   },
-  orderId: {fontWeight: '500', fontSize: 14, color: colors.primary},
-  dateTimeContainer: {flexDirection: 'row', gap: 10},
-  orderTime: {fontSize: 14, color: colors.textMedium, fontWeight: '500'},
+  orderId: {fontWeight: '500', fontSize: 14, color: colors.primary, maxWidth: '100%', flexShrink: 1},
+  dateTimeContainer: {flexDirection: 'row', flexWrap: 'wrap', maxWidth: '100%', columnGap: 10, rowGap: 4},
+  orderTime: {fontSize: 14, color: colors.textMedium, fontWeight: '500', flexShrink: 1},
   statusBadge: {
     paddingVertical: 4,
     paddingHorizontal: 10,

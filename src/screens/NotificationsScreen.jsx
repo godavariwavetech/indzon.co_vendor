@@ -6,30 +6,15 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import {useSelector, useDispatch} from 'react-redux';
-import {markDemoNotification} from '../demo/store';
 import {colors} from '../config/theme';
 export default function NotificationsScreen({navigation}) {
-  const notifications = useSelector(state => state.Auth.notifications || []);
-  const dispatch = useDispatch();
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <TouchableOpacity onPress={() => navigation.goBack()}>
         <Text style={styles.link}>Back</Text>
       </TouchableOpacity>
       <Text style={styles.title}>Notifications</Text>
-      <TouchableOpacity onPress={() => dispatch(markDemoNotification())}>
-        <Text style={styles.link}>Mark all as read</Text>
-      </TouchableOpacity>
-      {notifications.map(n => (
-        <View key={n.id} style={styles.card}>
-          <Text style={styles.heading}>
-            {n.read ? '' : 'New: '}
-            {n.title}
-          </Text>
-          <Text style={styles.body}>{n.body}</Text>
-        </View>
-      ))}
+      <Text style={styles.body}>Notifications arrive through push messages. Notification history is currently unavailable.</Text>
     </ScrollView>
   );
 }

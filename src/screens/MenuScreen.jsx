@@ -1,6 +1,5 @@
-import {deleteDemoProduct} from '../demo/store';
-import {DEMO_MODE} from '../demo/config';
 // src/screens/MenuScreen.jsx
+import {useFocusEffect} from '@react-navigation/native';
 import React, {useState, useEffect, useCallback} from 'react';
 import NoInternetScreen from '../components/NoInternetScreen';
 
@@ -70,8 +69,10 @@ const CustomToggle = ({value, onChange}) => {
   );
 };
 
-export default function MenuScreen({navigation}) {
+export default function MenuScreen() {
   const dispatch = useDispatch();
+  const requestErrors = useSelector(state => state.Auth.errors || {});
+  const requestError = requestErrors.fetchProductsList || requestErrors.fetchShopDetails;
   const [searchQuery, setSearchQuery] = useState('');
   const [isConnected, setIsConnected] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -111,19 +112,18 @@ export default function MenuScreen({navigation}) {
   }, [isConnected, userId, dispatch]);
 
   useEffect(() => {
-    if (DEMO_MODE) return;
     const unsubscribe = NetInfo.addEventListener(state => {
-      setIsConnected(DEMO_MODE || state.isConnected);
+      setIsConnected(state.isConnected);
     });
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (userId) {
       dispatch(fetchShopDetails(userId));
       dispatch(fetchProductsList(userId));
     }
-  }, [dispatch, userId]);
+  }, [dispatch, userId]));
 
   useEffect(() => {
     if (products.length > 0) {
@@ -165,12 +165,14 @@ export default function MenuScreen({navigation}) {
     const {id, newValue} = pendingToggle;
 
     setToggleConfirmVisible(false); // close first
-    setToggles(prev => ({...prev, [id]: newValue}));
 
     const active_status = newValue ? '0' : '1';
     dispatch(updateProductStatus({id, shop_id: userId, active_status}))
       .unwrap()
-      .then(() => setConfirmationVisible(true))
+      .then(async () => {
+        await dispatch(fetchProductsList(userId));
+        setConfirmationVisible(true);
+      })
       .catch(err => Alert.alert('Cannot change availability', String(err)));
   };
 
@@ -188,7 +190,10 @@ export default function MenuScreen({navigation}) {
     setModalVisible(false); // close immediately
     dispatch(updateProduct({...updatedValues, shop_id: userId}))
       .unwrap()
-      .then(() => setConfirmationVisible(true))
+      .then(async () => {
+        await dispatch(fetchProductsList(userId));
+        setConfirmationVisible(true);
+      })
       .catch(err => Alert.alert('Cannot update product', String(err)));
   };
 
@@ -237,7 +242,6 @@ export default function MenuScreen({navigation}) {
             <Text style={styles.foodName}>{item.item_name}</Text>
           </View>
           <Text style={styles.headerSubtitle}>{item.description}</Text>
-          {DEMO_MODE && <Text style={styles.headerSubtitle}>Stock: {item.stock} units</Text>}
           <View style={styles.priceRow}>
             <Text style={styles.price}>₹{item.selling_price}</Text>
             {item.actual_price &&
@@ -249,7 +253,6 @@ export default function MenuScreen({navigation}) {
         </View>
 
         <View style={styles.rightSection}>
-          {DEMO_MODE && <TouchableOpacity onPress={() => Alert.alert("Delete product?", item.item_name, [{text: "Cancel"}, {text: "Delete", onPress: () => dispatch(deleteDemoProduct(item.id))}])}><Text style={{color: colors.danger}}>Delete</Text></TouchableOpacity>}
           <CustomToggle
             value={toggles[item.id] || false}
             onChange={value => handleToggle(item.id, value)}
@@ -269,12 +272,12 @@ export default function MenuScreen({navigation}) {
       </View>
     ),
 
-    [toggles, dispatch],
+    [toggles],
   );
 
   return (
     <View style={styles.container}>
-      {DEMO_MODE && <TouchableOpacity style={styles.updateBtn} onPress={() => navigation.navigate("AddFoodScreen")}><Text style={styles.updateBtnText}>Add Product</Text></TouchableOpacity>}
+      {requestError && <Text accessibilityRole="alert" style={{color: colors.danger}}>{String(requestError)}</Text>}
       {/* 🔹 Restaurant Header */}
       <View style={styles.headerCard}>
         {loading && !refreshing && !shopDetails ? (
@@ -430,9 +433,6 @@ export default function MenuScreen({navigation}) {
 }
 
 const UpdateModal = ({visible, onClose, item, onUpdate, userId}) => {
-  const [name, setName] = useState(item?.item_name || '');
-  const [description, setDescription] = useState(item?.description || '');
-  const [stock, setStock] = useState(String(item?.stock ?? 0));
   const [actualPrice, setActualPrice] = useState('');
   const [sellingPrice, setSellingPrice] = useState('');
   const [discountPercent, setDiscountPercent] = useState('');
@@ -464,8 +464,7 @@ const UpdateModal = ({visible, onClose, item, onUpdate, userId}) => {
     onUpdate({
       id: item.id,
       shop_id: userId,
-      item_name: name,
-      ...(DEMO_MODE ? {description, stock: Number(stock)} : {}),
+      item_name: item.item_name,
       actual_price: actualPrice,
       selling_price: sellingPrice,
       discount_percentage: discountPercent,
@@ -503,11 +502,6 @@ const UpdateModal = ({visible, onClose, item, onUpdate, userId}) => {
             contentContainerStyle={styles.editFields}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag">
-          {DEMO_MODE && <>
-            <Text style={styles.label}>Product name</Text><TextInput style={styles.inputBox} value={name} onChangeText={setName} />
-            <Text style={styles.label}>Description</Text><TextInput style={[styles.inputBox, styles.descriptionInput]} multiline textAlignVertical="top" value={description} onChangeText={setDescription} />
-            <Text style={styles.label}>Stock quantity</Text><TextInput style={styles.inputBox} keyboardType="number-pad" value={stock} onChangeText={setStock} />
-          </>}
           {/* Actual Price */}
           <Text style={styles.label}>Actual Price</Text>
           <TextInput

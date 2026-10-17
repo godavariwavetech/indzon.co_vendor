@@ -1,5 +1,6 @@
 import NotificationsScreen from '../screens/NotificationsScreen';
 import React from 'react';
+import {useSelector} from 'react-redux';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import MoreScreen from '../screens/MoreScreen';
@@ -27,10 +28,10 @@ import BillSummary from '../screens/BillSummary';
 const Stack = createNativeStackNavigator();
 
 const AppNavigation = () => {
+  const userId = useSelector(state => state.Auth.userId);
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="SplashScreen" screenOptions={{headerShown: false}}>
-        <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
         <Stack.Screen name="SplashScreen" component={SplashScreen} />
         <Stack.Screen name="SignInScreen" component={SignInScreen} />
         <Stack.Screen
@@ -39,6 +40,8 @@ const AppNavigation = () => {
         />
 
         <Stack.Screen name="RegisterScreen" component={RegisterScreen} />
+        {userId && <Stack.Group>
+        <Stack.Screen name="NotificationsScreen" component={NotificationsScreen} />
         <Stack.Screen
           name="BottomTabNavigation"
           component={BottomTabNavigation}
@@ -73,6 +76,7 @@ const AppNavigation = () => {
           name="AdvertisementsCarousel"
           component={AdvertisementsCarousel}
         />
+        </Stack.Group>}
       </Stack.Navigator>
     </NavigationContainer>
   );

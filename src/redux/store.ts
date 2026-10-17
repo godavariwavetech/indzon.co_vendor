@@ -12,11 +12,10 @@ import {
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuthSlice from './reducers/auth';
-import {DEMO_MODE} from '../demo/config';
 
 const persistConfig = {
-  key: DEMO_MODE ? 'amaraa-demo-session' : 'root',
-  ...(DEMO_MODE ? {whitelist: []} : {}),
+  key: 'root',
+  whitelist: ['userId', 'token', 'userRole'],
   storage: AsyncStorage,
 };
 const persistedAuth = persistReducer(persistConfig, AuthSlice);

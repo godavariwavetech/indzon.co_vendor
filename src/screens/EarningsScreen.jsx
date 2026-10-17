@@ -1,5 +1,5 @@
-import {DEMO_MODE} from '../demo/config';
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchShopPayments, fetchPaymentHistory, fetchApplicationCommon} from '../redux/reducers/auth';
 import NetInfo from '@react-native-community/netinfo';
@@ -21,6 +21,8 @@ import {colors} from '../config/theme';
 
 export default function EarningsScreen() {
   const dispatch = useDispatch();
+  const requestErrors = useSelector(state => state.Auth.errors || {});
+  const requestError = requestErrors.fetchShopPayments || requestErrors.fetchPaymentHistory;
   const {userId, shopPayments, paymentHistory, loading, applicationCommon} = useSelector(
     state => state.Auth,
   );
@@ -29,9 +31,8 @@ export default function EarningsScreen() {
 
   // Listen to internet changes
   useEffect(() => {
-    if (DEMO_MODE) return;
     const unsubscribe = NetInfo.addEventListener(state => {
-      setIsConnected(DEMO_MODE || state.isConnected);
+      setIsConnected(state.isConnected);
     });
     return () => unsubscribe();
   }, []);
@@ -51,13 +52,13 @@ export default function EarningsScreen() {
   const [startDate, setStartDate] = useState(defaultStart);
   const [endDate, setEndDate] = useState(today);
 
-  // fetch shop payments once
-  useEffect(() => {
+  // Refresh settlement data when returning to the tab.
+  useFocusEffect(useCallback(() => {
     if (userId) {
       dispatch(fetchShopPayments(userId));
     }
     dispatch(fetchApplicationCommon());
-  }, [userId, dispatch]);
+  }, [userId, dispatch]));
 
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [selecting, setSelecting] = useState('start');
@@ -78,8 +79,8 @@ export default function EarningsScreen() {
     hideDatePicker();
   };
 
-  // Auto-fetch transaction history whenever dates change
-  useEffect(() => {
+  // Refresh history when dates change or the tab regains focus.
+  useFocusEffect(useCallback(() => {
     if (userId && startDate && endDate) {
       const payload = {
         f_date: formatDate(startDate),
@@ -89,7 +90,7 @@ export default function EarningsScreen() {
       // console.log('Fetching payment history with payload:', payload);
       dispatch(fetchPaymentHistory(payload));
     }
-  }, [startDate, endDate, userId, dispatch]);
+  }, [startDate, endDate, userId, dispatch]));
 
   const handleRefresh = async () => {
     if (!userId) return;
@@ -114,7 +115,6 @@ export default function EarningsScreen() {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
 
   const handleContactAdmin = () => {
-    if (DEMO_MODE) { alert('Support is available using the contact details provided.'); return; }
     const phoneNumber = applicationCommon?.contact_number; // Replace with actual admin number from config or API if available
     if (phoneNumber) {
       Linking.openURL(`tel:${phoneNumber}`);
@@ -133,6 +133,7 @@ export default function EarningsScreen() {
 
   return (
     <View style={styles.container}>
+      {requestError && <Text accessibilityRole="alert" style={{color: colors.danger}}>{String(requestError)}</Text>}
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Withdrawable amount</Text>

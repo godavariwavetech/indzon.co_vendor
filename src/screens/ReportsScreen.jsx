@@ -1,5 +1,4 @@
-import {DEMO_MODE} from '../demo/config';
-import React, {useState, useEffect, useCallback,useMemo} from 'react';
+import React, {useState, useCallback,useMemo} from 'react';
 import XLSX from 'xlsx';
 import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
@@ -22,10 +21,12 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {colors} from '../config/theme';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchDashboardOrders} from '../redux/reducers/auth';
-import {useNavigation} from '@react-navigation/native'; // ✅ add this
+import {useNavigation, useFocusEffect} from '@react-navigation/native'; // ✅ add this
 
 export default function ReportsScreen() {
   const dispatch = useDispatch();
+  const requestErrors = useSelector(state => state.Auth.errors || {});
+  const requestError = requestErrors.fetchDashboardOrders;
   const navigation = useNavigation(); // ✅ navigation hook
   const {userId, dashboardOrders, loading} = useSelector(state => state.Auth);
 
@@ -74,13 +75,13 @@ export default function ReportsScreen() {
   }, [startDate, endDate, userId, dispatch]);
 
 
-useEffect(() => {
+useFocusEffect(useCallback(() => {
   let timer;
   if (userId) {
     timer = setTimeout(() => fetchOrders(), 400);
   }
   return () => clearTimeout(timer);
-}, [userId, fetchOrders]);
+}, [userId, fetchOrders]));
 
 
   // ===================== Date Picker =====================
@@ -235,14 +236,11 @@ useEffect(() => {
   // ===================== JSX =====================
   return (
     <View style={styles.container}>
+      {requestError && <Text accessibilityRole="alert" style={{color: colors.danger}}>{String(requestError)}</Text>}
       <View style={styles.topBar}>
         <Text style={styles.topTitle}>Order History</Text>
       </View>
 
-      {DEMO_MODE && <View style={styles.orderCardContainer}>
-        <Text style={styles.orderCardId}>{dashboardOrders.length} orders - {dashboardOrders.filter(o => o.order_status === 3).length} completed</Text>
-        <Text style={styles.totalBill}>Sales: ₹{dashboardOrders.filter(o => o.order_status === 3).reduce((sum, o) => sum + o.item_amount, 0).toFixed(2)}</Text>
-      </View>}
       <View style={styles.filterRow}>
         <TouchableOpacity
           style={styles.datePicker}

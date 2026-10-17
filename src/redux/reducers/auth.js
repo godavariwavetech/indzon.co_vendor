@@ -1,6 +1,4 @@
-import {createSlice} from '@reduxjs/toolkit';
-import {createAsyncThunk, snapshot} from '../../demo/store';
-import {DEMO_MODE} from '../../demo/config';
+import {createSlice, createAsyncThunk, isAnyOf} from '@reduxjs/toolkit';
 import api from '../../utils/api';
 import {endpoints} from '../../config/config';
 
@@ -18,7 +16,8 @@ const initialState = {
   products: [],
   dashboardOrders: [],
   applicationCommon: null,
-  ...(DEMO_MODE ? snapshot() : {}),
+  errors: {},
+  pendingRequests: 0,
 };
 
 export const vendorLogin = createAsyncThunk(
@@ -638,6 +637,7 @@ export const fetchApplicationCommon = createAsyncThunk(
      // console.log('Application Common API response:', data);
 
       if (data?.status === 200 && Array.isArray(data?.data)) {
+        if (!data.data[0]) return rejectWithValue('No common data found');
         return fulfillWithValue(data.data[0]);
       } else {
         return rejectWithValue('No common data found');
@@ -651,18 +651,18 @@ export const fetchApplicationCommon = createAsyncThunk(
   },
 );
 
+const requests = [vendorLogin, verifyNumber, changePassword, fetchLocations,
+  fetchCategories, fetchSubCategories, fetchFilters, registerVendor,
+  fetchShopDetails, updateShopStatus, updateVendorPassword, fetchCurrentOrders,
+  fetchOrderDetails, updateOrderStatus, fetchShopPayments, fetchPaymentHistory,
+  fetchProductsList, updateProduct, updateProductStatus, fetchDashboardOrders,
+  updateFCMToken, deleteAccount, fetchApplicationCommon];
+
 export const AuthSlice = createSlice({
   name: 'authlice',
   initialState,
   reducers: {
-    actionLogout: state => {
-      state.token = null;
-      state.userId = null;
-
-    },
-    actionLogin: state => {
-      state.token = 'sampletoken';
-    },
+    actionLogout: () => ({...initialState}),
   },
   extraReducers: builder => {
     builder.addCase(vendorLogin.pending, state => {
@@ -670,10 +670,10 @@ export const AuthSlice = createSlice({
     });
     builder.addCase(vendorLogin.fulfilled, (state, action) => {
       state.message = null;
-      console.log(action.payload, '>>>>>>>responseses',action.payload?.data[0]?.id);
-      // FIX: use "id" instead of "user_id"
-      state.userId = action.payload?.data[0]?.id || null;
-      //  state.token = action.payload?.token || null;
+      if (action.payload?.status === 200 && action.payload?.data?.[0]?.id) {
+        state.userId = action.payload.data[0].id;
+        state.token = action.payload.token || null;
+      }
     });
     builder.addCase(vendorLogin.rejected, state => {
       state.message = 'Please try again!';
@@ -795,12 +795,23 @@ export const AuthSlice = createSlice({
       // state.loading = false;
       state.message = action.payload || 'Failed to load common data';
     });
+    builder.addMatcher(isAnyOf(...requests.map(request => request.pending)), (state, action) => {
+      state.pendingRequests = (state.pendingRequests || 0) + 1;
+      state.loading = true;
+      state.errors = state.errors || {};
+      delete state.errors[action.type.replace('/pending', '')];
+    });
+    builder.addMatcher(isAnyOf(...requests.flatMap(request => [request.fulfilled, request.rejected])), (state, action) => {
+      state.pendingRequests = Math.max(0, (state.pendingRequests || 0) - 1);
+      state.loading = state.pendingRequests > 0;
+      if (action.meta.requestStatus === 'rejected') {
+        state.errors = state.errors || {};
+        state.errors[action.type.replace('/rejected', '')] = action.payload || action.error?.message || 'Please try again.';
+      }
+    });
   },
 });
 
-export const {actionLogout, actionLogin} = AuthSlice.actions;
+export const {actionLogout} = AuthSlice.actions;
 
-export default function authReducer(state, action) {
-  if (DEMO_MODE && action.type === 'demo/sync') return {...state, ...action.payload, loading: false};
-  return AuthSlice.reducer(state, action);
-}
+export default AuthSlice.reducer;

@@ -1,5 +1,5 @@
-export const baseURL = 'https://amaraa.co.in:2026/';
-
+export const baseURL = __DEV__ ? 'http://127.0.0.1:2406/' : 'https://amaraa.co.in:2026/';
+// export const baseURL = 'https://amaraa.co.in:2026/'; //live
 export const endpoints = {
   // REQUEST_LOGIN_OPT:'OwnerLogin',
   // VERIFY_LOGIN_OPT:'OwnerLoginwithOtp',

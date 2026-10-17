@@ -5,7 +5,7 @@ import App from '../App';
 import {persistorStore} from '../src/redux/store';
 
 // Native hosts are provided by Android/iOS. Keep this test focused on mounting
-// the real application providers and demo store without a device or backend.
+// the real application providers and persisted store without a device or backend.
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
@@ -22,7 +22,7 @@ jest.mock('../src/utils/api', () => ({
 jest.mock('../src/navigation/AppNavigation', () => () => null);
 jest.mock('../src/components/OfflineNotice', () => () => null);
 
-test('mounts the demo application providers without native services', async () => {
+test('mounts the dynamic application providers without native services', async () => {
   let root!: ReactTestRenderer.ReactTestRenderer;
   await ReactTestRenderer.act(async () => {
     root = ReactTestRenderer.create(<App />);

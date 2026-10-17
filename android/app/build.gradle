@@ -144,6 +144,6 @@ def demoModeMatch = demoConfigFile.text =~ /export\s+const\s+DEMO_MODE\s*=\s*(tr
 if (!demoModeMatch.find()) {
     throw new GradleException('Cannot read DEMO_MODE from src/demo/config.js')
 }
-if (demoModeMatch.group(1) == 'false') {
+if (demoModeMatch.group(1) == 'false' && !project.hasProperty('localBackend')) {
     apply plugin: 'com.google.gms.google-services'
 }

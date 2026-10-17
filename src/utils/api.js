@@ -1,10 +1,8 @@
-import {DEMO_MODE} from '../demo/config';
 import axios from "axios";
 import { baseURL } from "../config/config";
 import { store } from "../redux/store"; 
 
 const api = axios.create({
-  ...(DEMO_MODE ? {adapter: async () => { throw new Error("Network requests are unavailable"); }} : {}),
   baseURL,
   timeout: 5000,
 });
@@ -24,6 +22,16 @@ api.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      store.dispatch({type: 'authlice/actionLogout'});
+    }
+    return Promise.reject(error);
+  },
 );
 
 export default api;

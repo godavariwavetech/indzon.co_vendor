@@ -1,4 +1,3 @@
-import {DEMO_MODE} from '../demo/config';
 import {baseURL} from '../config/config';
 import {store} from '../redux/store';
 
@@ -31,7 +30,6 @@ const networkCall = async (
   headers?: RequestInit['headers'],
   responseType: IResponseType = 'json',
 ) => {
-  if (DEMO_MODE) return {response: null, error: 'Network requests are unavailable'};
   const makeCall = async () => {
     try {
       const fullUrl = /(http(s?)):\/\//i.test(url) ? url : baseURL + '/' + url;
@@ -39,12 +37,14 @@ const networkCall = async (
       const AuthData = store.getState()?.Auth;
       const token = AuthData.token;
       // const token = 'eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxNSwiZXhwIjoxNjk3MTE3MzA1fQ.b3UzQdAk2mVGNMkcWGDP736HNvsS98jmHlOtcr0Y378'
-      const defaultHeaders = {
+      const defaultHeaders: Record<string, string> = {
         'Content-Type':
           body instanceof FormData ? 'multipart/form-data' : 'application/json',
-        ...(token && {Authorization: token}),
-        ...headers,
       };
+      if (token) defaultHeaders.Authorization = token;
+      if (headers) new Headers(headers).forEach((value, key) => {
+        defaultHeaders[key] = value;
+      });
 
       const response = await fetch(fullUrl, {
         method,

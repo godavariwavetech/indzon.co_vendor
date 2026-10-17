@@ -1,4 +1,3 @@
-import {DEMO_MODE} from '../../demo/config';
 import React, {useState} from 'react';
 import {
   View,
@@ -57,7 +56,7 @@ export default function LoginScreen() {
       const response = await dispatch(vendorLogin({phoneNumber, password}));
       // console.log('Login API response:', response);
 
-      if (response?.payload?.status === 200) {
+      if (response?.payload?.status === 200 && response.payload?.data?.[0]?.id) {
         // const successMessage = response?.payload?.msg || 'Login Successful';
         // showModal('Success', successMessage, 'success');
 
@@ -66,10 +65,10 @@ export default function LoginScreen() {
           const token = await retrieveFCMToken();
           console.log('FCM Token signin screen:', token);
           console.log('User ID signin screen:', response.payload?.data?.id);
-          if (token && response.payload?.data?.id) {
+          if (token && response.payload?.data?.[0]?.id) {
             dispatch(
               updateFCMToken({
-                userId: response.payload.data.id,
+                userId: response.payload.data[0].id,
                 fcmToken: token,
               }),
             );
@@ -148,8 +147,8 @@ export default function LoginScreen() {
               />
             </View>
 
-            <Text style={styles.title}>{DEMO_MODE ? 'SIGN IN' : 'SIGN IN'}</Text>
-            <Text style={styles.subtitle}>{DEMO_MODE ? 'Welcome to Indzon.co' : 'Only for Restaurant owner'}</Text>
+            <Text style={styles.title}>SIGN IN</Text>
+            <Text style={styles.subtitle}>Welcome to Indzon.co</Text>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Enter Your Phone Number</Text>

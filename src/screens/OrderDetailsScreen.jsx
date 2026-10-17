@@ -1,7 +1,6 @@
-import {DEMO_MODE} from '../demo/config';
 import React, {useState, useEffect} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import {fetchOrderDetails, updateOrderStatus} from './../redux/reducers/auth';
+import {fetchOrderDetails, fetchCurrentOrders, updateOrderStatus} from './../redux/reducers/auth';
 
 import {
   View,
@@ -22,7 +21,8 @@ import {colors} from '../config/theme';
 export default function OrderDetailsScreen({route}) {
   const current = useSelector(state => state.Auth);
   const original = route.params?.order;
-  const order = (DEMO_MODE && [...current.pendingOrders, ...current.OrdersInProcess, ...current.dashboardOrders].find(o => o.id === original?.id)) || original;
+  const orderId = original?.id || route.params?.orderId;
+  const order = [...current.pendingOrders, ...current.OrdersInProcess, ...current.dashboardOrders].find(o => String(o.id) === String(orderId)) || original;
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
@@ -30,13 +30,17 @@ export default function OrderDetailsScreen({route}) {
   const [feedback, setFeedback] = useState(null);
   const showFeedback = (title, message, type = 'error') =>
     setFeedback({title, message, type});
-  const [orderStatus, setOrderStatus] = useState(order.order_status); // numeric status
-  const [items, setItems] = useState(DEMO_MODE ? order.items : []);
-  const [loadingItems, setLoadingItems] = useState(!DEMO_MODE);
+  const [orderStatus, setOrderStatus] = useState(order?.order_status);
+  const [items, setItems] = useState([]);
+  const [loadingItems, setLoadingItems] = useState(true);
+  useEffect(() => {
+    if (!order && current.userId) dispatch(fetchCurrentOrders(current.userId));
+  }, [order, current.userId, dispatch]);
+  useEffect(() => setOrderStatus(order?.order_status), [order?.order_status]);
 
   // ✅ Parse rider info if available
   let riderInfo = null;
-  if (order.order_status === 8 && order.delivery_boy_array) {
+  if (order?.order_status === 8 && order.delivery_boy_array) {
     try {
       const parsed = JSON.parse(order.delivery_boy_array);
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -54,7 +58,7 @@ export default function OrderDetailsScreen({route}) {
     const fetchItems = async () => {
       try {
         setLoadingItems(true);
-        const resultAction = await dispatch(fetchOrderDetails(order.id));
+        const resultAction = await dispatch(fetchOrderDetails(orderId));
         if (fetchOrderDetails.fulfilled.match(resultAction)) {
           const fetchedItems = resultAction.payload;
 
@@ -76,6 +80,8 @@ export default function OrderDetailsScreen({route}) {
           }, {});
 
           setItems(Object.values(grouped));
+        } else {
+          showFeedback('Unable to load order items', String(resultAction.payload || 'Please try again.'));
         }
       } catch (err) {
         console.error('Error fetching order items', err);
@@ -83,8 +89,8 @@ export default function OrderDetailsScreen({route}) {
         setLoadingItems(false);
       }
     };
-    fetchItems();
-  }, [order.id, dispatch]);
+    if (orderId) fetchItems();
+  }, [orderId, dispatch]);
 
   const handleRejectConfirm = async () => {
     try {
@@ -93,6 +99,7 @@ export default function OrderDetailsScreen({route}) {
       );
       if (updateOrderStatus.fulfilled.match(resultAction)) {
         setOrderStatus(5);
+        dispatch(fetchCurrentOrders(current.userId));
         showFeedback('Order rejected', 'The order has been rejected.', 'success');
       } else {
         showFeedback('Unable to reject order', String(resultAction.payload || resultAction.error?.message || 'Please try again.'));
@@ -107,11 +114,12 @@ export default function OrderDetailsScreen({route}) {
   const handleConfirm = async () => {
     try {
       const resultAction = await dispatch(
-        updateOrderStatus({orderId: order.id, orderStatus: String(orderStatus === 0 ? 1 : orderStatus === 1 ? 8 : 3)}),
+        updateOrderStatus({orderId: order.id, orderStatus: '1'}),
       );
       if (updateOrderStatus.fulfilled.match(resultAction)) {
         setOrderStatus(Number(resultAction.payload.orderStatus));
-        showFeedback('Order updated', 'The order, stock and earnings have been updated.', 'success');
+        dispatch(fetchCurrentOrders(current.userId));
+        showFeedback('Order updated', 'The order has been accepted.', 'success');
       } else {
         showFeedback('Unable to update order', String(resultAction.payload || resultAction.error?.message || 'Please try again.'));
       }
@@ -119,6 +127,11 @@ export default function OrderDetailsScreen({route}) {
       showFeedback('Unable to update order', error.message || 'Please try again.');
     }
   };
+
+  if (!order) return <View style={styles.container}>
+    <TouchableOpacity onPress={() => navigation.goBack()}><Text>Back</Text></TouchableOpacity>
+    <Text>Order details are unavailable. Return to Orders and refresh.</Text>
+  </View>;
 
   /* 
     ✅ CALCULATION LOGIC:
@@ -207,6 +220,8 @@ export default function OrderDetailsScreen({route}) {
             <Text style={{textAlign: 'center', marginVertical: 10}}>
               Loading items...
             </Text>
+          ) : items.length === 0 ? (
+            <Text>No items available.</Text>
           ) : (
             items.map((item, index) => (
               <View key={index} style={styles.itemContainer}>
@@ -241,12 +256,6 @@ export default function OrderDetailsScreen({route}) {
             </Text>
           </View>
 
-          {DEMO_MODE && <View style={styles.addressCard}>
-            <Text style={styles.addressTitle}>{order.customer.name}</Text><Text style={styles.addressText}>{order.delivery_address}</Text>
-            <Text style={styles.addressText}>{order.customer.mobile} - Payment: {order.payment_status}</Text>
-          </View>}
-          {DEMO_MODE && [1, 8].includes(orderStatus) && <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}><Text style={styles.confirmButtonText}>{orderStatus === 1 ? 'Start Preparation' : 'Complete Order'}</Text></TouchableOpacity>}
-          {DEMO_MODE && [3, 4, 5].includes(orderStatus) && <Text style={styles.paymentTitle}>{orderStatus === 3 ? 'Completed - Paid' : 'Cancelled / Rejected'}</Text>}
           {/* Action buttons */}
           {order.order_status === 0 && orderStatus === 0 && (
             <View style={styles.buttonContainer}>
@@ -296,7 +305,7 @@ export default function OrderDetailsScreen({route}) {
             <TouchableOpacity
               style={styles.callButton}
               onPress={() =>
-                DEMO_MODE ? showFeedback('Rider contact', riderInfo.delivery_boy_mobile_number || 'Calling is currently unavailable.', 'info') : Linking.openURL(`tel:${riderInfo.delivery_boy_mobile_number}`).catch(() => showFeedback('Unable to call', 'Please try again.'))
+                Linking.openURL(`tel:${riderInfo.delivery_boy_mobile_number}`).catch(() => showFeedback('Unable to call', 'Please try again.'))
               }>
               <Icon name="call" size={25} color={colors.primary} />
             </TouchableOpacity>
@@ -306,7 +315,7 @@ export default function OrderDetailsScreen({route}) {
         {/* Payment Details Card */}
         <View style={styles.paymentCard}>
           <Text style={styles.paymentTitle}>Payment Details</Text>
-          {DEMO_MODE && <TouchableOpacity onPress={() => navigation.navigate('BillSummary', {order})}><Text style={{color: colors.primary}}>View Bill Summary</Text></TouchableOpacity>}
+          <TouchableOpacity onPress={() => navigation.navigate('BillSummary', {order})}><Text style={{color: colors.primary}}>View Bill Summary</Text></TouchableOpacity>
 
           <View style={styles.paymentRow}>
             <Text style={styles.paymentLabel}>Total Items</Text>

@@ -19,11 +19,14 @@ const BottomTabNavigation = ({navigation}) => {
 
   useEffect(() => {
     let unsubscribe;
+    let disposed = false;
     setupNotificationHandlers(navigation).then(unsub => {
-      unsubscribe = unsub;
-    });
+      if (disposed) unsub?.();
+      else unsubscribe = unsub;
+    }).catch(error => console.warn('Unable to initialize notifications:', error.message));
 
     return () => {
+      disposed = true;
       if (unsubscribe) {
         unsubscribe();
       }

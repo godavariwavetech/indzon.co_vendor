@@ -1,12 +1,11 @@
-import {DEMO_MODE} from '../../demo/config';
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useCallback} from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Linking,
-  Alert,
+  ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
@@ -20,6 +19,8 @@ const CustomerSupportScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const { applicationCommon } = useSelector((state) => state.Auth);
+  const [loadingContacts, setLoadingContacts] = useState(true);
+  const [contactError, setContactError] = useState(false);
 
   // ✅ Modal state
   const [modalVisible, setModalVisible] = useState(false);
@@ -27,9 +28,18 @@ const CustomerSupportScreen = () => {
   const [modalMessage, setModalMessage] = useState('');
   const [modalType, setModalType] = useState('error');
 
-  useEffect(() => {
-    dispatch(fetchApplicationCommon());
+  const loadContacts = useCallback(async () => {
+    setLoadingContacts(true);
+    setContactError(false);
+    try {
+      await dispatch(fetchApplicationCommon()).unwrap();
+    } catch (error) {
+      setContactError(true);
+    } finally {
+      setLoadingContacts(false);
+    }
   }, [dispatch]);
+  useEffect(() => { loadContacts(); }, [loadContacts]);
 
   const showModal = (title, message, type = 'error') => {
     setModalTitle(title);
@@ -40,14 +50,17 @@ const CustomerSupportScreen = () => {
 
 
   const handlePress = async (type) => {
+    if (loadingContacts) return;
+    if (contactError) {
+      showModal('Support unavailable', 'Unable to load support contact details. Please tap Retry.');
+      return;
+    }
     try {
       if (type === "whatsapp") {
         const phoneNumber = "919888888888"; 
         const url = `whatsapp://send?phone=${phoneNumber}&text=Hello, I need help!`;
-        if (DEMO_MODE) { alert('Support is available using the contact details provided.'); return; }
         const supported = await Linking.canOpenURL(url);
         if (supported) {
-          if (DEMO_MODE) { alert('Support is available using the contact details provided.'); return; }
         await Linking.openURL(url);
         } else {
           showModal("WhatsApp not installed");
@@ -56,21 +69,19 @@ const CustomerSupportScreen = () => {
         if (type === "email") {
         const email = applicationCommon?.mail_id;
         if (!email) {
-          showModal("Error", "Support email not available");
+          showModal('Support unavailable', 'The support email has not been provided. Please try again later.');
           return;
         }
         const subject = "Customer Support";
         const url = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
-        if (DEMO_MODE) { alert('Support is available using the contact details provided.'); return; }
         await Linking.openURL(url);
       } else if (type === "phone") {
         const phone = applicationCommon?.contact_number;
         if (!phone) {
-          showModal("Error", "Support number not available");
+          showModal('Support unavailable', 'The support number has not been provided. Please try again later.');
           return;
         }
         const url = `tel:${phone}`;
-        if (DEMO_MODE) { alert('Support is available using the contact details provided.'); return; }
         await Linking.openURL(url);
       }
     } catch (error) {
@@ -91,13 +102,24 @@ const CustomerSupportScreen = () => {
         We’re here to help! Choose one of the options below to get in touch with
         our support team.
       </Text>
+      {loadingContacts && <ActivityIndicator color={colors.primary} accessibilityLabel="Loading support details" />}
+      {!loadingContacts && (contactError || !applicationCommon?.mail_id || !applicationCommon?.contact_number) && (
+        <View>
+          <Text style={styles.description} accessibilityRole="alert">
+            {contactError ? 'Unable to load support contact details.' : 'Some support contact details are currently unavailable.'}
+          </Text>
+          <TouchableOpacity onPress={loadContacts} accessibilityRole="button">
+            <Text style={styles.retry}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 {/* 
       <TouchableOpacity style={styles.card} onPress={() => handlePress("whatsapp")}>
         <Icon name="logo-whatsapp" size={28} color="#25D366" />
         <Text style={styles.cardText}>Chat on WhatsApp</Text>
       </TouchableOpacity> */}
 
-      <TouchableOpacity style={styles.card} onPress={() => handlePress("email")}>
+      <TouchableOpacity style={styles.card} disabled={loadingContacts} onPress={() => handlePress("email")}>
         <Icon name="mail-outline" size={28} color={colors.brandPrimary} />
         <View style={{flex: 1}}>
              <Text style={styles.cardText}>Send us an Email</Text>
@@ -106,7 +128,7 @@ const CustomerSupportScreen = () => {
         <Icon name="chevron-forward" size={24} color={colors.textSecondary} />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.card} onPress={() => handlePress("phone")}>
+      <TouchableOpacity style={styles.card} disabled={loadingContacts} onPress={() => handlePress("phone")}>
         <Icon name="call-outline" size={28} color="#007AFF" />
          <View style={{flex: 1}}>
             <Text style={styles.cardText}>Call Support</Text>
@@ -129,6 +151,7 @@ const CustomerSupportScreen = () => {
 export default CustomerSupportScreen;
 
 const styles = StyleSheet.create({
+  retry: {color: colors.primary, marginBottom: 20, fontWeight: '600'},
   container: {
     flex: 1,
     backgroundColor: colors.backgroundLight,

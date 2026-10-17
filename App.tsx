@@ -1,4 +1,3 @@
-import {DEMO_MODE} from './src/demo/config';
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AppNavigation from './src/navigation/AppNavigation';
@@ -13,7 +12,7 @@ export default function App() {
       <SafeAreaProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <AppNavigation />
-          {!DEMO_MODE && <OfflineNotice />}
+          <OfflineNotice />
         </GestureHandlerRootView>
       </SafeAreaProvider>
     </Provider>

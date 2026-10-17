@@ -1,6 +1,6 @@
-import {DEMO_MODE} from '../demo/config';
 import notifee, {AndroidImportance, AndroidStyle} from '@notifee/react-native';
 import messaging from '@react-native-firebase/messaging';
+import firebase from '@react-native-firebase/app';
 import {PermissionsAndroid, Platform} from 'react-native';
 
 const CHANNEL_ID = 'quickieevendor';
@@ -19,7 +19,7 @@ const createChannel = async () => {
 
 
 export const requestUserPermission = async () => {
-  if (DEMO_MODE) return;
+  if (!firebase.apps.some(app => app.name === '[DEFAULT]')) return;
   if (Platform.OS === 'android' && Platform.Version >= 33) {
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
@@ -42,7 +42,10 @@ export const requestUserPermission = async () => {
 };
 
 export const setupNotificationHandlers = async navigation => {
-  if (DEMO_MODE) return () => {};
+  if (!firebase.apps.some(app => app.name === '[DEFAULT]')) {
+    console.warn('Push notifications unavailable: Firebase configuration for this app is missing.');
+    return () => {};
+  }
   await messaging().setAutoInitEnabled(true);
   await requestUserPermission();
   await createChannel();
@@ -54,7 +57,7 @@ export const setupNotificationHandlers = async navigation => {
   });
 
   // Background/Quit state (User taps notification)
-  messaging().onNotificationOpenedApp(remoteMessage => {
+  const unsubscribeOpened = messaging().onNotificationOpenedApp(remoteMessage => {
     console.log(
       'Notification caused app to open from background state:',
       remoteMessage,
@@ -73,9 +76,12 @@ export const setupNotificationHandlers = async navigation => {
         );
         handleNotificationNavigation(remoteMessage.data, navigation);
       }
-    });
+    }).catch(error => console.warn('Unable to read initial notification:', error.message));
 
-  return unsubscribe;
+  return () => {
+    unsubscribe();
+    unsubscribeOpened();
+  };
 };
 
 const displayNotification = async remoteMessage => {
@@ -128,7 +134,7 @@ const handleNotificationNavigation = (data, navigation) => {
 };
 
 export const retrieveFCMToken = async () => {
-  if (DEMO_MODE) return null;
+  if (!firebase.apps.some(app => app.name === '[DEFAULT]')) return null;
   try {
     return await messaging().getToken();
   } catch (error) {

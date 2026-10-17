@@ -1,4 +1,3 @@
-import {DEMO_MODE} from '../demo/config';
 import React, {useState, useEffect} from 'react';
 import {
   View,
@@ -22,6 +21,7 @@ export default function MoreScreen() {
   const dispatch = useDispatch();
 
   const userId = useSelector(state => state.Auth.userId);
+  const error = useSelector(state => state.Auth.errors?.fetchShopDetails);
 
   const [logoutVisible, setLogoutVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false); // ✅ Delete modal state
@@ -106,7 +106,6 @@ export default function MoreScreen() {
       <ScrollView style={styles.container}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>My Account</Text>
-          {DEMO_MODE && <MenuItem icon="bell-outline" title="Notifications" onPress={() => navigation.navigate('NotificationsScreen')} />}
           <MenuItem icon="file-document-outline" title="Terms & Conditions" onPress={() => navigation.navigate('TermsScreen')} />
           <MenuItem icon="shield-outline" title="Privacy Policy" onPress={() => navigation.navigate('PrivacyPolicyScreen')} />
           <MenuItem
