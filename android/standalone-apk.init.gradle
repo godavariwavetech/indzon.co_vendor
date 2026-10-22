@@ -1,0 +1,7 @@
+gradle.beforeProject { p ->
+    if (p.path == ':app') {
+        p.pluginManager.withPlugin('com.facebook.react') {
+            p.extensions.getByName('react').debuggableVariants.set([])
+        }
+    }
+}

@@ -1,6 +1,10 @@
 import {createSlice, createAsyncThunk, isAnyOf} from '@reduxjs/toolkit';
 import api from '../../utils/api';
 import {endpoints} from '../../config/config';
+import {uniqueHistoryOrders} from '../../utils/orderHistory';
+
+const readError = (body, fallback) =>
+  typeof body?.msg === 'string' && body.msg.trim() ? body.msg : fallback;
 
 const initialState = {
   message: null,
@@ -24,16 +28,43 @@ export const vendorLogin = createAsyncThunk(
   'vendorLogin',
   async ({phoneNumber, password}, {rejectWithValue, fulfillWithValue}) => {
     const data = {
-      number: phoneNumber,
+      number: phoneNumber.trim(),
       password: password,
     };
-    const response = await api.post(endpoints.LOGIN, data);
-    if (response) {
-      if (response.data) {
-        return fulfillWithValue(response.data);
-      } else {
-        return rejectWithValue('Something went wrong!');
+    try {
+      const response = await api.post(endpoints.LOGIN, data);
+      const body = response?.data;
+      if (__DEV__) {
+        console.log('Sign-in response diagnostics', {
+          server: api.defaults?.baseURL,
+          httpStatus: response?.status,
+          apiStatus: body?.status,
+          responseType: typeof body,
+          vendorCount: Array.isArray(body?.data) ? body.data.length : null,
+          hasVendorId: Boolean(body?.data?.[0]?.id),
+        });
       }
+      if (body?.status === 200 && body?.data?.[0]?.id) {
+        return fulfillWithValue(body);
+      }
+      return rejectWithValue(
+        typeof body?.msg === 'string'
+          ? body.msg
+          : body?.status === 200 && Array.isArray(body?.data) && body.data.length === 0
+            ? 'Mobile number or password is incorrect.'
+            : 'The server returned an unexpected sign-in response. Please try again.',
+      );
+    } catch (error) {
+      if (typeof error.response?.data?.msg === 'string') {
+        return rejectWithValue(error.response.data.msg);
+      }
+      if (error.code === 'ECONNABORTED') {
+        return rejectWithValue('The server took too long to respond. Please try again.');
+      }
+      if (!error.response) {
+        return rejectWithValue('Unable to reach the server. Please check your internet connection.');
+      }
+      return rejectWithValue('The server could not complete sign-in. Please try again.');
     }
   },
 );
@@ -219,19 +250,20 @@ export const fetchShopDetails = createAsyncThunk(
 
       if (data?.status === 200 && Array.isArray(data?.data)) {
         const shop = data.data[0]; // Take first shop from array
+        if (!shop) return fulfillWithValue(null);
 
         return fulfillWithValue({
           id: shop.id,
           name: shop.shop_name,
           address: shop.shop_address,
-          timing: `${shop.shop_open_time} - ${shop.shop_close_time}`,
+          timing: [shop.shop_open_time, shop.shop_close_time].filter(Boolean).join(' - '),
           mobile: shop.shop_phone_number,
           email: shop.shop_email,
           image: shop.shop_image,
           shop_active_status: shop.shop_active_status,
         });
       } else {
-        return rejectWithValue('No shop found or invalid response');
+        return rejectWithValue(readError(data, 'Unable to load shop details. Please try again.'));
       }
     } catch (error) {
       return rejectWithValue(
@@ -335,7 +367,7 @@ export const fetchCurrentOrders = createAsyncThunk(
             //items: [], // ✅ You can fetch items with another API if available
           };
 
-          if (order.order_status === 0) {
+          if (Number(order.order_status) === 0) {
             pendingOrders.push(order);
           } else {
             OrdersInProcess.push(order);
@@ -344,7 +376,7 @@ export const fetchCurrentOrders = createAsyncThunk(
 
         return fulfillWithValue({pendingOrders, OrdersInProcess});
       } else {
-        return rejectWithValue('No current orders found');
+        return rejectWithValue(readError(data, 'Unable to load current orders. Please try again.'));
       }
     } catch (error) {
       console.error('Fetch Current Orders error:', error);
@@ -392,7 +424,7 @@ export const fetchOrderDetails = createAsyncThunk(
         }));
         return fulfillWithValue(items);
       } else {
-        return rejectWithValue('No items found for this order');
+        return rejectWithValue(readError(data, 'Unable to load order items. Please try again.'));
       }
     } catch (error) {
       return rejectWithValue(
@@ -442,9 +474,9 @@ export const fetchShopPayments = createAsyncThunk(
       console.log('getshopsforpayments API response:', data);
 
       if (data?.status === 200 && Array.isArray(data?.data)) {
-        return fulfillWithValue(data.data[0]); // take first shop
+        return fulfillWithValue(data.data[0] ?? null); // take first shop
       } else {
-        return rejectWithValue('No payment data found');
+        return rejectWithValue(readError(data, 'Unable to load earnings. Please try again.'));
       }
     } catch (error) {
       return rejectWithValue(
@@ -469,7 +501,7 @@ export const fetchPaymentHistory = createAsyncThunk(
       if (data?.status === 200 && Array.isArray(data?.data)) {
         return fulfillWithValue(data.data);
       } else {
-        return rejectWithValue('No transactions found');
+        return rejectWithValue(readError(data, 'Unable to load transactions. Please try again.'));
       }
     } catch (error) {
       return rejectWithValue(
@@ -493,7 +525,7 @@ export const fetchProductsList = createAsyncThunk(
       if (data?.status === 200 && Array.isArray(data?.data)) {
         return fulfillWithValue(data.data);
       } else {
-        return rejectWithValue('No products found');
+        return rejectWithValue(readError(data, 'Unable to load menu items from the server. Please try again.'));
       }
     } catch (error) {
       return rejectWithValue(
@@ -567,7 +599,7 @@ export const fetchDashboardOrders = createAsyncThunk(
       if (data?.status === 200 && Array.isArray(data?.data)) {
         return fulfillWithValue(data.data);
       } else {
-        return rejectWithValue('No orders found');
+        return rejectWithValue(readError(data, 'Unable to load reports. Please try again.'));
       }
     } catch (error) {
       return rejectWithValue(
@@ -776,7 +808,7 @@ export const AuthSlice = createSlice({
     });
     builder.addCase(fetchDashboardOrders.fulfilled, (state, action) => {
       state.loading = false;
-      state.dashboardOrders = action.payload;
+      state.dashboardOrders = uniqueHistoryOrders(action.payload);
     });
     builder.addCase(fetchDashboardOrders.rejected, (state, action) => {
       state.loading = false;

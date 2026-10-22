@@ -130,7 +130,7 @@ export default function MenuScreen() {
       const initialToggles = {};
       products.forEach(item => {
         // active_status: "0" = ON, "1" = OFF
-        initialToggles[item.id] = item.active_status === '0';
+        initialToggles[item.id] = Number(item.active_status) === 0;
       });
       setToggles(initialToggles);
     }
@@ -139,7 +139,7 @@ export default function MenuScreen() {
   // 🔹 Group products by sub_category_id
   // Filter products by name
   const filteredProducts = products.filter(item =>
-    item.item_name.toLowerCase().includes(searchQuery.toLowerCase()),
+    String(item.item_name ?? '').toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Group filtered products by sub_category_id
@@ -293,7 +293,7 @@ export default function MenuScreen() {
             />
             <View style={styles.headerTextContainer}>
               <Text style={styles.headerTitle}>
-                {shopDetails?.name || 'Restaurant Name'}
+                {shopDetails?.name || '--'}
               </Text>
               <Text style={styles.headerSubtitle}>
                 {shopDetails?.address || 'Restaurant Address'}
@@ -346,6 +346,15 @@ export default function MenuScreen() {
 ) : (
   <SectionList
     sections={Object.values(groupedProducts)}
+    ListEmptyComponent={
+      <Text style={{textAlign: 'center', marginTop: 20, color: colors.textMedium}}>
+        {requestErrors.fetchProductsList
+          ? 'Menu could not be loaded. Pull down to retry.'
+          : searchQuery
+            ? 'No menu items match your search.'
+            : 'No menu items available.'}
+      </Text>
+    }
     keyExtractor={(item) => item.id.toString()}
     renderItem={renderCard}
     renderSectionHeader={({section}) => (

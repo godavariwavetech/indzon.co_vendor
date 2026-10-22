@@ -90,6 +90,7 @@ export default function LoginScreen() {
         }, 1200);
       } else {
         const errorMessage =
+          (typeof response?.payload === 'string' ? response.payload : null) ||
           response?.payload?.msg ||
           response?.error?.message ||
           'Login failed. Please try again.';
@@ -172,6 +173,8 @@ export default function LoginScreen() {
                   placeholder="Enter your Password"
                   placeholderTextColor={colors.textLight}
                   secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   value={password}
                   onChangeText={setPassword}
                 />

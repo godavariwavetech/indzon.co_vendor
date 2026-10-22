@@ -95,7 +95,7 @@ export default function OrdersScreen({navigation}) {
   useEffect(() => {
     if (shopDetails?.shop_active_status !== undefined) {
       // User says: if it is 1 then the status is off else on
-      setIsOn(shopDetails.shop_active_status === 0);
+      setIsOn(Number(shopDetails.shop_active_status) === 0);
     }
   }, [shopDetails]);
 
@@ -209,7 +209,7 @@ export default function OrdersScreen({navigation}) {
       <StatusBar translucent backgroundColor={'transparent'} barStyle={'dark-content'} />
       <View style={styles.header}>
         <Image source={shopDetails?.image ? (typeof shopDetails.image === "string" ? {uri: shopDetails.image} : shopDetails.image) : RestaurantLogo} style={styles.avatar} resizeMode="contain" />
-        <Text style={styles.restaurantName}>{shopDetails?.name || 'Restaurant Name'}</Text>
+        <Text style={styles.restaurantName}>{shopDetails?.name || '--'}</Text>
         <TouchableOpacity style={[styles.toggleContainer, isOn ? styles.toggleOn : styles.toggleOff]} onPress={() => setShowToggleModal(true)}>
           <Animated.View style={[styles.circle, {transform: [{translateX}]}]} />
         </TouchableOpacity>

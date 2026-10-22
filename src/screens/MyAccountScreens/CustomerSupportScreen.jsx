@@ -57,7 +57,11 @@ const CustomerSupportScreen = () => {
     }
     try {
       if (type === "whatsapp") {
-        const phoneNumber = "919888888888"; 
+        const phoneNumber = String(applicationCommon?.contact_number ?? '').replace(/\D/g, '');
+        if (!phoneNumber) {
+          showModal('Support unavailable', 'The support number has not been provided. Please try again later.');
+          return;
+        }
         const url = `whatsapp://send?phone=${phoneNumber}&text=Hello, I need help!`;
         const supported = await Linking.canOpenURL(url);
         if (supported) {

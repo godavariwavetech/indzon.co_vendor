@@ -228,7 +228,7 @@ export default function EarningsScreen() {
       ) : paymentHistory.length === 0 ? (
         // Case 3: No transactions
         <Text style={{textAlign: 'center', marginTop: 20, color: '#888'}}>
-          No transactions found for the selected date range
+          {requestErrors.fetchPaymentHistory ? 'Transactions could not be loaded. Please try again.' : 'No transactions found for the selected date range'}
         </Text>
       ) : (
         // Case 4: Transactions available

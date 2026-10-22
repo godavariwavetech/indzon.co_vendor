@@ -21,6 +21,7 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {colors} from '../config/theme';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchDashboardOrders} from '../redux/reducers/auth';
+import {getHistoryCardKey} from '../utils/orderHistory';
 import {useNavigation, useFocusEffect} from '@react-navigation/native'; // ✅ add this
 
 export default function ReportsScreen() {
@@ -283,7 +284,7 @@ useFocusEffect(useCallback(() => {
       ) : (
         <FlatList
   data={[...(dashboardOrders || [])].reverse()}
-  keyExtractor={(item, index) => `${item.id}-${index}`}
+  keyExtractor={(item, index) => getHistoryCardKey(item) || (item.id != null ? `id:${item.id}` : `row:${index}`)}
   renderItem={renderOrder}
   contentContainerStyle={styles.listContent}
   refreshing={loading}
@@ -291,7 +292,7 @@ useFocusEffect(useCallback(() => {
   ListEmptyComponent={
     !loading && (
       <Text style={styles.emptyMessage}>
-        No orders found for the selected date range.
+        {requestError ? 'Reports could not be loaded. Pull down to retry.' : 'No orders found for the selected date range.'}
       </Text>
     )
   }

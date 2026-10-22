@@ -20,7 +20,7 @@ export default function BillSummary({navigation, route}) {
     finally { setLoading(false); }
   }, [order?.id, dispatch]);
   useEffect(() => { load(); }, [load]);
-  const money = value => Number(value || 0).toFixed(2);
+  const money = value => `\u20B9${Number(value || 0).toFixed(2)}`;
   return <View style={styles.container}>
     <View style={styles.header}>
       <TouchableOpacity onPress={() => navigation.goBack()}><Icon name="arrow-back" size={22} color={colors.textDark} /></TouchableOpacity>
@@ -31,9 +31,9 @@ export default function BillSummary({navigation, route}) {
       {!order ? <Text>No order selected.</Text> : loading ? <ActivityIndicator color={colors.primary} /> : error ? <TouchableOpacity onPress={load}><Text>{error} - Tap to retry</Text></TouchableOpacity> :
       <View style={styles.card}><Text style={styles.billSummary}>Bill Summary</Text><View style={styles.divider} />
         {items.length === 0 && <Text>No items found.</Text>}
-        {items.map((item, index) => <View key={index} style={styles.itemRow}><Text style={styles.itemText}>{item.quantity} x {item.name}</Text><Text style={styles.itemPrice}>?{money(Number(item.quantity) * Number(item.price))}</Text></View>)}
-        {[['GST', items[0]?.total_item_gst_amount], ['Delivery', order.delivery_charges], ['Coupon', -Number(order.coupon_amount || 0)]].map(([label, value]) => <View key={label} style={styles.itemRow}><Text style={styles.taxText}>{label}</Text><Text style={styles.itemPrice}>?{money(value)}</Text></View>)}
-        <View style={styles.totalBox}><Text style={styles.totalText}>Grand Total</Text><Text style={styles.totalPrice}>?{money(order.grand_total)}</Text></View>
+        {items.map((item, index) => <View key={index} style={styles.itemRow}><Text style={styles.itemText}>{item.quantity} x {item.name}</Text><Text style={styles.itemPrice}>{money(Number(item.quantity) * Number(item.price))}</Text></View>)}
+        {[['GST', items[0]?.total_item_gst_amount], ['Delivery', order.delivery_charges], ['Coupon', -Number(order.coupon_amount || 0)]].map(([label, value]) => <View key={label} style={styles.itemRow}><Text style={styles.taxText}>{label}</Text><Text style={styles.itemPrice}>{money(value)}</Text></View>)}
+        <View style={styles.totalBox}><Text style={styles.totalText}>Grand Total</Text><Text style={styles.totalPrice}>{money(order.grand_total)}</Text></View>
       </View>}
     </ScrollView>
   </View>;

@@ -146,4 +146,22 @@ if (!demoModeMatch.find()) {
 }
 if (demoModeMatch.group(1) == 'false' && !project.hasProperty('localBackend')) {
     apply plugin: 'com.google.gms.google-services'
+
+    // Allow normal local debug runs before this app is registered in Firebase.
+    // Release builds still validate the supplied Firebase configuration.
+    def googleServicesFile = file('google-services.json')
+    def firebaseConfig = googleServicesFile.exists()
+        ? new groovy.json.JsonSlurper().parse(googleServicesFile)
+        : [:]
+    def hasMatchingFirebaseClient = (firebaseConfig.client ?: []).any {
+        it.client_info?.android_client_info?.package_name == android.defaultConfig.applicationId
+    }
+    if (!hasMatchingFirebaseClient) {
+        tasks.configureEach { task ->
+            if (task.name == 'processDebugGoogleServices') {
+                task.enabled = false
+            }
+        }
+        logger.warn('Firebase configuration does not match the application ID. Debug builds run without Firebase; add a matching google-services.json to enable push notifications.')
+    }
 }
