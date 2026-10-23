@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 import {
-  fetchCurrentOrders,
+  refreshCurrentOrders,
   fetchShopDetails,
   updateShopStatus,
 } from '../redux/reducers/auth';
@@ -24,13 +24,14 @@ import {
 } from 'react-native';
 import {colors} from '../config/theme';
 import {Ordersscreenimage, RestaurantLogo} from '../assets/index';
-import {useFocusEffect} from '@react-navigation/native';
+import {matchesShopLocation} from '../utils/orderLocation';
+import useOrderRefresh from '../hooks/useOrderRefresh';
 
 export default function OrdersScreen({navigation}) {
   const dispatch = useDispatch();
   const requestErrors = useSelector(state => state.Auth.errors || {});
   const requestError = requestErrors.fetchCurrentOrders || requestErrors.fetchShopDetails || requestErrors.updateShopStatus;
-  const {pendingOrders, OrdersInProcess, loading, userId, shopDetails} =
+  const {pendingOrders, OrdersInProcess, userId, shopDetails} =
     useSelector(state => state.Auth);
 
   const [isOn, setIsOn] = useState(true);
@@ -38,8 +39,18 @@ export default function OrdersScreen({navigation}) {
   const [showToggleModal, setShowToggleModal] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const translateX = useRef(new Animated.Value(0)).current;
+
+  useOrderRefresh(useCallback(async isActive => {
+    if (!userId || !isConnected) return;
+    try {
+      await dispatch(refreshCurrentOrders(userId));
+    } finally {
+      if (isActive()) setInitialLoading(false);
+    }
+  }, [dispatch, userId, isConnected]));
 
   const onRefresh = useCallback(async () => {
     if (!userId) return;
@@ -47,7 +58,7 @@ export default function OrdersScreen({navigation}) {
     try {
       // Fetch both orders and shop details on manual refresh
       await Promise.all([
-        dispatch(fetchCurrentOrders(userId)),
+        dispatch(refreshCurrentOrders(userId)),
         dispatch(fetchShopDetails(userId)),
       ]);
     } catch (error) {
@@ -57,21 +68,12 @@ export default function OrdersScreen({navigation}) {
     }
   }, [userId, dispatch]);
 
-  const fetchOrders = useCallback(async () =>{
-    const resp = await dispatch(fetchCurrentOrders(userId));
-    console.log(resp,">>>>>>>>>>>>>RESPONSSSS");
-  }, [dispatch, userId]);
-
-  // Refetch orders when internet comes back
+  // Order polling handles reconnects; fetch the profile separately.
   useEffect(() => {
     if (isConnected && userId) {
-      fetchOrders()
-      dispatch(fetchCurrentOrders(userId));
-      // if (!shopDetails) {
-        dispatch(fetchShopDetails(userId));
-      // }
+      dispatch(fetchShopDetails(userId));
     }
-  }, [isConnected, userId, dispatch, fetchOrders]);
+  }, [isConnected, userId, dispatch]);
 
   // ✅ Listen for internet changes
   useEffect(() => {
@@ -86,11 +88,10 @@ export default function OrdersScreen({navigation}) {
   const hasShopDetails = Boolean(shopDetails);
   const fetchOrdersAndDetails = useCallback(() => {
     if (!userId) return;
-    dispatch(fetchCurrentOrders(userId));
+    dispatch(refreshCurrentOrders(userId));
     if (!hasShopDetails) dispatch(fetchShopDetails(userId));
   }, [userId, dispatch, hasShopDetails]);
 
-  useFocusEffect(fetchOrdersAndDetails);
   // Toggle shop status
   useEffect(() => {
     if (shopDetails?.shop_active_status !== undefined) {
@@ -125,11 +126,17 @@ export default function OrdersScreen({navigation}) {
     }
   };
 
-  const orders = selectedTab === 'Pending' ? pendingOrders : OrdersInProcess;
+  const visiblePendingOrders = pendingOrders.filter(order =>
+    matchesShopLocation(order, shopDetails, userId),
+  );
+  const visibleOrdersInProcess = OrdersInProcess.filter(order =>
+    matchesShopLocation(order, shopDetails, userId),
+  );
+  const orders = selectedTab === 'Pending' ? visiblePendingOrders : visibleOrdersInProcess;
 
   const tabs = [
-    {label: 'Pending', count: pendingOrders.length},
-    {label: 'Orders In Process', count: OrdersInProcess.length},
+    {label: 'Pending', count: visiblePendingOrders.length},
+    {label: 'Orders In Process', count: visibleOrdersInProcess.length},
   ];
 
   // ✅ Inline OrderCard
@@ -169,6 +176,7 @@ export default function OrdersScreen({navigation}) {
     switch (order.order_status) {
       case 0: return <OrderCard key={order.id} {...commonProps} statusColor={colors.primary} statusLabel="Pending" />;
       case 1: return <OrderCard key={order.id} {...commonProps} statusColor={colors.primary} statusLabel="Accepted" />;
+      case 2:
       case 8: return <OrderCard key={order.id} {...commonProps} statusColor={colors.primary} statusLabel="Ongoing" />;
       default: return <OrderCard key={order.id} {...commonProps} statusColor={colors.primarySemi} statusLabel={`Status ${order.order_status}`} />;
     }
@@ -227,7 +235,7 @@ export default function OrdersScreen({navigation}) {
 
 
 
-      {loading && !refreshing ? (
+      {initialLoading && isConnected && !refreshing && !orders.length ? (
         <View style={styles.loaderContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loaderText}>Loading orders...</Text>

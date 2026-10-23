@@ -1,7 +1,8 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import {useFocusEffect} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
-import {fetchShopPayments, fetchPaymentHistory, fetchApplicationCommon} from '../redux/reducers/auth';
+import {fetchShopPayments, fetchShopDetails, fetchPaymentHistory, fetchApplicationCommon} from '../redux/reducers/auth';
+import {calculateEarnings} from '../utils/vendorEarnings';
 import NetInfo from '@react-native-community/netinfo';
 import NoInternetScreen from '../components/NoInternetScreen';
 import {ActivityIndicator} from 'react-native';
@@ -23,11 +24,12 @@ export default function EarningsScreen() {
   const dispatch = useDispatch();
   const requestErrors = useSelector(state => state.Auth.errors || {});
   const requestError = requestErrors.fetchShopPayments || requestErrors.fetchPaymentHistory;
-  const {userId, shopPayments, paymentHistory, loading, applicationCommon} = useSelector(
+  const {userId, shopPayments, shopDetails, paymentHistory, loading, applicationCommon} = useSelector(
     state => state.Auth,
   );
   const [isConnected, setIsConnected] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const payout = calculateEarnings(shopPayments, shopDetails);
 
   // Listen to internet changes
   useEffect(() => {
@@ -56,6 +58,7 @@ export default function EarningsScreen() {
   useFocusEffect(useCallback(() => {
     if (userId) {
       dispatch(fetchShopPayments(userId));
+      dispatch(fetchShopDetails(userId));
     }
     dispatch(fetchApplicationCommon());
   }, [userId, dispatch]));
@@ -150,13 +153,7 @@ export default function EarningsScreen() {
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
           <Text style={styles.amountBig}>
             ₹
-            {(
-              (shopPayments?.item_amount ?? 0)+
-              (shopPayments?.item_amount_gst ?? 0)-
-              (shopPayments?.admin_service_fee ?? 0) +
-              (shopPayments?.admin_coupon_amount ?? 0) -
-              (shopPayments?.vendor_coupon_amount ?? 0)
-            ).toFixed(2)}
+            {payout ? payout.earnings.toFixed(2) : '--'}
           </Text>
         </View>
 
@@ -348,7 +345,7 @@ export default function EarningsScreen() {
             <View style={styles.row}>
               <Text style={styles.label}>Admin Service Fee (C)</Text>
               <Text style={styles.value}>
-                ₹{Number(shopPayments?.admin_service_fee ?? 0).toFixed(2)}
+                ₹{payout ? payout.commission.toFixed(2) : '--'}
               </Text>
             </View>
             <View style={styles.row}>

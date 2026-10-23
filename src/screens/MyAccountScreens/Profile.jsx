@@ -194,6 +194,21 @@ const RestaurantProfileScreen = () => {
 
       <View style={styles.card}>
         <View style={styles.infoRow}>
+          <Icon name="map" size={22} color={colors.brandPrimary} />
+          <Text style={styles.infoText}>Location: {shop?.location || '--'}</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Icon name="pricetag" size={22} color={colors.brandPrimary} />
+          <Text style={styles.infoText}>
+            Commission: {shop?.commission != null && Number.isFinite(Number(shop.commission))
+              ? String(shop.commissionType) === '0' ? `${Number(shop.commission)}%`
+                : String(shop.commissionType) === '1' ? `₹${Number(shop.commission).toFixed(2)} per order` : '--'
+              : '--'}
+          </Text>
+        </View>
+
+        <View style={styles.infoRow}>
           <Icon name="location" size={22} color={colors.brandPrimary} />
           <Text style={styles.infoText}>Address: {shop?.address || '--'}</Text>
         </View>

@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchOrderDetails, fetchCurrentOrders, updateOrderStatus} from './../redux/reducers/auth';
 
@@ -17,14 +17,38 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
 import {colors} from '../config/theme';
+import api from '../utils/api';
+import {endpoints} from '../config/config';
+import useOrderRefresh from '../hooks/useOrderRefresh';
 
 export default function OrderDetailsScreen({route}) {
   const current = useSelector(state => state.Auth);
   const original = route.params?.order;
   const orderId = original?.id || route.params?.orderId;
-  const order = [...current.pendingOrders, ...current.OrdersInProcess, ...current.dashboardOrders].find(o => String(o.id) === String(orderId)) || original;
+  const [liveOrder, setLiveOrder] = useState(null);
+  const savedOrder = [...current.pendingOrders, ...current.OrdersInProcess, ...current.dashboardOrders].find(o => String(o.id) === String(orderId)) || original;
+  const order = liveOrder && String(liveOrder.id) === String(orderId)
+    ? {...savedOrder, ...liveOrder}
+    : savedOrder;
   const navigation = useNavigation();
   const dispatch = useDispatch();
+
+  useOrderRefresh(useCallback(async isActive => {
+    if (!orderId) return;
+    const {data} = await api.post(endpoints.NEWGETORDERDETAILS, {orderid: orderId});
+    const latest = data?.data?.[0];
+    if (isActive() && data?.status === 200 && latest &&
+        String(latest.main_order_id) === String(orderId)) {
+      // Item rows have their own IDs; use the parent order ID for tracking.
+      setLiveOrder({
+        id: latest.main_order_id,
+        order_status: Number(latest.order_status),
+        delivery_boy_array: latest.delivery_boy_array,
+        delivery_accepted_date_time: latest.delivery_accepted_date_time,
+        deliveryboy_pickup_time: latest.deliveryboy_pickup_time,
+      });
+    }
+  }, [orderId]));
 
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -52,7 +76,7 @@ export default function OrderDetailsScreen({route}) {
   }
 
   const statusSteps = ['Placed', 'Accepted', 'Ongoing', 'Delivered'];
-  const statusMap = {0: 'Placed', 1: 'Accepted', 8: 'Ongoing', 3: 'Delivered'};
+  const statusMap = {0: 'Placed', 1: 'Accepted', 2: 'Ongoing', 8: 'Ongoing', 3: 'Delivered'};
 
   useEffect(() => {
     const fetchItems = async () => {

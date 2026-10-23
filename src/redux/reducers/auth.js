@@ -252,10 +252,29 @@ export const fetchShopDetails = createAsyncThunk(
         const shop = data.data[0]; // Take first shop from array
         if (!shop) return fulfillWithValue(null);
 
+        let location = shop.location_name || null;
+        if (!location && shop.location_id != null) {
+          try {
+            const locationsResponse = await api.get(endpoints.GETLOCATION);
+            const locations = locationsResponse.data;
+            if (locations?.status === 200 && Array.isArray(locations.data)) {
+              location = locations.data.find(
+                item => String(item.id) === String(shop.location_id),
+              )?.location_name || null;
+            }
+          } catch {
+            // Keep the profile available if the location lookup fails.
+          }
+        }
+
         return fulfillWithValue({
           id: shop.id,
           name: shop.shop_name,
           address: shop.shop_address,
+          location,
+          locationId: shop.location_id,
+          commission: shop.admin_percentage,
+          commissionType: shop.commission_type,
           timing: [shop.shop_open_time, shop.shop_close_time].filter(Boolean).join(' - '),
           mobile: shop.shop_phone_number,
           email: shop.shop_email,
@@ -386,6 +405,25 @@ export const fetchCurrentOrders = createAsyncThunk(
     }
   },
 );
+// Background refresh avoids the full-screen loader and preserves data on failure.
+export const refreshCurrentOrders = createAsyncThunk(
+  'refreshCurrentOrders',
+  async (userId, {rejectWithValue}) => {
+    try {
+      const {data} = await api.post(endpoints.GETCURRENTORDERS, {shop_id: userId});
+      if (data?.status !== 200 || !Array.isArray(data.data)) {
+        return rejectWithValue('Unable to refresh orders');
+      }
+      return {
+        pendingOrders: data.data.filter(order => Number(order.order_status) === 0),
+        OrdersInProcess: data.data.filter(order => Number(order.order_status) !== 0),
+      };
+    } catch {
+      return rejectWithValue('Unable to refresh orders');
+    }
+  },
+);
+
 export const fetchOrderDetails = createAsyncThunk(
   'fetchOrderDetails',
   async (orderId, {rejectWithValue, fulfillWithValue}) => {
@@ -716,6 +754,12 @@ export const AuthSlice = createSlice({
       // state.userId = action.payload?.data?.id || null;
       // state.token = action.payload?.token || null;
     });
+    builder.addCase(refreshCurrentOrders.fulfilled, (state, action) => {
+      if (String(state.userId) !== String(action.meta.arg)) return;
+      state.pendingOrders = action.payload.pendingOrders;
+      state.OrdersInProcess = action.payload.OrdersInProcess;
+    });
+
     builder.addCase(fetchCurrentOrders.pending, state => {
       state.loading = true;
     });

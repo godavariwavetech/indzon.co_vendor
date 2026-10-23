@@ -478,6 +478,9 @@ const UpdateModal = ({visible, onClose, item, onUpdate, userId}) => {
       selling_price: sellingPrice,
       discount_percentage: discountPercent,
       discount_amount: discountAmount,
+      item_description: item.item_description ?? '',
+      quantity_type: item.quantity_type ?? 0,
+      item_gst: item.item_gst ?? item.tax_percent ?? 0,
     });
     setConfirmVisible(false);
   };
