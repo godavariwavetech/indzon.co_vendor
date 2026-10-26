@@ -4,6 +4,7 @@ import {View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator}
 import Icon from 'react-native-vector-icons/Ionicons';
 import {colors} from '../config/theme';
 import {fetchOrderDetails} from '../redux/reducers/auth';
+import {getOrderGst} from '../utils/orderPayment';
 
 export default function BillSummary({navigation, route}) {
   const order = route.params?.order;
@@ -32,7 +33,7 @@ export default function BillSummary({navigation, route}) {
       <View style={styles.card}><Text style={styles.billSummary}>Bill Summary</Text><View style={styles.divider} />
         {items.length === 0 && <Text>No items found.</Text>}
         {items.map((item, index) => <View key={index} style={styles.itemRow}><Text style={styles.itemText}>{item.quantity} x {item.name}</Text><Text style={styles.itemPrice}>{money(Number(item.quantity) * Number(item.price))}</Text></View>)}
-        {[['GST', items[0]?.total_item_gst_amount], ['Delivery', order.delivery_charges], ['Coupon', -Number(order.coupon_amount || 0)]].map(([label, value]) => <View key={label} style={styles.itemRow}><Text style={styles.taxText}>{label}</Text><Text style={styles.itemPrice}>{money(value)}</Text></View>)}
+        {[['Total GST', getOrderGst(order, items)], ['Delivery', order.delivery_charges], ['Coupon', -Number(order.coupon_amount || 0)]].map(([label, value]) => <View key={label} style={styles.itemRow}><Text style={styles.taxText}>{label}</Text><Text style={styles.itemPrice}>{money(value)}</Text></View>)}
         <View style={styles.totalBox}><Text style={styles.totalText}>Grand Total</Text><Text style={styles.totalPrice}>{money(order.grand_total)}</Text></View>
       </View>}
     </ScrollView>

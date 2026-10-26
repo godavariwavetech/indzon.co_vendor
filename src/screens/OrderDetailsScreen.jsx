@@ -20,6 +20,7 @@ import {colors} from '../config/theme';
 import api from '../utils/api';
 import {endpoints} from '../config/config';
 import useOrderRefresh from '../hooks/useOrderRefresh';
+import {getOrderGst} from '../utils/orderPayment';
 
 export default function OrderDetailsScreen({route}) {
   const current = useSelector(state => state.Auth);
@@ -168,8 +169,8 @@ export default function OrderDetailsScreen({route}) {
   // Checking both order object and items array for coupon safely
   const totalCoupon = Number(order.coupon_amount) || (items.length > 0 ? Number(items[0].coupon_amount) || 0 : 0);
   
-  // GST is typically inside the item array based on your previous code
-  const totalGst = items.length > 0 ? Number(items[0].total_item_gst_amount) || 0 : 0;
+  // Include item and fee GST, counting repeated order totals only once.
+  const totalGst = getOrderGst(order, items);
   
   // Base MRP based on fetched items
   const totalMrp = items.reduce(
