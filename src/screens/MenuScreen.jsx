@@ -35,6 +35,7 @@ import {colors} from '../config/theme';
 import {RestaurantLogo} from '../assets/index';
 import ConfirmationModal from '../components/ConfirmationModal';
 import NetInfo from '@react-native-community/netinfo';
+import {buildPriceUpdate} from '../utils/productPricing';
 
 const CustomToggle = ({value, onChange}) => {
   // keep Animated.Value stable across renders
@@ -84,6 +85,7 @@ export default function MenuScreen() {
   const [toggles, setToggles] = useState({});
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [savingPrice, setSavingPrice] = useState(false);
   const [confirmationVisible, setConfirmationVisible] = useState(false);
 
   // 🔹 toggle confirmation modal state
@@ -186,15 +188,19 @@ export default function MenuScreen() {
     setModalVisible(true);
   };
 
-  const handleUpdate = updatedValues => {
-    setModalVisible(false); // close immediately
-    dispatch(updateProduct({...updatedValues, shop_id: userId}))
-      .unwrap()
-      .then(async () => {
-        await dispatch(fetchProductsList(userId));
-        setConfirmationVisible(true);
-      })
-      .catch(err => Alert.alert('Cannot update product', String(err)));
+  const handleUpdate = async updatedValues => {
+    if (savingPrice) return;
+    setSavingPrice(true);
+    try {
+      await dispatch(updateProduct({...updatedValues, shop_id: userId})).unwrap();
+      setModalVisible(false);
+      await dispatch(fetchProductsList(userId));
+      setConfirmationVisible(true);
+    } catch (err) {
+      Alert.alert('Cannot update product', String(err));
+    } finally {
+      setSavingPrice(false);
+    }
   };
 
   useEffect(() => {
@@ -388,6 +394,7 @@ export default function MenuScreen() {
           item={selectedItem}
           onUpdate={handleUpdate}
           userId={userId}
+          saving={savingPrice}
         />
       )}
 
@@ -441,7 +448,7 @@ export default function MenuScreen() {
   );
 }
 
-const UpdateModal = ({visible, onClose, item, onUpdate, userId}) => {
+const UpdateModal = ({visible, onClose, item, onUpdate, userId, saving}) => {
   const [actualPrice, setActualPrice] = useState('');
   const [sellingPrice, setSellingPrice] = useState('');
   const [discountPercent, setDiscountPercent] = useState('');
@@ -470,26 +477,22 @@ const UpdateModal = ({visible, onClose, item, onUpdate, userId}) => {
   }, [actualPrice, sellingPrice]);
 
   const handleConfirmUpdate = () => {
-    onUpdate({
-      id: item.id,
-      shop_id: userId,
-      item_name: item.item_name,
-      actual_price: actualPrice,
-      selling_price: sellingPrice,
-      discount_percentage: discountPercent,
-      discount_amount: discountAmount,
-      item_description: item.item_description ?? '',
-      quantity_type: item.quantity_type ?? 0,
-      item_gst: item.item_gst ?? item.tax_percent ?? 0,
-    });
-    setConfirmVisible(false);
+    if (saving) return;
+    try {
+      const payload = buildPriceUpdate(item, userId, actualPrice, sellingPrice);
+      setConfirmVisible(false);
+      onUpdate(payload);
+    } catch (error) {
+      setConfirmVisible(false);
+      Alert.alert('Check prices', error.message);
+    }
   };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={[styles.updateCard, styles.editCard]}>
           <View style={styles.editHeader}>
             <MaterialCommunityIcons
@@ -552,8 +555,9 @@ const UpdateModal = ({visible, onClose, item, onUpdate, userId}) => {
           <View style={styles.editFooter}>
           <TouchableOpacity
             style={styles.updateBtn}
+            disabled={saving}
             onPress={() => { Keyboard.dismiss(); setConfirmVisible(true); }}>
-            <Text style={styles.updateBtnText}>Update</Text>
+            <Text style={styles.updateBtnText}>{saving ? 'Updating...' : 'Update'}</Text>
           </TouchableOpacity>
           </View>
         </View>
@@ -751,7 +755,7 @@ const styles = StyleSheet.create({
     padding: 20,
     elevation: 4,
   },
-  editCard: {padding: 0, maxHeight: '100%', overflow: 'hidden'},
+  editCard: {padding: 0, maxHeight: '100%', flexShrink: 1, overflow: 'hidden'},
   editHeader: {
     flexDirection: 'row',
     alignItems: 'center',
