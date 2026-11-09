@@ -259,6 +259,8 @@ const styles = StyleSheet.create({
     borderColor: colors.textLight,
     borderRadius: 8,
     paddingHorizontal: 12,
+    paddingVertical: 12,
+    minHeight: 48,
     fontSize: 16,
     backgroundColor: colors.white,
   },
