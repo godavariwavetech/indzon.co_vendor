@@ -76,8 +76,18 @@ export default function OrderDetailsScreen({route}) {
     }
   }
 
-  const statusSteps = ['Placed', 'Accepted', 'Ongoing', 'Delivered'];
-  const statusMap = {0: 'Placed', 1: 'Accepted', 2: 'Ongoing', 8: 'Ongoing', 3: 'Delivered'};
+  const isRejected = Number(orderStatus) === 5;
+  const statusSteps = isRejected
+    ? ['Placed', 'Rejected']
+    : ['Placed', 'Accepted', 'Ongoing', 'Delivered'];
+  const statusMap = {
+    0: 'Placed',
+    1: 'Accepted',
+    2: 'Ongoing',
+    8: 'Ongoing',
+    3: 'Delivered',
+    5: 'Rejected',
+  };
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -203,12 +213,14 @@ export default function OrderDetailsScreen({route}) {
             {statusSteps.map((step, index) => {
               const currentStepIndex = statusSteps.indexOf(statusMap[orderStatus]);
               const isActive = index <= currentStepIndex;
+              const stepColor =
+                isActive && step === 'Rejected' ? colors.danger : colors.success;
               return (
                 <View key={index} style={styles.statusItem}>
                   <View
                     style={[
                       styles.statusCircle,
-                      {backgroundColor: isActive ? colors.success : '#ccc'},
+                      {backgroundColor: isActive ? stepColor : '#ccc'},
                     ]}>
                     <MaterialCommunityIcons
                       name={
@@ -218,6 +230,8 @@ export default function OrderDetailsScreen({route}) {
                           ? 'check'
                           : step === 'Ongoing'
                           ? 'bike'
+                          : step === 'Rejected'
+                          ? 'close'
                           : 'map-marker-check'
                       }
                       size={16}
@@ -227,12 +241,19 @@ export default function OrderDetailsScreen({route}) {
                   <Text
                     style={[
                       styles.statusLabel,
-                      {color: isActive ? colors.success : '#999'},
+                      {color: isActive ? stepColor : '#999'},
                     ]}>
                     {step}
                   </Text>
                   {index < statusSteps.length - 1 && (
-                    <View style={styles.statusLine} />
+                    <View
+                      style={[
+                        styles.statusLine,
+                        index < currentStepIndex && isRejected
+                          ? {backgroundColor: colors.danger}
+                          : null,
+                      ]}
+                    />
                   )}
                 </View>
               );

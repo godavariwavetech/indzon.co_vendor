@@ -20,7 +20,7 @@ const cases = [
   ['registerVendor', {name: 'Shop'}, 'post', endpoints.REGISTERVENDOR, {name: 'Shop'}],
   ['fetchShopDetails', 7, 'post', endpoints.GETPROFILEDETAILS, {user_id: 7}, {status: 200, data: [{id: 7}]}],
   ['updateShopStatus', {shop_id: 7, shop_active_status: 0}, 'post', endpoints.UPDATESHOPSTATUSS, {shop_id: 7, active_status: 0}],
-  ['updateVendorPassword', {userId: 7, newPassword: 'new'}, 'post', endpoints.UPDATEVENDORSPASSWORD, {user_id: 7, newPassword: 'new'}],
+  ['updateVendorPassword', {userId: 7, shopPhoneNumber: '9876543210', newPassword: 'new'}, 'post', endpoints.UPDATEVENDORSPASSWORD, {user_id: 7, shop_phone_number: '9876543210', newPassword: 'new'}],
   ['fetchCurrentOrders', 7, 'post', endpoints.GETCURRENTORDERS, {shop_id: 7}],
   ['fetchOrderDetails', 42, 'post', endpoints.NEWGETORDERDETAILS, {orderid: 42}],
   ['updateOrderStatus', {orderId: 42, orderStatus: '1'}, 'post', endpoints.UPDATEORDERSTATUS, {order_id: 42, order_status: '1'}],
@@ -40,6 +40,15 @@ test.each(cases)('%s uses the original API contract', async (...row) => {
   await makeStore().dispatch(actions[name](arg));
   if (method === 'get') expect(api.get).toHaveBeenCalledWith(url);
   else expect(api.post).toHaveBeenCalledWith(url, payload);
+});
+test('password update rejects when the profile phone number is unavailable', async () => {
+  const store = makeStore();
+  await expect(
+    store.dispatch(actions.updateVendorPassword({userId: 7, newPassword: 'new'})).unwrap(),
+  ).rejects.toBe(
+    'Shop phone number is unavailable. Please reload your profile and try again.',
+  );
+  expect(api.post).not.toHaveBeenCalled();
 });
 test('login accepts the real vendor id and logout clears vendor data', async () => {
   const store = makeStore();

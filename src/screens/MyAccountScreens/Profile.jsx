@@ -141,7 +141,11 @@ const RestaurantProfileScreen = () => {
     try {
       setLoading(true);
       const resultAction = await dispatch(
-        updateVendorPassword({userId, newPassword: password}),
+        updateVendorPassword({
+          userId,
+          shopPhoneNumber: shop?.mobile,
+          newPassword: password,
+        }),
       );
 
       if (updateVendorPassword.fulfilled.match(resultAction)) {

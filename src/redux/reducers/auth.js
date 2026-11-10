@@ -333,10 +333,21 @@ export const updateShopStatus = createAsyncThunk(
 
 export const updateVendorPassword = createAsyncThunk(
   'updateVendorPassword',
-  async ({userId, newPassword}, {rejectWithValue, fulfillWithValue}) => {
+  async (
+    {userId, shopPhoneNumber, newPassword},
+    {rejectWithValue, fulfillWithValue},
+  ) => {
+    const shopPhoneNumberValue = String(shopPhoneNumber ?? '').trim();
+    if (!shopPhoneNumberValue) {
+      return rejectWithValue(
+        'Shop phone number is unavailable. Please reload your profile and try again.',
+      );
+    }
+
     try {
       const response = await api.post(endpoints.UPDATEVENDORSPASSWORD, {
         user_id: userId,
+        shop_phone_number: shopPhoneNumberValue,
         newPassword: newPassword,
       });
 
