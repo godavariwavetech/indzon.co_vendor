@@ -37,7 +37,11 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import NetInfo from '@react-native-community/netinfo';
 import {buildPriceUpdate} from '../utils/productPricing';
 
-const CustomToggle = ({value, onChange}) => {
+// Vendors can currently only view the menu. Set to true to re-enable the
+// availability toggle and the Edit button.
+const MENU_EDITING_ENABLED = false;
+
+const CustomToggle = ({value, onChange, disabled = false}) => {
   // keep Animated.Value stable across renders
   const translateRef = React.useRef(new Animated.Value(value ? 19 : 0));
 
@@ -56,8 +60,12 @@ const CustomToggle = ({value, onChange}) => {
       style={[
         styles.toggleContainer,
         value ? styles.toggleOn : styles.toggleOff,
+        disabled && styles.disabledControl,
       ]}
       activeOpacity={0.8}
+      disabled={disabled}
+      accessibilityRole="switch"
+      accessibilityState={{checked: value, disabled}}
       onPress={() => onChange(!value)} // keep your existing prop name
     >
       <Animated.View
@@ -262,10 +270,13 @@ export default function MenuScreen() {
           <CustomToggle
             value={toggles[item.id] || false}
             onChange={value => handleToggle(item.id, value)}
+            disabled={!MENU_EDITING_ENABLED}
           />
 
           <TouchableOpacity
-            style={styles.editBtn}
+            style={[styles.editBtn, !MENU_EDITING_ENABLED && styles.disabledControl]}
+            disabled={!MENU_EDITING_ENABLED}
+            accessibilityState={{disabled: !MENU_EDITING_ENABLED}}
             onPress={() => openEditCard(item)}>
             <Text style={styles.editText}>Edit</Text>
             <MaterialCommunityIcons
@@ -707,6 +718,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
+  disabledControl: {opacity: 0.4},
   editText: {
     color: '#fff',
     fontWeight: '600',
