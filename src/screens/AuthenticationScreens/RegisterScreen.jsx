@@ -123,13 +123,13 @@ export default function RegisterScreen() {
   }, [dispatch]);
 
   const handleConfirmTime = date => {
+    setTimePickerVisible(false);
     const time = date.toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
     });
     isOpenTime ? setOpenTime(time) : setCloseTime(time);
-    setTimePickerVisible(false);
   };
 
   const pickImage = async setter => {
@@ -406,6 +406,7 @@ export default function RegisterScreen() {
         <TouchableOpacity
           style={[styles.input, errors.openTime && styles.errorInput]}
           onPress={() => {
+            if (timePickerVisible) return;
             setIsOpenTime(true);
             setTimePickerVisible(true);
           }}>
@@ -420,6 +421,7 @@ export default function RegisterScreen() {
         <TouchableOpacity
           style={[styles.input, errors.closeTime && styles.errorInput]}
           onPress={() => {
+            if (timePickerVisible) return;
             setIsOpenTime(false);
             setTimePickerVisible(true);
           }}>

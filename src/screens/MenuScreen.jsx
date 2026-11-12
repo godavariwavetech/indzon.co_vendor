@@ -363,6 +363,8 @@ export default function MenuScreen() {
     }
     keyExtractor={(item) => item.id.toString()}
     renderItem={renderCard}
+    // iOS pins section headers by default; scroll them with the list like Android.
+    stickySectionHeadersEnabled={false}
     renderSectionHeader={({section}) => (
       <Text style={styles.sectionTitle}>{section.title}</Text>
     )}

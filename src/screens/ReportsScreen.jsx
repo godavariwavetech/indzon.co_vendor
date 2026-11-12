@@ -17,6 +17,7 @@ import {
   ToastAndroid,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import ScreenHeader from '../components/ScreenHeader';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {colors} from '../config/theme';
 import {useDispatch, useSelector} from 'react-redux';
@@ -86,14 +87,17 @@ useFocusEffect(useCallback(() => {
 
 
   // ===================== Date Picker =====================
+  // Ignore taps while a picker is open, and close it *before* updating the
+  // date - updating state while it is still visible makes it reopen.
   const showDatePicker = type => {
+    if (isDatePickerVisible) return;
     setSelecting(type);
     setDatePickerVisible(true);
   };
   const hideDatePicker = () => setDatePickerVisible(false);
   const handleConfirm = date => {
-    selecting === 'start' ? setStartDate(date) : setEndDate(date);
     hideDatePicker();
+    selecting === 'start' ? setStartDate(date) : setEndDate(date);
   };
 
   // ===================== Render Order =====================
@@ -236,11 +240,10 @@ useFocusEffect(useCallback(() => {
 
   // ===================== JSX =====================
   return (
-    <View style={styles.container}>
+    <View style={styles.screen}>
+      <ScreenHeader title="Order History" showBack={false} />
+      <View style={styles.container}>
       {requestError && <Text accessibilityRole="alert" style={{color: colors.danger}}>{String(requestError)}</Text>}
-      <View style={styles.topBar}>
-        <Text style={styles.topTitle}>Order History</Text>
-      </View>
 
       <View style={styles.filterRow}>
         <TouchableOpacity
@@ -307,23 +310,18 @@ useFocusEffect(useCallback(() => {
         onConfirm={handleConfirm}
         onCancel={hideDatePicker}
       />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {flex: 1, backgroundColor: colors.reportsContainerBg},
   container: {
     flex: 1,
     backgroundColor: colors.reportsContainerBg,
     padding: 13,
-    paddingTop: 40,
   },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 15,
-  },
-  topTitle: {fontSize: 18, fontWeight: '600', color: colors.reportsTopTitle},
 
   filterRow: {
     flexDirection: 'row',

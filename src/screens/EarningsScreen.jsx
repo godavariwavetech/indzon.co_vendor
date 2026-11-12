@@ -66,7 +66,10 @@ export default function EarningsScreen() {
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [selecting, setSelecting] = useState('start');
 
+  // Ignore taps while a picker is open, and close it *before* updating the
+  // date - updating state while it is still visible makes it reopen.
   const showDatePicker = type => {
+    if (isDatePickerVisible) return;
     setSelecting(type);
     setDatePickerVisible(true);
   };
@@ -74,12 +77,12 @@ export default function EarningsScreen() {
   const hideDatePicker = () => setDatePickerVisible(false);
 
   const handleConfirm = date => {
+    hideDatePicker();
     if (selecting === 'start') {
       setStartDate(new Date(date));
     } else {
       setEndDate(new Date(date));
     }
-    hideDatePicker();
   };
 
   // Refresh history when dates change or the tab regains focus.

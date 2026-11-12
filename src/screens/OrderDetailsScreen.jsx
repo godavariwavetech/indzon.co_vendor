@@ -13,6 +13,7 @@ import {
   Linking,
 } from 'react-native';
 import CustomAlertModal from '../components/CustomAlertModal';
+import ScreenHeader from '../components/ScreenHeader';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useNavigation} from '@react-navigation/native';
@@ -191,14 +192,7 @@ export default function OrderDetailsScreen({route}) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}>
-          <Icon name="arrow-back" size={22} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Order Tracking</Text>
-      </View>
+      <ScreenHeader title="Order Tracking" />
 
       <ScrollView style={styles.contentContainerStyle}>
         <View style={styles.orderCard}>
@@ -457,19 +451,6 @@ export default function OrderDetailsScreen({route}) {
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.background},
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 22,
-    backgroundColor: colors.textWhite,
-    elevation: 5,
-    paddingTop: 50,
-    borderBottomWidth: 1,
-    borderColor: 'lightgrey',
-  },
-  backButton: {marginRight: 10},
-  headerTitle: {fontSize: 18, fontWeight: '600', color: '#000'},
   contentContainerStyle: {paddingBottom: 20},
 
   orderCard: {
