@@ -136,7 +136,12 @@ const handleNotificationNavigation = (data, navigation) => {
 export const retrieveFCMToken = async () => {
   if (!firebase.apps.some(app => app.name === '[DEFAULT]')) return null;
   try {
-    return await messaging().getToken();
+    // On iOS getToken() can wait indefinitely for an APNs token; never let
+    // that block sign-in.
+    return await Promise.race([
+      messaging().getToken(),
+      new Promise(resolve => setTimeout(() => resolve(null), 8000)),
+    ]);
   } catch (error) {
     console.error('Error getting FCM token:', error);
     return null;

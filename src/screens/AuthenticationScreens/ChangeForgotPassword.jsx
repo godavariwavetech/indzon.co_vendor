@@ -166,6 +166,8 @@ const showModal = (title, message, type = 'error') => {
                 placeholder="Enter your phone number"
                 placeholderTextColor={colors.textLight}
                 keyboardType="number-pad"
+                textContentType="telephoneNumber"
+                autoComplete="tel"
                 maxLength={10}
                 value={phoneNumber}
                 editable={!isVerified}
@@ -184,10 +186,18 @@ const showModal = (title, message, type = 'error') => {
                   <Text style={styles.label}>New Password</Text>
                   <View style={styles.passwordWrapper}>
                     <TextInput
-                      style={[styles.input, {flex: 1, color: colors.textDark}]}
+                      style={[
+                        styles.input,
+                        {flex: 1, paddingRight: 44, color: colors.textDark},
+                      ]}
                       placeholder="Enter new password"
                       placeholderTextColor={colors.textLight}
                       secureTextEntry={!showNewPassword}
+                      textContentType="newPassword"
+                      autoComplete="new-password"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      spellCheck={false}
                       value={newPassword}
                       onChangeText={setNewPassword}
                     />
@@ -208,10 +218,18 @@ const showModal = (title, message, type = 'error') => {
                   <Text style={styles.label}>Confirm Password</Text>
                   <View style={styles.passwordWrapper}>
                     <TextInput
-                      style={[styles.input, {flex: 1, color: colors.textDark}]}
+                      style={[
+                        styles.input,
+                        {flex: 1, paddingRight: 44, color: colors.textDark},
+                      ]}
                       placeholder="Confirm new password"
                       placeholderTextColor={colors.textLight}
                       secureTextEntry={!showConfirmPassword}
+                      textContentType="newPassword"
+                      autoComplete="new-password"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      spellCheck={false}
                       value={confirmPassword}
                       onChangeText={setConfirmPassword}
                     />
@@ -307,7 +325,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    minHeight: 48,
     fontSize: 16,
     backgroundColor: colors.background,
   },

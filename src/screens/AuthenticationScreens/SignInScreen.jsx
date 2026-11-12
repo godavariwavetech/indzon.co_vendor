@@ -22,6 +22,15 @@ import {retrieveFCMToken} from '../../services/NotificationsService';
 import CustomAlertModal from '../../components/CustomAlertModal'; // ✅ Import
 import validateLogin from '../../utils/validateLogin';
 
+// iOS autofill/paste can insert "+91 98765 43210" or a leading 0; keep the
+// last 10 digits so the number matches what the server stores.
+const normalizePhone = text => {
+  let digits = text.replace(/[^0-9]/g, '');
+  if (digits.length > 10 && digits.startsWith('91')) digits = digits.slice(2);
+  if (digits.length > 10 && digits.startsWith('0')) digits = digits.slice(1);
+  return digits.slice(0, 10);
+};
+
 export default function LoginScreen() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
@@ -158,11 +167,10 @@ export default function LoginScreen() {
                 placeholder="Enter your Phone Number"
                 placeholderTextColor={colors.textLight}
                 keyboardType="number-pad"
-                maxLength={10}
+                textContentType="telephoneNumber"
+                autoComplete="tel"
                 value={phoneNumber}
-                onChangeText={text =>
-                  setPhoneNumber(text.replace(/[^0-9]/g, ''))
-                }
+                onChangeText={text => setPhoneNumber(normalizePhone(text))}
               />
             </View>
             <View style={styles.inputContainer}>
@@ -173,8 +181,12 @@ export default function LoginScreen() {
                   placeholder="Enter your Password"
                   placeholderTextColor={colors.textLight}
                   secureTextEntry={!showPassword}
+                  textContentType="password"
+                  autoComplete="password"
                   autoCapitalize="none"
                   autoCorrect={false}
+                  spellCheck={false}
+                  smartInsertDelete={false}
                   value={password}
                   onChangeText={setPassword}
                 />
@@ -272,8 +284,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: colors.white,
     paddingHorizontal: 12,
+    minHeight: 48,
   },
-  passwordInput: {flex: 1, fontSize: 16, paddingVertical: 10},
+  passwordInput: {flex: 1, fontSize: 16, paddingVertical: 12, minHeight: 48},
   eyeIcon: {paddingHorizontal: 8},
   forgotPasswordContainer: {marginTop: 8, alignItems: 'flex-end'},
   forgotPasswordText: {color: colors.primary, fontSize: 14, fontWeight: '600'},
