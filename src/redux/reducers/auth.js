@@ -18,6 +18,7 @@ const initialState = {
   shopDetails: null,
   paymentHistory: [],
   products: [],
+  itemsToAssign: [],
   dashboardOrders: [],
   applicationCommon: null,
   errors: {},
@@ -280,6 +281,8 @@ export const fetchShopDetails = createAsyncThunk(
           email: shop.shop_email,
           image: shop.shop_image,
           shop_active_status: shop.shop_active_status,
+          categoryId: shop.category_id,
+          shopItemsTableName: shop.shop_items_tb_nm,
         });
       } else {
         return rejectWithValue(readError(data, 'Unable to load shop details. Please try again.'));
@@ -590,6 +593,36 @@ export const fetchProductsList = createAsyncThunk(
 
 // src/redux/reducers/auth.js
 
+export const fetchItemsToAssign = createAsyncThunk(
+  'fetchItemsToAssign',
+  async (
+    {shop_id, category_id, subcategory_id, table_name},
+    {rejectWithValue, fulfillWithValue},
+  ) => {
+    try {
+      const response = await api.post(endpoints.GETITEMSTOASSIGN, {
+        shop_id,
+        category_id,
+        subcategory_id,
+        table_name,
+      });
+
+      const data = response.data;
+      console.log('Items To Assign API response:', data);
+
+      if (data?.status === 200 && Array.isArray(data?.data)) {
+        return fulfillWithValue(data.data);
+      } else {
+        return rejectWithValue(readError(data, 'Unable to load products for this category.'));
+      }
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.msg || 'Failed to fetch products',
+      );
+    }
+  },
+);
+
 export const updateProduct = createAsyncThunk(
   'updateProduct',
   async (payload, {rejectWithValue, fulfillWithValue}) => {
@@ -740,7 +773,7 @@ const requests = [vendorLogin, verifyNumber, changePassword, fetchLocations,
   fetchCategories, fetchSubCategories, fetchFilters, registerVendor,
   fetchShopDetails, updateShopStatus, updateVendorPassword, fetchCurrentOrders,
   fetchOrderDetails, updateOrderStatus, fetchShopPayments, fetchPaymentHistory,
-  fetchProductsList, updateProduct, updateProductStatus, fetchDashboardOrders,
+  fetchProductsList, fetchItemsToAssign, updateProduct, updateProductStatus, fetchDashboardOrders,
   updateFCMToken, deleteAccount, fetchApplicationCommon];
 
 export const AuthSlice = createSlice({
@@ -836,6 +869,13 @@ export const AuthSlice = createSlice({
       state.loading = false;
       state.products = [];
       state.message = action.payload || 'Failed to load products';
+    });
+
+    builder.addCase(fetchItemsToAssign.fulfilled, (state, action) => {
+      state.itemsToAssign = action.payload;
+    });
+    builder.addCase(fetchItemsToAssign.rejected, state => {
+      state.itemsToAssign = [];
     });
 
     builder.addCase(updateProduct.fulfilled, (state, action) => {

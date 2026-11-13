@@ -24,6 +24,7 @@ export const endpoints = {
   GETSHOPSFORPAYMENTS: 'vendor_app/getshopsforpayments',
   GETPAYMENTHISTORY: 'vendor_app/getpaymenthistory',
   GETPRODUCTSLISTDATA: 'vendor_app/getproductslistdata',
+  GETITEMSTOASSIGN: 'dashboard_api/getitemstoassign',
   UPDATESHOPPRODUCTS: 'vendor_app/updateshopproducts',
   UPDATEPRODUCTACTIVE: 'vendor_app/updateproductactive',
   GETDASHBOARDORDERS: 'vendor_app/getdashboardorders',

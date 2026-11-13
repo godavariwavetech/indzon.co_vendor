@@ -1,5 +1,5 @@
 // src/screens/MenuScreen.jsx
-import {useFocusEffect} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import React, {useState, useEffect, useCallback} from 'react';
 import NoInternetScreen from '../components/NoInternetScreen';
 
@@ -80,6 +80,7 @@ const CustomToggle = ({value, onChange, disabled = false}) => {
 
 export default function MenuScreen() {
   const dispatch = useDispatch();
+  const navigation = useNavigation();
   const requestErrors = useSelector(state => state.Auth.errors || {});
   const requestError = requestErrors.fetchProductsList || requestErrors.fetchShopDetails;
   const [searchQuery, setSearchQuery] = useState('');
@@ -267,7 +268,7 @@ export default function MenuScreen() {
         </View>
 
         <View style={styles.rightSection}>
-          <CustomToggle
+          {/* <CustomToggle
             value={toggles[item.id] || false}
             onChange={value => handleToggle(item.id, value)}
             disabled={!MENU_EDITING_ENABLED}
@@ -284,7 +285,7 @@ export default function MenuScreen() {
               size={16}
               color="#fff" // icon white to match button
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
     ),
@@ -319,6 +320,14 @@ export default function MenuScreen() {
           </>
         )}
       </View>
+
+      {/* 🔹 Add Products */}
+      <TouchableOpacity
+        style={styles.addProductBtn}
+        onPress={() => navigation.navigate('AddFoodScreen')}>
+        <MaterialCommunityIcons name="plus" size={18} color="#fff" />
+        <Text style={styles.addProductText}>Add Products</Text>
+      </TouchableOpacity>
 
       {/* 🔹 Search */}
       <View style={styles.searchcontainer1}>
@@ -667,6 +676,21 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
     borderColor: 'lightgrey',
+  },
+  addProductBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
+  addProductText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+    marginLeft: 6,
   },
   icon: {marginRight: 5},
   input: {flex: 1, fontSize: 16, color: colors.textDark},
