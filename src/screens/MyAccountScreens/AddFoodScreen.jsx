@@ -77,6 +77,7 @@ export default function AddFoodScreen({navigation}) {
   const [subCategoryModalVisible, setSubCategoryModalVisible] = useState(false);
 
   const [itemsLoading, setItemsLoading] = useState(false);
+  const [itemsLoadError, setItemsLoadError] = useState(null);
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -99,6 +100,7 @@ export default function AddFoodScreen({navigation}) {
       setCategoryModalVisible(false);
       setSelectedSubCategory(null);
       setSubCategoryOptions([]);
+      setItemsLoadError(null);
 
       setSubCategoryLoading(true);
       try {
@@ -121,12 +123,9 @@ export default function AddFoodScreen({navigation}) {
   useEffect(() => {
     if (!selectedCategory || !userId) return;
 
-    if (!shopDetails?.shopItemsTableName) {
-      console.warn('AddFoodScreen: shopDetails.shopItemsTableName is missing', shopDetails);
-    }
-
     const loadItems = async () => {
       setItemsLoading(true);
+      setItemsLoadError(null);
       try {
         const response = await dispatch(
           fetchItemsToAssign({
@@ -142,7 +141,7 @@ export default function AddFoodScreen({navigation}) {
       }
     };
     loadItems();
-  }, [dispatch, userId, shopDetails?.shopItemsTableName, selectedCategory, selectedSubCategory]);
+  }, [dispatch, userId, shopDetails, selectedCategory, selectedSubCategory]);
 
   const renderItemCard = ({item}) => (
     <View style={styles.card}>
@@ -212,6 +211,8 @@ export default function AddFoodScreen({navigation}) {
 
       {!selectedCategory ? (
         <Text style={styles.hintText}>Choose a category to view available products.</Text>
+      ) : itemsLoadError ? (
+        <Text style={[styles.hintText, {color: colors.danger}]}>{itemsLoadError}</Text>
       ) : itemsLoading || loading ? (
         <View style={styles.loaderContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
