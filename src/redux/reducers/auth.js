@@ -18,6 +18,7 @@ const initialState = {
   shopDetails: null,
   paymentHistory: [],
   products: [],
+  assignedProductIds: [],
   itemsToAssign: [],
   dashboardOrders: [],
   applicationCommon: null,
@@ -623,6 +624,28 @@ export const fetchItemsToAssign = createAsyncThunk(
   },
 );
 
+export const assignProductToShop = createAsyncThunk(
+  'assignProductToShop',
+  async (payload, {rejectWithValue, fulfillWithValue}) => {
+    try {
+      const response = await api.post(endpoints.SUBMITASSIGNEDPRODUCTS, payload);
+      const data = response.data;
+
+      if (data?.status === 200) {
+        return fulfillWithValue(data);
+      }
+      return rejectWithValue(
+        readError(data, 'Unable to add this product to your shop. Please try again.'),
+      );
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.msg ||
+          'Unable to add this product to your shop. Please try again.',
+      );
+    }
+  },
+);
+
 export const updateProduct = createAsyncThunk(
   'updateProduct',
   async (payload, {rejectWithValue, fulfillWithValue}) => {
@@ -789,7 +812,11 @@ export const AuthSlice = createSlice({
     builder.addCase(vendorLogin.fulfilled, (state, action) => {
       state.message = null;
       if (action.payload?.status === 200 && action.payload?.data?.[0]?.id) {
-        state.userId = action.payload.data[0].id;
+        const userId = action.payload.data[0].id;
+        if (String(state.userId) !== String(userId)) {
+          state.assignedProductIds = [];
+        }
+        state.userId = userId;
         state.token = action.payload.token || null;
       }
     });
@@ -876,6 +903,16 @@ export const AuthSlice = createSlice({
     });
     builder.addCase(fetchItemsToAssign.rejected, state => {
       state.itemsToAssign = [];
+    });
+
+    builder.addCase(assignProductToShop.fulfilled, (state, action) => {
+      const newIds = (action.meta.arg?.items || [])
+        .map(item => item.item_id)
+        .filter(id => id != null)
+        .map(String);
+      state.assignedProductIds = [
+        ...new Set([...(state.assignedProductIds || []), ...newIds]),
+      ];
     });
 
     builder.addCase(updateProduct.fulfilled, (state, action) => {

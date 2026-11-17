@@ -1,4 +1,5 @@
 import React, {useState, useEffect, useCallback} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
 import {
   View,
   Text,
@@ -8,16 +9,20 @@ import {
   Image,
   Modal,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {colors} from '../../config/theme';
+import {isCatalogProductAssigned} from '../../utils/productAssignment';
 import {
   fetchCategories,
   fetchSubCategories,
   fetchItemsToAssign,
   fetchShopDetails,
+  fetchProductsList,
+  assignProductToShop,
 } from '../../redux/reducers/auth';
 import {filterRegisteredCategories} from '../../utils/categoryOptions';
 
@@ -74,7 +79,15 @@ const SelectModal = ({visible, title, options, selectedId, onSelect, onClose, lo
 
 export default function AddFoodScreen({navigation}) {
   const dispatch = useDispatch();
-  const {userId, shopDetails, itemsToAssign, loading, errors} = useSelector(state => state.Auth);
+  const {
+    userId,
+    shopDetails,
+    products,
+    assignedProductIds,
+    itemsToAssign,
+    loading,
+    errors,
+  } = useSelector(state => state.Auth);
   const itemsError = errors?.fetchItemsToAssign;
 
   const [allCategoryOptions, setAllCategoryOptions] = useState([]);
@@ -89,6 +102,8 @@ export default function AddFoodScreen({navigation}) {
 
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsLoadError, setItemsLoadError] = useState(null);
+  const [addingItemId, setAddingItemId] = useState(null);
+  const [addedItemIds, setAddedItemIds] = useState({});
 
   const categoryOptions = filterRegisteredCategories(
     allCategoryOptions,
@@ -98,6 +113,12 @@ export default function AddFoodScreen({navigation}) {
   useEffect(() => {
     if (userId && !shopDetails) dispatch(fetchShopDetails(userId));
   }, [dispatch, userId, shopDetails]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (userId) dispatch(fetchProductsList(userId));
+    }, [dispatch, userId]),
+  );
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -163,6 +184,61 @@ export default function AddFoodScreen({navigation}) {
     loadItems();
   }, [dispatch, selectedCategory, selectedSubCategory]);
 
+  const isProductAdded = item =>
+    Boolean(addedItemIds[String(item.id)]) ||
+    assignedProductIds?.includes(String(item.id)) ||
+    isCatalogProductAssigned(products, item.id);
+
+  const handleAddProduct = async item => {
+    if (!userId || !shopDetails) {
+      Alert.alert(
+        'Unable to add product',
+        'Shop details are not available. Please go back and try again.',
+      );
+      return;
+    }
+    if (addingItemId != null || isProductAdded(item)) return;
+
+    setAddingItemId(item.id);
+    try {
+      await dispatch(
+        assignProductToShop({
+          items: [
+            {
+              shop_id: userId,
+              item_id: item.id,
+              item_name: item.item_name,
+              item_image: item.item_image,
+              item_description: item.item_description,
+              category_id: selectedCategory.id,
+              category_name: selectedCategory.name,
+              sub_category_id: item.sub_category_id,
+              sub_category_name: item.sub_category_name,
+              filter_one: item.filter_one,
+              filter_two: item.filter_two,
+              actual_price: item.actual_price || 0,
+              selling_price: item.selling_price || 0,
+              discount_percentage: item.discount_percentage || 0,
+              discount_amount: item.discount_amount || 0,
+              admin_percentage: shopDetails.commission || 0,
+              quantity_varient: item.quantity_varient,
+              unique_code: item.unique_code,
+              location_id: shopDetails.locationId,
+              prescription_required: item.prescription_required,
+              entry_by: userId,
+              active_status: 0,
+            },
+          ],
+        }),
+      ).unwrap();
+      setAddedItemIds(previous => ({...previous, [String(item.id)]: true}));
+    } catch (error) {
+      Alert.alert('Unable to add product', String(error));
+    } finally {
+      setAddingItemId(null);
+    }
+  };
+
   const renderItemCard = ({item}) => (
     <View style={styles.card}>
       {item.item_image ? (
@@ -198,6 +274,35 @@ export default function AddFoodScreen({navigation}) {
             )}
         </View>
       </View>
+      <TouchableOpacity
+        style={[
+          styles.addProductButton,
+          isProductAdded(item) && styles.addedProductButton,
+        ]}
+        onPress={() => handleAddProduct(item)}
+        disabled={
+          addingItemId != null ||
+          isProductAdded(item) ||
+          !userId ||
+          !shopDetails
+        }
+        accessibilityRole="button"
+        accessibilityLabel={`Add ${item.item_name} to your shop`}
+        accessibilityState={{
+          disabled:
+            addingItemId != null ||
+            isProductAdded(item) ||
+            !userId ||
+            !shopDetails,
+        }}>
+        {addingItemId === item.id ? (
+          <ActivityIndicator size="small" color={colors.white} />
+        ) : (
+          <Text style={styles.addProductButtonText}>
+            {isProductAdded(item) ? 'Added' : 'Add'}
+          </Text>
+        )}
+      </TouchableOpacity>
     </View>
   );
 
@@ -352,6 +457,23 @@ const styles = StyleSheet.create({
   },
   placeholderText: {color: '#888', fontSize: 10, textAlign: 'center'},
   cardContent: {flex: 1, marginLeft: 10},
+  addProductButton: {
+    minWidth: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+  },
+  addedProductButton: {
+    backgroundColor: colors.grey,
+  },
+  addProductButtonText: {
+    color: colors.white,
+    fontSize: 13,
+    fontWeight: '600',
+  },
   row: {flexDirection: 'row', alignItems: 'center'},
   foodName: {fontSize: 14, fontWeight: '500', color: colors.textDark, flexShrink: 1},
   subCategoryLabel: {fontSize: 12, color: colors.textLight, marginTop: 2},

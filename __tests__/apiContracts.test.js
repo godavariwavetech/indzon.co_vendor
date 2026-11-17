@@ -4,6 +4,7 @@ import reducer, * as actions from '../src/redux/reducers/auth';
 import {endpoints} from '../src/config/config';
 import {uniqueHistoryOrders} from '../src/utils/orderHistory';
 import {filterRegisteredCategories} from '../src/utils/categoryOptions';
+import {isCatalogProductAssigned} from '../src/utils/productAssignment';
 
 jest.mock('../src/utils/api', () => ({__esModule: true, default: {get: jest.fn(), post: jest.fn()}}));
 const makeStore = () => configureStore({reducer: {Auth: reducer}});
@@ -29,6 +30,7 @@ const cases = [
   ['fetchPaymentHistory', {userId: 7, f_date: '2026-10-01', t_date: '2026-10-17'}, 'post', endpoints.GETPAYMENTHISTORY, {shop_id: 7, f_date: '2026-10-01', t_date: '2026-10-17'}],
   ['fetchProductsList', 7, 'post', endpoints.GETPRODUCTSLISTDATA, {shop_id: 7}],
   ['fetchItemsToAssign', {category_id: 10, subcategory_id: 3}, 'post', endpoints.GETITEMS, {filters: {category: 10, subcategory: 3}}],
+  ['assignProductToShop', {items: [{shop_id: 7, item_id: 42}]}, 'post', endpoints.SUBMITASSIGNEDPRODUCTS, {items: [{shop_id: 7, item_id: 42}]}],
   ['updateProduct', {id: 2, shop_id: 7, selling_price: '100'}, 'post', endpoints.UPDATESHOPPRODUCTS, {id: 2, shop_id: 7, selling_price: '100'}],
   ['updateProductStatus', {id: 2, shop_id: 7, active_status: '1'}, 'post', endpoints.UPDATEPRODUCTACTIVE, {id: 2, shop_id: 7, active_status: '1'}],
   ['fetchDashboardOrders', {userId: 7, f_date: '2026-10-01', t_date: '2026-10-17'}, 'post', endpoints.GETDASHBOARDORDERS, {shop_id: 7, f_date: '2026-10-01', t_date: '2026-10-17'}],
@@ -51,6 +53,37 @@ test('Add Product category options include only the shop registered category', (
   expect(filterRegisteredCategories(categories, '10')).toEqual([categories[0]]);
   expect(filterRegisteredCategories(categories, null)).toEqual([]);
 });
+test('Add Product does not confuse vendor row IDs with catalogue item IDs', () => {
+  expect(isCatalogProductAssigned([{id: 42}], 42)).toBe(false);
+  expect(isCatalogProductAssigned([{id: 99, item_id: 42}], 42)).toBe(true);
+});
+test('successful product assignments remain marked after leaving the Add Product screen', () => {
+  const store = makeStore();
+  store.dispatch(
+    actions.assignProductToShop.fulfilled(
+      {status: 200, data: [{item_id: 42}]},
+      'assignment-request',
+      {items: [{item_id: 42}]},
+    ),
+  );
+  expect(store.getState().Auth.assignedProductIds).toContain('42');
+
+  store.dispatch(actions.actionLogout());
+  expect(store.getState().Auth.assignedProductIds).toEqual([]);
+});
+test('Add Product catalogue and assignment requests use vendor API routes', () => {
+  expect([
+    endpoints.GETCATEGORIES,
+    endpoints.GETSUBCATEGORIES,
+    endpoints.GETITEMS,
+    endpoints.SUBMITASSIGNEDPRODUCTS,
+  ]).toEqual([
+    'vendor_app/getproductcategories',
+    'vendor_app/getproductsubcategories',
+    'vendor_app/getcatalogitems',
+    'vendor_app/submitassignedproducts',
+  ]);
+});
 test('password update rejects when the profile phone number is unavailable', async () => {
   const store = makeStore();
   await expect(
@@ -59,6 +92,14 @@ test('password update rejects when the profile phone number is unavailable', asy
     'Shop phone number is unavailable. Please reload your profile and try again.',
   );
   expect(api.post).not.toHaveBeenCalled();
+});
+test('product assignment displays the backend rejection message', async () => {
+  api.post.mockResolvedValue({
+    data: {status: 500, msg: 'The product table for this shop cannot store assigned products.'},
+  });
+  await expect(
+    makeStore().dispatch(actions.assignProductToShop({items: [{shop_id: 7, item_id: 42}]})).unwrap(),
+  ).rejects.toBe('The product table for this shop cannot store assigned products.');
 });
 test('login accepts the real vendor id and logout clears vendor data', async () => {
   const store = makeStore();

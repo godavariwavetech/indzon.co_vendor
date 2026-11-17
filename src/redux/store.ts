@@ -15,7 +15,7 @@ import AuthSlice from './reducers/auth';
 
 const persistConfig = {
   key: 'root',
-  whitelist: ['userId', 'token', 'userRole'],
+  whitelist: ['userId', 'token', 'userRole', 'assignedProductIds'],
   storage: AsyncStorage,
 };
 const persistedAuth = persistReducer(persistConfig, AuthSlice);
