@@ -321,13 +321,14 @@ export default function MenuScreen() {
         )}
       </View>
 
-      {/* 🔹 Add Products */}
+      {/*
       <TouchableOpacity
         style={styles.addProductBtn}
         onPress={() => navigation.navigate('AddFoodScreen')}>
         <MaterialCommunityIcons name="plus" size={18} color="#fff" />
         <Text style={styles.addProductText}>Add Products</Text>
       </TouchableOpacity>
+      */}
 
       {/* 🔹 Search */}
       <View style={styles.searchcontainer1}>
