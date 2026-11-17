@@ -596,15 +596,15 @@ export const fetchProductsList = createAsyncThunk(
 export const fetchItemsToAssign = createAsyncThunk(
   'fetchItemsToAssign',
   async (
-    {shop_id, category_id, subcategory_id, table_name},
+    {category_id, subcategory_id},
     {rejectWithValue, fulfillWithValue},
   ) => {
     try {
-      const response = await api.post(endpoints.GETITEMSTOASSIGN, {
-        shop_id,
-        category_id,
-        subcategory_id,
-        table_name,
+      const response = await api.post(endpoints.GETITEMS, {
+        filters: {
+          category: category_id,
+          subcategory: subcategory_id,
+        },
       });
 
       const data = response.data;

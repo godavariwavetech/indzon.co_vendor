@@ -17,13 +17,24 @@ import {
   fetchCategories,
   fetchSubCategories,
   fetchItemsToAssign,
+  fetchShopDetails,
 } from '../../redux/reducers/auth';
+import {filterRegisteredCategories} from '../../utils/categoryOptions';
 
 const SelectModal = ({visible, title, options, selectedId, onSelect, onClose, loading, emptyLabel}) => (
   <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
     <View style={styles.modalOverlay}>
       <View style={styles.modalCard}>
-        <Text style={styles.modalTitle}>{title}</Text>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>{title}</Text>
+          <TouchableOpacity
+            style={styles.modalCloseButton}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel={`Close ${title.toLowerCase()} modal`}>
+            <Ionicons name="close" size={22} color={colors.textDark} />
+          </TouchableOpacity>
+        </View>
 
         {loading ? (
           <View style={styles.modalLoader}>
@@ -66,7 +77,7 @@ export default function AddFoodScreen({navigation}) {
   const {userId, shopDetails, itemsToAssign, loading, errors} = useSelector(state => state.Auth);
   const itemsError = errors?.fetchItemsToAssign;
 
-  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [allCategoryOptions, setAllCategoryOptions] = useState([]);
   const [categoryLoading, setCategoryLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
@@ -79,14 +90,25 @@ export default function AddFoodScreen({navigation}) {
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsLoadError, setItemsLoadError] = useState(null);
 
+  const categoryOptions = filterRegisteredCategories(
+    allCategoryOptions,
+    shopDetails?.categoryId,
+  );
+
+  useEffect(() => {
+    if (userId && !shopDetails) dispatch(fetchShopDetails(userId));
+  }, [dispatch, userId, shopDetails]);
+
   useEffect(() => {
     const loadCategories = async () => {
       setCategoryLoading(true);
       try {
         const response = await dispatch(fetchCategories());
-        setCategoryOptions(response?.payload || []);
+        setAllCategoryOptions(
+          Array.isArray(response?.payload) ? response.payload : [],
+        );
       } catch {
-        setCategoryOptions([]);
+        setAllCategoryOptions([]);
       } finally {
         setCategoryLoading(false);
       }
@@ -121,7 +143,7 @@ export default function AddFoodScreen({navigation}) {
   }, []);
 
   useEffect(() => {
-    if (!selectedCategory || !userId) return;
+    if (!selectedCategory) return;
 
     const loadItems = async () => {
       setItemsLoading(true);
@@ -129,10 +151,8 @@ export default function AddFoodScreen({navigation}) {
       try {
         const response = await dispatch(
           fetchItemsToAssign({
-            shop_id: userId,
             category_id: selectedCategory.id,
             subcategory_id: selectedSubCategory?.id,
-            table_name: shopDetails?.shopItemsTableName,
           }),
         );
         console.log('AddFoodScreen: fetchItemsToAssign result', response);
@@ -141,7 +161,7 @@ export default function AddFoodScreen({navigation}) {
       }
     };
     loadItems();
-  }, [dispatch, userId, shopDetails, selectedCategory, selectedSubCategory]);
+  }, [dispatch, selectedCategory, selectedSubCategory]);
 
   const renderItemCard = ({item}) => (
     <View style={styles.card}>
@@ -241,7 +261,11 @@ export default function AddFoodScreen({navigation}) {
         selectedId={selectedCategory?.id}
         onSelect={handleSelectCategory}
         onClose={() => setCategoryModalVisible(false)}
-        loading={categoryLoading}
+        loading={
+          categoryLoading ||
+          Boolean(userId && !shopDetails && !errors?.fetchShopDetails)
+        }
+        emptyLabel="No registered category available"
       />
 
       <SelectModal
@@ -353,12 +377,26 @@ const styles = StyleSheet.create({
     padding: 20,
     maxHeight: '80%',
   },
+  modalHeader: {
+    minHeight: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   modalTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 16,
     color: colors.textDark,
     textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    right: 0,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalLoader: {
     alignItems: 'center',

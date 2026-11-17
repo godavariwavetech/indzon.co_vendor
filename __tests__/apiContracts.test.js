@@ -3,6 +3,7 @@ import api from '../src/utils/api';
 import reducer, * as actions from '../src/redux/reducers/auth';
 import {endpoints} from '../src/config/config';
 import {uniqueHistoryOrders} from '../src/utils/orderHistory';
+import {filterRegisteredCategories} from '../src/utils/categoryOptions';
 
 jest.mock('../src/utils/api', () => ({__esModule: true, default: {get: jest.fn(), post: jest.fn()}}));
 const makeStore = () => configureStore({reducer: {Auth: reducer}});
@@ -27,6 +28,7 @@ const cases = [
   ['fetchShopPayments', 7, 'post', endpoints.GETSHOPSFORPAYMENTS, {user_id: 7}],
   ['fetchPaymentHistory', {userId: 7, f_date: '2026-10-01', t_date: '2026-10-17'}, 'post', endpoints.GETPAYMENTHISTORY, {shop_id: 7, f_date: '2026-10-01', t_date: '2026-10-17'}],
   ['fetchProductsList', 7, 'post', endpoints.GETPRODUCTSLISTDATA, {shop_id: 7}],
+  ['fetchItemsToAssign', {category_id: 10, subcategory_id: 3}, 'post', endpoints.GETITEMS, {filters: {category: 10, subcategory: 3}}],
   ['updateProduct', {id: 2, shop_id: 7, selling_price: '100'}, 'post', endpoints.UPDATESHOPPRODUCTS, {id: 2, shop_id: 7, selling_price: '100'}],
   ['updateProductStatus', {id: 2, shop_id: 7, active_status: '1'}, 'post', endpoints.UPDATEPRODUCTACTIVE, {id: 2, shop_id: 7, active_status: '1'}],
   ['fetchDashboardOrders', {userId: 7, f_date: '2026-10-01', t_date: '2026-10-17'}, 'post', endpoints.GETDASHBOARDORDERS, {shop_id: 7, f_date: '2026-10-01', t_date: '2026-10-17'}],
@@ -40,6 +42,14 @@ test.each(cases)('%s uses the original API contract', async (...row) => {
   await makeStore().dispatch(actions[name](arg));
   if (method === 'get') expect(api.get).toHaveBeenCalledWith(url);
   else expect(api.post).toHaveBeenCalledWith(url, payload);
+});
+test('Add Product category options include only the shop registered category', () => {
+  const categories = [
+    {id: 10, name: 'Registered category'},
+    {id: 11, name: 'Other category'},
+  ];
+  expect(filterRegisteredCategories(categories, '10')).toEqual([categories[0]]);
+  expect(filterRegisteredCategories(categories, null)).toEqual([]);
 });
 test('password update rejects when the profile phone number is unavailable', async () => {
   const store = makeStore();
