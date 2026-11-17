@@ -136,6 +136,10 @@ const handleNotificationNavigation = (data, navigation) => {
 export const retrieveFCMToken = async () => {
   if (!firebase.apps.some(app => app.name === '[DEFAULT]')) return null;
   try {
+    await requestUserPermission();
+    if (Platform.OS === 'ios' && !messaging().isDeviceRegisteredForRemoteMessages) {
+      await messaging().registerDeviceForRemoteMessages();
+    }
     // On iOS getToken() can wait indefinitely for an APNs token; never let
     // that block sign-in.
     return await Promise.race([
