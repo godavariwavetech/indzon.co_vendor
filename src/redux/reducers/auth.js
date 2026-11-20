@@ -721,11 +721,13 @@ export const fetchDashboardOrders = createAsyncThunk(
 export const updateFCMToken = createAsyncThunk(
   'updateFCMToken',
   async ({userId, fcmToken}, {rejectWithValue, fulfillWithValue}) => {
+    const payload = {user_id: userId, player_id: fcmToken};
+    console.log(
+      `Sending player_id to backend -> POST ${api.defaults?.baseURL}${endpoints.UPDATE_FCM_TOKEN}`,
+      payload,
+    );
     try {
-      const response = await api.post(endpoints.UPDATE_FCM_TOKEN, {
-        user_id: userId,
-        player_id: fcmToken,
-      });
+      const response = await api.post(endpoints.UPDATE_FCM_TOKEN, payload);
       const data = response.data;
       console.log('Update FCM Token response:', response);
       console.log('Update FCM Token response.data:', data);
@@ -738,6 +740,7 @@ export const updateFCMToken = createAsyncThunk(
         return rejectWithValue(data?.msg || 'Failed to update FCM token');
       }
     } catch (error) {
+      console.error('Failed to send player_id to backend:', error.message, error.response?.data);
       return rejectWithValue(
         error.response?.data?.msg || 'Failed to update FCM token',
       );

@@ -73,7 +73,7 @@ export default function LoginScreen() {
         try {
           const token = await retrieveFCMToken();
           console.log('FCM Token signin screen:', token);
-          console.log('User ID signin screen:', response.payload?.data?.id);
+          console.log('User ID signin screen:', response.payload?.data?.[0]?.id);
           if (token && response.payload?.data?.[0]?.id) {
             dispatch(
               updateFCMToken({
@@ -81,6 +81,11 @@ export default function LoginScreen() {
                 fcmToken: token,
               }),
             );
+          } else {
+            console.log('Skipping player_id update: token or userId missing', {
+              hasToken: Boolean(token),
+              userId: response.payload?.data?.[0]?.id,
+            });
           }
         } catch (err) {
           console.error('Failed to update FCM token', err);
