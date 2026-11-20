@@ -8,11 +8,21 @@ export default function useOrderRefresh(refresh) {
     let active = true;
     let busy = false;
     const tick = async () => {
-      if (!active || busy || AppState.currentState !== 'active') return;
+      if (!active || busy || AppState.currentState !== 'active') {
+        console.log('home page order -----------------------> poll tick skipped:', {
+          active,
+          busy,
+          appState: AppState.currentState,
+        });
+        return;
+      }
       busy = true;
+      console.log('home page order -----------------------> poll tick: fetching...');
       try {
         await refresh(() => active);
-      } catch {
+        console.log('home page order -----------------------> poll tick: fetch completed');
+      } catch (err) {
+        console.log('home page order -----------------------> poll tick: fetch threw', err?.message);
         // Keep the last successful data and retry on the next tick.
       } finally {
         busy = false;

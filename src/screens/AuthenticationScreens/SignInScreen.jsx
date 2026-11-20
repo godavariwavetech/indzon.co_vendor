@@ -74,11 +74,13 @@ export default function LoginScreen() {
           const token = await retrieveFCMToken();
           console.log('FCM Token signin screen:', token);
           console.log('User ID signin screen:', response.payload?.data?.[0]?.id);
+          console.log('Location ID signin screen:', response.payload?.location_id);
           if (token && response.payload?.data?.[0]?.id) {
             dispatch(
               updateFCMToken({
                 userId: response.payload.data[0].id,
                 fcmToken: token,
+                locationId: response.payload?.location_id,
               }),
             );
           } else {

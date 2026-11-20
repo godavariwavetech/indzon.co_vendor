@@ -44,7 +44,11 @@ export default function OrdersScreen({navigation}) {
   const translateX = useRef(new Animated.Value(0)).current;
 
   useOrderRefresh(useCallback(async isActive => {
-    if (!userId || !isConnected) return;
+    if (!userId || !isConnected) {
+      console.log('home page order -----------------------> skipping refresh', {userId, isConnected});
+      return;
+    }
+    console.log('home page order -----------------------> dispatching refreshCurrentOrders', {userId});
     try {
       await dispatch(refreshCurrentOrders(userId));
     } finally {

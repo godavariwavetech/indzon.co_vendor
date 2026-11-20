@@ -2,6 +2,7 @@ import {createSlice, createAsyncThunk, isAnyOf} from '@reduxjs/toolkit';
 import api from '../../utils/api';
 import {endpoints} from '../../config/config';
 import {uniqueHistoryOrders} from '../../utils/orderHistory';
+import {resolveLocationId} from '../../utils/resolveLocationId';
 
 const readError = (body, fallback) =>
   typeof body?.msg === 'string' && body.msg.trim() ? body.msg : fallback;
@@ -29,10 +30,18 @@ const initialState = {
 export const vendorLogin = createAsyncThunk(
   'vendorLogin',
   async ({phoneNumber, password}, {rejectWithValue, fulfillWithValue}) => {
+    // Never let a slow/denied GPS lookup block sign-in.
+    const location_id = await Promise.race([
+      resolveLocationId(),
+      new Promise(resolve => setTimeout(() => resolve(null), 8000)),
+    ]);
+
     const data = {
       number: phoneNumber.trim(),
       password: password,
+     // location_id,
     };
+    console.log('Vendor login payload (with location_id):', data);
     try {
       const response = await api.post(endpoints.LOGIN, data);
       const body = response?.data;
@@ -47,7 +56,7 @@ export const vendorLogin = createAsyncThunk(
         });
       }
       if (body?.status === 200 && body?.data?.[0]?.id) {
-        return fulfillWithValue(body);
+        return fulfillWithValue({...body, location_id});
       }
       return rejectWithValue(
         typeof body?.msg === 'string'
@@ -424,16 +433,31 @@ export const fetchCurrentOrders = createAsyncThunk(
 export const refreshCurrentOrders = createAsyncThunk(
   'refreshCurrentOrders',
   async (userId, {rejectWithValue}) => {
+    console.log(`home page order -----------------------> POST ${endpoints.GETCURRENTORDERS}`, {shop_id: userId});
     try {
       const {data} = await api.post(endpoints.GETCURRENTORDERS, {shop_id: userId});
+      console.log('home page order -----------------------> response:', {
+        status: data?.status,
+        count: Array.isArray(data?.data) ? data.data.length : null,
+      });
       if (data?.status !== 200 || !Array.isArray(data.data)) {
         return rejectWithValue('Unable to refresh orders');
       }
-      return {
-        pendingOrders: data.data.filter(order => Number(order.order_status) === 0),
-        OrdersInProcess: data.data.filter(order => Number(order.order_status) !== 0),
-      };
-    } catch {
+      const pendingOrders = data.data.filter(order => Number(order.order_status) === 0);
+      const OrdersInProcess = data.data.filter(order => Number(order.order_status) !== 0);
+      console.log('home page order -----------------------> parsed:', {
+        pending: pendingOrders.length,
+        inProcess: OrdersInProcess.length,
+        total: pendingOrders.length + OrdersInProcess.length,
+      });
+      console.log('home page order -----------------------> full data:', data.data);
+      return {pendingOrders, OrdersInProcess};
+    } catch (error) {
+      console.log(
+        'home page order -----------------------> failed:',
+        error.response?.status,
+        error.response?.data?.msg || error.message,
+      );
       return rejectWithValue('Unable to refresh orders');
     }
   },
@@ -720,8 +744,8 @@ export const fetchDashboardOrders = createAsyncThunk(
 
 export const updateFCMToken = createAsyncThunk(
   'updateFCMToken',
-  async ({userId, fcmToken}, {rejectWithValue, fulfillWithValue}) => {
-    const payload = {user_id: userId, player_id: fcmToken};
+  async ({userId, fcmToken, locationId}, {rejectWithValue, fulfillWithValue}) => {
+    const payload = {user_id: userId, player_id: fcmToken, location_id: locationId};
     console.log(
       `Sending player_id to backend -> POST ${api.defaults?.baseURL}${endpoints.UPDATE_FCM_TOKEN}`,
       payload,
