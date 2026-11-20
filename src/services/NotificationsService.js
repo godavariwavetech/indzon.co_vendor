@@ -50,6 +50,11 @@ export const setupNotificationHandlers = async navigation => {
   await requestUserPermission();
   await createChannel();
 
+  const playerId = await retrieveFCMToken();
+  console.log('**********************************************');
+  console.log('PLAYER ID (FCM TOKEN):', playerId);
+  console.log('**********************************************');
+
   // Foreground notifications
   const unsubscribe = messaging().onMessage(async remoteMessage => {
     console.log('Foreground Message:', remoteMessage);
