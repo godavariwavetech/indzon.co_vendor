@@ -19,7 +19,10 @@ const createChannel = async () => {
 
 
 export const requestUserPermission = async () => {
-  if (!firebase.apps.some(app => app.name === '[DEFAULT]')) return;
+  if (!firebase.apps.some(app => app.name === '[DEFAULT]')) {
+    console.warn('Skipping notification permission request: Firebase default app not initialized yet.');
+    return;
+  }
   // notifee needs its own permission grant (same iOS prompt) to be able
   // to display notifications, in addition to messaging()'s permission.
   await notifee.requestPermission();
@@ -142,11 +145,25 @@ const handleNotificationNavigation = (data, navigation) => {
 };
 
 export const retrieveFCMToken = async () => {
-  if (!firebase.apps.some(app => app.name === '[DEFAULT]')) return null;
+  if (!firebase.apps.some(app => app.name === '[DEFAULT]')) {
+    console.warn('Skipping FCM token retrieval: Firebase default app not initialized yet.');
+    return null;
+  }
   try {
     await requestUserPermission();
     if (Platform.OS === 'ios' && !messaging().isDeviceRegisteredForRemoteMessages) {
       await messaging().registerDeviceForRemoteMessages();
+    }
+    if (Platform.OS === 'ios') {
+      // Give Apple's APNs device token a brief chance to arrive before
+      // racing getToken() below against the timeout.
+      for (
+        let attempt = 0;
+        attempt < 10 && !(await messaging().getAPNSToken());
+        attempt += 1
+      ) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
     // On iOS getToken() can wait indefinitely for an APNs token; never let
     // that block sign-in.
