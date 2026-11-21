@@ -20,6 +20,9 @@ const createChannel = async () => {
 
 export const requestUserPermission = async () => {
   if (!firebase.apps.some(app => app.name === '[DEFAULT]')) return;
+  // notifee needs its own permission grant (same iOS prompt) to be able
+  // to display notifications, in addition to messaging()'s permission.
+  await notifee.requestPermission();
   if (Platform.OS === 'android' && Platform.Version >= 33) {
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
