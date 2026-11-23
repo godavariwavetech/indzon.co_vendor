@@ -4,7 +4,9 @@ import {View, Text, StyleSheet, Pressable} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createStackNavigator} from '@react-navigation/stack';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {setupNotificationHandlers} from '../services/NotificationsService';
+import {useDispatch, useSelector} from 'react-redux';
+import {setupNotificationHandlers, onTokenRefresh} from '../services/NotificationsService';
+import {updateFCMToken} from '../redux/reducers/auth';
 
 import MoreScreen from '../screens/MoreScreen';
 import OrdersScreen from '../screens/OrdersScreen';
@@ -16,6 +18,8 @@ const Tab = createBottomTabNavigator();
 
 const BottomTabNavigation = ({navigation}) => {
   //const [modalVisible, setModalVisible] = useState(false);
+  const dispatch = useDispatch();
+  const userId = useSelector(state => state.Auth.userId);
 
   useEffect(() => {
     let unsubscribe;
@@ -32,6 +36,17 @@ const BottomTabNavigation = ({navigation}) => {
       }
     };
   }, [navigation]);
+
+  // Re-save the push token with the backend whenever Firebase reissues it, not just at
+  // login - otherwise the backend keeps sending to a dead token until the vendor logs out
+  // and back in.
+  useEffect(() => {
+    if (!userId) return;
+    return onTokenRefresh(token => {
+      console.log('Vendor FCM token refreshed:', token);
+      dispatch(updateFCMToken({userId, fcmToken: token, locationId: null}));
+    });
+  }, [dispatch, userId]);
 
   return (
     <View style={{flex: 1}}>

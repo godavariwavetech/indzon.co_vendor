@@ -144,6 +144,18 @@ const handleNotificationNavigation = (data, navigation) => {
   // Add more navigation handlers as needed
 };
 
+// Firebase can reissue this token at any time (app reinstall, data clear, routine rotation),
+// without a user ever logging in again. Without this listener, the backend keeps the old
+// token forever and pushes to this vendor silently fail. Same pattern as the delivery app's
+// NotificationService.onTokenRefresh.
+export const onTokenRefresh = handler => {
+  if (!firebase.apps.some(app => app.name === '[DEFAULT]')) {
+    console.warn('Skipping token-refresh subscription: Firebase default app not initialized yet.');
+    return () => {};
+  }
+  return messaging().onTokenRefresh(handler);
+};
+
 export const retrieveFCMToken = async () => {
   if (!firebase.apps.some(app => app.name === '[DEFAULT]')) {
     console.warn('Skipping FCM token retrieval: Firebase default app not initialized yet.');
